@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Multiplayer Game</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="auth.css">
+</head>
+<body>
+    <div id="auth-container" class="container">
+        <div class="auth-form">
+            <h1>Sign In</h1>
+            <div id="error-message" class="error-message hidden"></div>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" name="username" placeholder="Enter your username" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                </div>
+                
+                <button type="submit" class="button">Sign In</button>
+            </form>
+            
+            <div class="auth-links">
+                <p>Don't have an account? <a href="register.html">Create Account</a></p>
+            </div>
+        </div>
+    </div>
+    
+    <script> 
+
+document.addEventListener('DOMContentLoaded', function() {
+    const loginForm = document.getElementById('login-form');
+    const errorMessage = document.getElementById('error-message');
+    
+    // Check if user is already logged in
+    const token = localStorage.getItem('token');
+    if (token) {
+        // Redirect to lobby
+        window.location.href = '/';
+    }
+    
+    // Form submission
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // Get form data
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+        
+        // Create request body
+        const userData = {
+            username,
+            password
+        };
+        
+        try {
+            // Show loading state
+            const submitBtn = loginForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Signing in...';
+            submitBtn.disabled = true;
+            
+            // Send login request
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(userData)
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                showError(data.message || 'Login failed');
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+                return;
+            }
+            
+            // Important: Store token properly
+            localStorage.setItem('token', data.token);
+            
+            // Make sure avatar path includes directory
+            if (data.user.avatar && !data.user.avatar.startsWith('images/')) {
+                data.user.avatar = `images/${data.user.avatar}`;
+            }
+            
+            // Store user data
+            localStorage.setItem('user', JSON.stringify(data.user));
+            
+            // Add a small delay to ensure localStorage is written
+            setTimeout(() => {
+                // Redirect to lobby
+                window.location.href = '/';
+            }, 100);
+            
+        } catch (error) {
+            showError('Error connecting to server');
+            console.error('Login error:', error);
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }
+    });
+    
+    // Helper function to show error message
+    function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.classList.remove('hidden');
+        
+        // Hide after 5 seconds
+        setTimeout(() => {
+            errorMessage.classList.add('hidden');
+        }, 5000);
+    }
+});
+            const loginForm = document.getElementById('login-form');
+            const errorMessage = document.getElementById('error-message');
+            
+            // Check if user is already logged in
+            const token = localStorage.getItem('token');
+            if (token) {
+                // Redirect to lobby
+                window.location.href = '/';
+            }
+            
+            // Form submission
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                // Get form data
+                const username = document.getElementById('username').value.trim();
+                const password = document.getElementById('password').value;
+                
+                // Create request body
+                const userData = {
+                    username,
+                    password
+                };
+                
+                try {
+                    // Send login request
+                    const response = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(userData)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        showError(data.message || 'Login failed');
+                        return;
+                    }
+                    
+                    // Store token in localStorage
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    // Redirect to lobby
+                    window.location.href = '/';
+                } catch (error) {
+                    showError('Error connecting to server');
+                    console.error('Login error:', error);
+                }
+            });
+            
+            // Helper function to show error message
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.classList.remove('hidden');
+                
+                // Hide after 5 seconds
+                setTimeout(() => {
+                    errorMessage.classList.add('hidden');
+                }, 5000);
+            };
+        
+    </script>
+
+    <script src="/auth.js"></script>
+</body>
+</html>

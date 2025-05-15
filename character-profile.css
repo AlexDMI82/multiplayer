@@ -1,0 +1,436 @@
+/* character-profile.css - Updated to fix UI issues */
+
+.profile-container {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 30px;
+    margin-top: 20px;
+    background-color: rgba(15, 15, 15, 0.8);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Character Overview Panel */
+.character-overview {
+    display: flex;
+    flex-direction: column;
+    background-color: #222;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.player-level {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.player-level h2 {
+    color: #ffcc00;
+    margin: 0 0 10px 0;
+    font-size: 24px;
+    text-shadow: 0 0 5px rgba(255, 204, 0, 0.5);
+}
+
+.level-progress {
+    width: 100%;
+    margin-top: 5px;
+}
+
+.progress-bar {
+    height: 10px;
+    background-color: #444;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4a8cff, #36f);
+    width: 0%;
+    transition: width 0.5s ease;
+}
+
+.progress-text {
+    font-size: 12px;
+    color: #aaa;
+    text-align: center;
+}
+
+.character-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.character-name {
+    font-size: 22px;
+    color: #fff;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+/* UPDATED: Avatar container with equipment slots on the sides */
+.avatar-with-equipment {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.side-equipment {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 70px;
+}
+
+.avatar-container {
+    position: relative;
+    width: 200px;
+    height: 300px;
+    background-color: #000;
+    border-radius: 5px;
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.5), 0 0 20px rgba(0, 0, 255, 0.3);
+    /* Added margin if equipment grid is not part of this structure directly */
+    margin-bottom: 15px; /* Adjust as needed if .equipment-grid is separate */
+}
+
+#character-avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.health-energy-bars {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+}
+
+.health-bar, .energy-bar {
+    height: 6px;
+    margin-bottom: 1px;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.health-bar {
+    background-color: #600;
+}
+
+.energy-bar {
+    background-color: #004;
+}
+
+.health-fill, .energy-fill {
+    height: 100%;
+    width: 100%;
+    border-radius: 3px;
+}
+
+.health-fill {
+    background-color: #f33;
+}
+
+.energy-fill {
+    background-color: #39f;
+}
+
+/* Equipment Grid below avatar */
+.equipment-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Or repeat(4, 1fr) if you want them in one row */
+    gap: 10px;
+    width: 100%; /* Or a fixed width like 200px to match avatar if desired */
+    max-width: 220px; /* Example to control width */
+    margin: 0 auto; /* Center the grid if it's narrower than its container */
+}
+
+
+/* UPDATED: Equipment slot styling */
+.equipment-slot {
+    background-color: #333;
+    border-radius: 5px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 70px; /* Ensure slots have a minimum width */
+}
+
+.equipment-slot:hover {
+    background-color: #444;
+    transform: translateY(-2px);
+}
+
+.slot-icon {
+    width: 30px;
+    height: 30px;
+    opacity: 0.7;
+}
+
+.equipment-name {
+    font-size: 12px;
+    color: #aaa;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* Bottom equipment slots (if using a different structure) */
+.bottom-equipment {
+    display: flex;
+    justify-content: space-around;
+    gap: 10px;
+    width: 100%;
+}
+
+/* Character Stats Panel */
+.character-stats-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+/* UPDATED: Combat stats - removed white background */
+.combat-stats, .base-stats {
+    background-color: #222;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    display: flex; /* Added for flex column layout in base-stats */
+    flex-direction: column; /* Added for flex column layout in base-stats */
+}
+
+.combat-stats h2, .base-stats h2.stats-header { /* Specific for .stats-header */
+    color: #fff;
+    margin-top: 0;
+    margin-bottom: 20px; /* Adjusted margin */
+    font-size: 20px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 10px;
+    width: 100%; /* Ensure it takes full width for border */
+}
+
+.stats-subtitle {
+    color: #999;
+    margin: 30px 0 15px 0;
+    font-size: 16px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 5px;
+}
+
+/* UPDATED: Stat item styling - transparent background */
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    padding: 8px;
+    border-bottom: 1px solid #333;
+    background-color: rgba(20, 20, 20, 0.5);
+    border-radius: 4px;
+}
+
+.stat-label {
+    color: #aaa;
+}
+
+.stat-value {
+    color: #fff;
+    font-weight: bold;
+}
+
+/* Base stats section */
+/*
+.base-stats {
+    /* position: relative; -- Removed as available-points is no longer absolute 
+}*/
+
+/* .stats-header styling is now part of .base-stats h2.stats-header */
+
+.available-points {
+    /* position: absolute; top: 23px; right: 20px; -- REMOVED */
+    color: #4caf50;
+    font-weight: bold;
+    margin-top: auto; /* Pushes to the bottom if .base-stats is flex column */
+    padding-top: 20px; /* Add some space above it */
+    text-align: center; /* Center the text */
+    width: 100%; /* Ensure it takes full width for centering */
+    border-top: 1px solid #444; /* Optional: add a separator line */
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #2a2a2a;
+    border-radius: 5px;
+    position: relative; /* For tooltip positioning */
+}
+
+.stat-name {
+    color: #bbb;
+    position: relative;
+}
+
+.stat-tooltip {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: #111;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    width: 250px;
+    z-index: 10;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+.stat-name:hover .stat-tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+.stat-value { /* This styles the container for the number and button */
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.stat-value span { /* This styles the stat number itself */
+    min-width: 30px;
+    text-align: right;
+    color: #fff; /* Ensure stat numbers are white */
+    font-weight: bold; /* Ensure stat numbers are bold */
+}
+
+.stat-increase {
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.stat-increase:hover {
+    background-color: #45a049;
+    transform: scale(1.1);
+}
+
+.stat-increase:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+}
+
+/* Item quality colors */
+.equipment-slot.common {
+    border: 1px solid #aaa;
+}
+
+.equipment-slot.uncommon {
+    border: 1px solid #1eff00;
+}
+
+.equipment-slot.rare {
+    border: 1px solid #0070dd;
+}
+
+.equipment-slot.epic {
+    border: 1px solid #a335ee;
+}
+
+.equipment-slot.legendary {
+    border: 1px solid #ff8000;
+}
+
+/* Animation for equipping items */
+@keyframes equip-pulse {
+    0% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
+    50% { box-shadow: 0 0 15px rgba(255, 255, 255, 0.8); }
+    100% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
+}
+
+.just-equipped {
+    animation: equip-pulse 1s ease;
+}
+
+/* Level up notification */
+.level-up-notification {
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #2a3f5f, #1f2a40);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(255, 204, 0, 0.6);
+    border: 2px solid #ffcc00;
+    color: white;
+    text-align: center;
+    z-index: 1000;
+    animation: notification-appear 0.5s ease;
+}
+
+.level-up-notification h3 {
+    color: #ffcc00;
+    font-size: 24px;
+    margin-top: 0;
+}
+
+.level-up-notification.fade-out {
+    animation: notification-fade 0.5s ease forwards;
+}
+
+@keyframes notification-appear {
+    from { opacity: 0; transform: translate(-50%, -20px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes notification-fade {
+    from { opacity: 1; transform: translate(-50%, 0); }
+    to { opacity: 0; transform: translate(-50%, -20px); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .profile-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .character-overview {
+        margin-bottom: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .character-stats-panel {
+        grid-template-columns: 1fr;
+    }
+    
+    .combat-stats {
+        margin-bottom: 20px;
+    }
+}
