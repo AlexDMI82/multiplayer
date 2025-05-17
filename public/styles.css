@@ -1,0 +1,1087 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background-color: #121212;
+    color: #f0f0f0;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Login Screen */
+#login-screen .container {
+    max-width: 500px;
+    background: #1e1e1e;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+#login-screen h1 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #4d79ff;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    background: #2a2a2a;
+    border-radius: 5px;
+    color: #f0f0f0;
+    font-size: 16px;
+}
+
+.avatar-selection {
+    display: flex;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.avatar-option {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: all 0.2s;
+}
+
+.avatar-option.selected {
+    border-color: #4d79ff;
+    transform: scale(1.1);
+}
+
+button {
+    background: #4d79ff;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+
+button:hover {
+    background: #3a66ff;
+}
+
+button:disabled {
+    background: #666;
+    cursor: not-allowed;
+}
+
+#login-btn {
+    width: 100%;
+    margin-top: 10px;
+}
+
+/* Lobby Screen */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#player-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+.lobby-container {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+}
+
+.players-list, .challenges-list {
+    background: #1e1e1e;
+    border-radius: 10px;
+    padding: 20px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+h2 {
+    margin-bottom: 15px;
+    color: #4d79ff;
+    border-bottom: 1px solid #333;
+    padding-bottom: 10px;
+}
+
+h3 {
+    margin: 20px 0 10px;
+    color: #4d79ff;
+}
+
+/* Player List Items */
+.player-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 8px;
+    background: #2a2a2a;
+    border-radius: 5px;
+}
+
+.player-details {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.player-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+}
+
+/* Challenge Items */
+.challenge-item {
+    background: #2a2a2a;
+    border-radius: 5px;
+    padding: 12px;
+    margin-bottom: 10px;
+}
+
+.challenge-player {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.challenge-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.accept-btn {
+    background: #4caf50;
+}
+
+.accept-btn:hover {
+    background: #3d8b40;
+}
+
+.decline-btn, #cancel-challenge {
+    background: #f44336;
+}
+
+.decline-btn:hover, #cancel-challenge:hover {
+    background: #d32f2f;
+}
+
+/* Game Screen */
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #222;
+    border-bottom: 2px solid #444;
+}
+
+.game-container {
+    display: flex;
+    justify-content: space-between;
+    height: calc(100vh - 150px);
+    padding: 20px;
+    background-color: #1a1a1a;
+}
+
+/* Character Panels */
+.character-panel {
+    width: 300px;
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.character-name {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.health-energy-bars {
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.health-bar, .energy-bar {
+    height: 20px;
+    margin-bottom: 5px;
+    background-color: #333;
+    border: 1px solid #555;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.health-fill {
+    height: 100%;
+    width: 100%;
+    background-color: #ff3a3a;
+    transition: width 0.3s ease;
+}
+
+.energy-fill {
+    height: 100%;
+    width: 100%;
+    background-color: #3a6aff;
+    transition: width 0.3s ease;
+}
+
+.health-bar::after {
+    content: attr(title);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    color: white;
+    text-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Equipment Grid */
+.equipment-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(5, auto);
+    gap: 10px;
+    width: 100%;
+}
+
+.character-avatar-container {
+    grid-column: 2;
+    grid-row: 2 / span 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.character-avatar {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border: 2px solid #666;
+    border-radius: 8px;
+    background-color: #000;
+}
+
+/* Equipment Slots */
+.equipment-slot {
+    background-color: #333;
+    border: 1px solid #555;
+    border-radius: 4px;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    transition: all 0.2s ease;
+    overflow: hidden; /* Hide any overflowing text */
+}
+
+.equipment-slot:hover {
+    border-color: #888;
+    background-color: #444;
+    cursor: pointer;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.slot-icon {
+    width: 32px;
+    height: 32px;
+    opacity: 0.6;
+    transition: all 0.3s ease;
+    filter: grayscale(40%);
+}
+
+.equipment-slot:hover .slot-icon {
+    opacity: 1;
+    filter: grayscale(0);
+}
+
+.equipment-name {
+    position: absolute;
+    bottom: -50px; /* Hide off-screen by default */
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 0.8rem;
+    color: #fff;
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 3px 0;
+    transition: bottom 0.3s ease;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.equipment-slot:hover .equipment-name {
+    bottom: 0;
+}
+
+/* Make equipped items more visible */
+.equipment-slot.equipped {
+    border-width: 2px;
+    background-color: #3a3a3a;
+}
+
+.equipment-slot.equipped .slot-icon {
+    opacity: 1;
+    filter: grayscale(0) brightness(1.2);
+}
+
+/* Equipment slot quality indicators with better visibility */
+.equipment-slot.equipped::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 3px;
+    pointer-events: none;
+    z-index: 1;
+    box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.3);
+}
+
+.equipment-slot.common::after {
+    border: 2px solid #aaaaaa;
+}
+
+.equipment-slot.uncommon::after {
+    border: 2px solid #1eff00;
+}
+
+.equipment-slot.rare::after {
+    border: 2px solid #0070dd;
+}
+
+.equipment-slot.epic::after {
+    border: 2px solid #a335ee;
+}
+
+.equipment-slot.legendary::after {
+    border: 2px solid #ff8000;
+}
+
+/* Equipment slot quality backgrounds for better visibility */
+.equipment-slot.equipped.common {
+    background-color: rgba(170, 170, 170, 0.2);
+}
+
+.equipment-slot.equipped.uncommon {
+    background-color: rgba(30, 255, 0, 0.1);
+}
+
+.equipment-slot.equipped.rare {
+    background-color: rgba(0, 112, 221, 0.1);
+}
+
+.equipment-slot.equipped.epic {
+    background-color: rgba(163, 53, 238, 0.1);
+}
+
+.equipment-slot.equipped.legendary {
+    background-color: rgba(255, 128, 0, 0.1);
+}
+
+/* Equipped item image (when using actual item images) */
+.equipped-item {
+    position: absolute;
+    max-width: 85%;
+    max-height: 85%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+}
+
+/* Animated effects for newly equipped items */
+@keyframes equip-glow {
+    0% { box-shadow: 0 0 0px transparent; }
+    50% { box-shadow: 0 0 15px rgba(255, 255, 255, 0.8); }
+    100% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
+}
+
+.equipment-slot.just-equipped {
+    animation: equip-glow 1s ease-out;
+}
+
+.equipment-slot.just-equipped .slot-icon {
+    filter: brightness(1.5);
+}
+
+/* Stats display at bottom of character panel */
+.character-stats {
+    width: 100%;
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid #444;
+}
+
+.stats-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.stats-header h3 {
+    font-size: 1rem;
+    margin: 0;
+    color: #ccc;
+}
+
+.available-points {
+    font-weight: bold;
+    color: #4CAF50;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.stat-name {
+    font-size: 0.9rem;
+    color: #aaa;
+    position: relative;
+    cursor: help;
+}
+
+.stat-value {
+    font-weight: bold;
+    color: #fff;
+}
+
+.stat-increase {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    width: 25px;
+    height: 25px;
+    font-size: 18px;
+    line-height: 0;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.stat-increase:hover {
+    background-color: #45a049;
+}
+
+.stat-increase:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+}
+
+.stat-tooltip {
+    visibility: hidden;
+    position: absolute;
+    left: -10px;
+    bottom: 25px;
+    background-color: rgba(0, 0, 0, 0.9);
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    width: 200px;
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    border: 1px solid #555;
+}
+
+.stat-name:hover .stat-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Combat Area */
+.combat-area-container {
+    flex: 1;
+    margin: 0 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#game-message {
+    font-size: 1.3rem;
+    color: #fff;
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    width: 100%;
+}
+
+.versus-display {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #ff5722;
+    margin: 20px 0;
+    text-shadow: 0 0 10px rgba(255, 87, 34, 0.7);
+}
+
+.combat-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.combat-section {
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.combat-section h3 {
+    font-size: 1.2rem;
+    color: #ddd;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.attack-areas, .block-areas {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 15px;
+}
+
+.combat-area {
+    width: 80px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #333;
+    color: #ddd;
+    border: 1px solid #555;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.combat-area:hover {
+    background-color: #444;
+    border-color: #888;
+}
+
+.combat-area.selected {
+    background-color: #2a6ca5;
+    border-color: #4a8cc5;
+    color: white;
+}
+
+#confirm-move-btn {
+    width: 150px;
+    height: 40px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+}
+
+#confirm-move-btn:hover:not([disabled]) {
+    background-color: #3e8e41;
+}
+
+#confirm-move-btn[disabled] {
+    background-color: #666;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.game-log {
+    width: 100%;
+    height: 150px;
+    padding: 10px;
+    overflow-y: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #ddd;
+    font-size: 0.9rem;
+}
+
+.log-entry {
+    margin-bottom: 5px;
+    padding: 3px 0;
+    border-bottom: 1px solid #333;
+}
+
+.log-entry.damage {
+    color: #ff6b6b;
+}
+
+.log-entry.heal {
+    color: #69ff69;
+}
+
+.log-entry.info {
+    color: #6bb5ff;
+}
+
+/* Turn timer */
+#turn-timer-container {
+    font-size: 1.2rem;
+    color: #fff;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 5px 15px;
+    border-radius: 4px;
+}
+
+#turn-timer {
+    font-weight: bold;
+    color: #4CAF50;
+}
+
+#turn-timer.urgent {
+    color: #f44336;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* Shop Screen */
+.shop-container {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 20px;
+    background: #1e1e1e;
+    border-radius: 10px;
+    padding: 20px;
+}
+
+.shop-categories {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.category-btn {
+    text-align: left;
+    padding: 12px;
+    background: #2a2a2a;
+    border: none;
+}
+
+.category-btn.active {
+    background: #4d79ff;
+}
+
+.shop-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.shop-item {
+    background: #2a2a2a;
+    padding: 15px;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.item-name {
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.item-stats {
+    color: #aaa;
+}
+
+.item-price {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.gold {
+    color: gold;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: #2a2a2a;
+    border: 2px solid #444;
+    border-radius: 8px;
+    padding: 20px;
+    width: 80%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.modal-content h2 {
+    margin-bottom: 20px;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* Combat Result Modal */
+.combat-result {
+    color: #ddd;
+}
+
+.combat-round {
+    font-size: 1.4rem;
+    text-align: center;
+    margin-bottom: 15px;
+    color: #ff9800;
+}
+
+.combat-players {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.combat-player {
+    flex: 1;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    margin: 0 10px;
+}
+
+.combat-player h3 {
+    text-align: center;
+    margin-bottom: 10px;
+    color: #4fc3f7;
+}
+
+.damage-dealt {
+    margin-top: 10px;
+}
+
+.damage {
+    color: #ff5252;
+    font-weight: bold;
+}
+
+.combat-outcome {
+    padding: 15px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.block-success {
+    color: #69f0ae;
+    margin-bottom: 10px;
+}
+
+.block-failure {
+    color: #ff5252;
+    margin-bottom: 10px;
+}
+
+.block-info {
+    color: #ddd;
+}
+
+.health-status {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 15px;
+}
+
+/* Inventory Modal */
+.inventory-modal-content {
+    max-width: 700px;
+    width: 90%;
+}
+
+.equipped-items {
+    background: #2a2a2a;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 15px 0;
+}
+
+.equipment-slots {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 15px;
+}
+
+#inventory-items-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+    background: #2a2a2a;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+.inventory-item {
+    background: #1a1a1a;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.inventory-item:hover {
+    background: #333;
+}
+
+.header-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.empty-inventory {
+    text-align: center;
+    padding: 15px;
+    color: #999;
+}
+
+/* Equipment Tooltips */
+.equipment-tooltip {
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.9);
+    border: 1px solid #555;
+    padding: 8px 12px;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 0.85rem;
+    z-index: 100;
+    pointer-events: none;
+    width: max-content;
+    max-width: 200px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.tooltip-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: inherit;
+}
+
+.tooltip-stats {
+    color: #aaa;
+    font-size: 0.8rem;
+    margin-bottom: 5px;
+}
+
+.tooltip-description {
+    margin-top: 5px;
+    font-style: italic;
+    color: #bbb;
+    font-size: 0.8rem;
+}
+
+/* Item quality colors in tooltips */
+.tooltip-title.common { color: #ffffff; }
+.tooltip-title.uncommon { color: #1eff00; }
+.tooltip-title.rare { color: #0070dd; }
+.tooltip-title.epic { color: #a335ee; }
+.tooltip-title.legendary { color: #ff8000; }
+
+/* Critical hit and evade animations */
+@keyframes criticalHit {
+    0% { color: white; }
+    50% { color: #ff5722; transform: scale(1.2); }
+    100% { color: white; }
+}
+
+.critical-hit {
+    animation: criticalHit 0.5s;
+    color: #ff5722;
+    font-weight: bold;
+}
+
+@keyframes evadeAnimation {
+    0% { opacity: 1; }
+    50% { opacity: 0.3; transform: translateX(10px); }
+    100% { opacity: 1; }
+}
+
+.evaded {
+    animation: evadeAnimation 0.5s;
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+/* Stat point notification */
+.stat-point-notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(76, 175, 80, 0.9);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+    z-index: 1000;
+    animation: fadeIn 0.3s, fadeOut 0.3s 2.7s;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, -20px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; transform: translate(-50%, 0); }
+    to { opacity: 0; transform: translate(-50%, -20px); }
+}
+
+/* Common button style */
+.button {
+    padding: 8px 15px;
+    background-color: #3f51b5;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.button:hover {
+    background-color: #303f9f;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .game-container {
+        flex-direction: column;
+        height: auto;
+    }
+    
+    .character-panel {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+    
+    .combat-area-container {
+        margin: 20px 0;
+    }
+}
+
+/* Add to styles.css */
+
+/* Fix for equipment items placement */
+.stat-item .item-icon,
+.stats-container .item-icon {
+    display: none; /* Hide icons from the stats area */
+}
+
+/* Ensure equipment icons only appear in the equipped items section */
+.equipped-items-grid .item-icon {
+    display: flex !important; /* Force display of icons in the right section */
+}
+
+/* Ensure equipment names look good */
+.equipped-item .item-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}

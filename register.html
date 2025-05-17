@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Multiplayer Game</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="auth.css">
+</head>
+<body>
+    <div id="auth-container" class="container">
+        <div class="auth-form">
+            <h1>Create Account</h1>
+            <div id="error-message" class="error-message hidden"></div>
+            
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" name="username" placeholder="Choose a username (3-20 characters)" required minlength="3" maxlength="20">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" placeholder="Choose a password (min 6 characters)" required minlength="6">
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirm-password">Confirm Password:</label>
+                    <input type="password" id="confirm-password" name="confirm-password" placeholder="Confirm your password" required minlength="6">
+                </div>
+                
+                <div class="form-group">
+                    <label>Select Avatar:</label>
+                    <div class="avatar-selection">
+                        <img src="images/avatar1.png" class="avatar-option selected" data-avatar="avatar1.png">
+                        <img src="images/avatar2.png" class="avatar-option" data-avatar="avatar2.png">
+                        <img src="images/avatar3.png" class="avatar-option" data-avatar="avatar3.png">
+                    </div>
+                </div>
+                
+                <button type="submit" class="button">Create Account</button>
+            </form>
+            
+            <div class="auth-links">
+                <p>Already have an account? <a href="login.html">Sign In</a></p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let selectedAvatar = 'avatar1.png';
+            const avatarOptions = document.querySelectorAll('.avatar-option');
+            const registerForm = document.getElementById('register-form');
+            const errorMessage = document.getElementById('error-message');
+            
+            // Avatar selection
+            avatarOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    // Remove selected class from all options
+                    avatarOptions.forEach(opt => opt.classList.remove('selected'));
+                    // Add selected class to clicked option
+                    option.classList.add('selected');
+                    // Update selected avatar
+                    selectedAvatar = option.getAttribute('data-avatar');
+                });
+            });
+            
+            // Form submission
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                // Get form data
+                const username = document.getElementById('username').value.trim();
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirm-password').value;
+                
+                // Validate passwords match
+                if (password !== confirmPassword) {
+                    showError('Passwords do not match');
+                    return;
+                }
+                
+                // Create request body
+                const userData = {
+                    username,
+                    email,
+                    password,
+                    avatar: selectedAvatar
+                };
+                
+                try {
+                    // Send registration request
+                    const response = await fetch('/api/register', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(userData)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        showError(data.message || 'Registration failed');
+                        return;
+                    }
+                    
+                    // Store token in localStorage
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    // Redirect to lobby
+                    window.location.href = '/';
+                } catch (error) {
+                    showError('Error connecting to server');
+                    console.error('Registration error:', error);
+                }
+            });
+            
+            // Helper function to show error message
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.classList.remove('hidden');
+                
+                // Hide after 5 seconds
+                setTimeout(() => {
+                    errorMessage.classList.add('hidden');
+                }, 5000);
+            }
+        });
+    </script>
+
+    <script src="/auth.js"></script>
+</body>
+</html>

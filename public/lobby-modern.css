@@ -1,0 +1,659 @@
+/* Modern Lobby Layout Styles */
+.modern-lobby {
+    display: grid;
+    grid-template-columns: 280px 1fr 320px;
+    grid-template-rows: 100vh;
+    overflow: hidden;
+}
+
+/* Left Sidebar Styles */
+.lobby-sidebar {
+    background-color: #1a1f2b;
+    border-right: 1px solid #2c364a;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.logo-container {
+    padding: 20px;
+    text-align: center;
+    border-bottom: 1px solid #2c364a;
+}
+
+.game-logo {
+    color: #4d79ff;
+    font-size: 1.4rem;
+    margin: 0;
+    letter-spacing: 1px;
+    text-shadow: 0 0 10px rgba(77, 121, 255, 0.5);
+}
+
+.lobby-nav {
+    display: flex;
+    flex-direction: column;
+    padding: 15px 0;
+    border-bottom: 1px solid #2c364a;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    margin: 4px 10px;
+    background: none;
+    border: none;
+    border-radius: 4px;
+    color: #8a9bb8;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.nav-item:hover {
+    background-color: #242d3f;
+    color: #fff;
+}
+
+.nav-item.active {
+    background-color: #3a66ff;
+    color: #fff;
+}
+
+.nav-item i {
+    margin-right: 10px;
+    font-size: 18px;
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Using default icons - replace with actual icons if available */
+.icon-users:before { content: "👥"; }
+.icon-user:before { content: "👤"; }
+.icon-shop:before { content: "🛒"; }
+.icon-inventory:before { content: "🎒"; }
+.icon-logout:before { content: "🚪"; }
+
+.player-list-container {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+}
+
+.player-list-container h2 {
+    color: #4d79ff;
+    font-size: 14px;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #2c364a;
+}
+
+.modern-players-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Style for each player in the list */
+.player-item {
+    background-color: #242d3f;
+    border-radius: 6px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.player-item:hover {
+    background-color: #2c364a;
+    transform: translateY(-2px);
+}
+
+.player-details {
+    flex: 1;
+}
+
+.player-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #4d79ff;
+}
+
+.challenge-btn {
+    background-color: #4d79ff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.challenge-btn:hover {
+    background-color: #3a66ff;
+}
+
+/* Main Content Area Styles */
+.lobby-main {
+    background-color: #121820;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.lobby-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #2c364a;
+    background-color: #1a1f2b;
+}
+
+.server-status {
+    display: flex;
+    align-items: center;
+}
+
+.status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.status-indicator.online {
+    background-color: #4CAF50;
+    box-shadow: 0 0 8px #4CAF50;
+}
+
+.server-name {
+    color: #f0f0f0;
+    font-size: 14px;
+    margin-right: 20px;
+}
+
+.player-count {
+    color: #8a9bb8;
+    font-size: 14px;
+}
+
+.lobby-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr;
+    gap: 20px;
+}
+
+.content-card {
+    background-color: #1a1f2b;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.challenges-card {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+}
+
+.outgoing-card {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.stats-card {
+    grid-column: 2;
+    grid-row: 2;
+}
+
+.card-header {
+    background-color: #242d3f;
+    padding: 12px 15px;
+    border-bottom: 1px solid #2c364a;
+}
+
+.card-header h2 {
+    color: #4d79ff;
+    font-size: 14px;
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+.card-body {
+    padding: 15px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Challenge items styling */
+.challenge-item {
+    background-color: #242d3f;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.challenge-player {
+    margin-bottom: 10px;
+}
+
+.challenge-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+/* Stats section styling */
+.stats-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-gap: 15px;
+    padding: 10px;
+}
+
+.stat-item {
+    background-color: #242d3f;
+    border-radius: 6px;
+    padding: 15px;
+    text-align: center;
+    transition: transform 0.2s;
+}
+
+.stat-item:hover {
+    transform: translateY(-3px);
+    background-color: #2c364a;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #4d79ff;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    color: #8a9bb8;
+    font-size: 12px;
+}
+
+/* Right Sidebar - Profile Styles */
+.profile-sidebar {
+    background-color: #1a1f2b;
+    border-left: 1px solid #2c364a;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.profile-card {
+    background-color: #242d3f;
+    border-radius: 10px;
+    overflow: hidden;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.profile-header {
+    height: 80px;
+    background: linear-gradient(to right, #3a66ff, #4d79ff);
+    position: relative;
+}
+
+.level-indicator {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.profile-avatar-container {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    margin: -50px auto 10px;
+}
+
+.profile-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 4px solid #242d3f;
+    object-fit: cover;
+    background-color: #121820;
+}
+
+.avatar-border {
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border-radius: 50%;
+    border: 2px solid #4d79ff;
+    box-shadow: 0 0 15px rgba(77, 121, 255, 0.5);
+    pointer-events: none;
+}
+
+.profile-info {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.profile-name {
+    color: #fff;
+    font-size: 18px;
+    margin: 0 0 5px;
+}
+
+.profile-rank {
+    color: #4d79ff;
+    font-size: 14px;
+}
+
+.quick-stats {
+    padding: 0 20px;
+    margin-bottom: 20px;
+}
+
+.quick-stat {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.stat-icon {
+    width: 24px;
+    height: 24px;
+    background-color: #1a1f2b;
+    border-radius: 4px;
+    margin-right: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #fff;
+}
+
+.strength-icon:before { content: "💪"; }
+.agility-icon:before { content: "🏃"; }
+.intuition-icon:before { content: "🧠"; }
+.endurance-icon:before { content: "❤️"; }
+
+.stat-bar {
+    flex: 1;
+    height: 8px;
+    background-color: #1a1f2b;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-right: 10px;
+}
+
+.stat-fill {
+    height: 100%;
+    border-radius: 4px;
+    width: 60%; /* Default - will be set by JS */
+}
+
+.strength-fill { background-color: #F44336; width: 60%; }
+.agility-fill { background-color: #2196F3; width: 50%; }
+.intuition-fill { background-color: #9C27B0; width: 75%; }
+.endurance-fill { background-color: #4CAF50; width: 55%; }
+
+.action-buttons {
+    padding: 0 20px;
+}
+
+.action-button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 10px;
+    transition: all 0.2s;
+}
+
+.primary-action {
+    background-color: #4d79ff;
+    color: white;
+}
+
+.primary-action:hover {
+    background-color: #3a66ff;
+    transform: translateY(-2px);
+}
+
+.secondary-action {
+    background-color: transparent;
+    border: 1px solid #4d79ff;
+    color: #4d79ff;
+}
+
+.secondary-action:hover {
+    background-color: rgba(77, 121, 255, 0.1);
+}
+
+.equipment-preview {
+    background-color: #242d3f;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.equipment-preview h3 {
+    color: #4d79ff;
+    font-size: 14px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.equipped-items-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-gap: 10px;
+}
+
+.equipped-item {
+    background-color: #1a1f2b;
+    border-radius: 6px;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    transition: transform 0.2s;
+    overflow: hidden;
+}
+
+.equipped-item:hover {
+    transform: translateY(-2px);
+    background-color: #2c364a;
+}
+
+.item-icon {
+    width: 30px;
+    height: 30px;
+    background-color: #242d3f;
+    border-radius: 4px;
+    margin-right: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+
+/* Fix for misplaced item icons in stats section */
+.stats-container .item-icon,
+.stats-card .item-icon {
+    display: none; /* Hide any item icons that appear in the stats area */
+}
+
+/* If there are specific elements with IDs */
+#displaced-icons,
+.stats-section .item-icon {
+    display: none;
+}
+
+/* Additional fix for any icon elements that might be misplaced */
+.content-card .stat-item img,
+.content-card .stat-value img {
+    display: none;
+}
+
+.weapon-icon:before { content: "⚔️"; }
+.armor-icon:before { content: "🛡️"; }
+.shield-icon:before { content: "🔰"; }
+.helmet-icon:before { content: "⛑️"; }
+
+.item-name {
+    font-size: 12px;
+    color: #f0f0f0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1a1f2b;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #3a66ff;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #4d79ff;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .modern-lobby {
+        grid-template-columns: 230px 1fr 280px;
+    }
+}
+
+@media (max-width: 992px) {
+    .modern-lobby {
+        grid-template-columns: 200px 1fr 0;
+    }
+    
+    .profile-sidebar {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .modern-lobby {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+    }
+    
+    .lobby-sidebar {
+        display: none;
+    }
+    
+    /* Add mobile navigation */
+    .mobile-nav {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px;
+        background-color: #1a1f2b;
+        border-bottom: 1px solid #2c364a;
+    }
+}
+
+
+/* Game result message container */
+.game-result-message-wrapper {
+    text-align: center;
+    margin-top: 20px; /* Give some space from top if needed */
+    width: 80%; /* Take up most of the combat area width */
+    max-width: 500px; /* But not too wide */
+    position: absolute; 
+    top: 50%; 
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 25px;
+    background-color: rgba(30, 30, 30, 0.9); /* Darker, more opaque background */
+    border-radius: 12px;
+    color: #fff;
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
+    z-index: 10; /* Ensure it's above other elements in combat area */
+}
+
+.game-result-message-wrapper .game-result {
+    font-size: 2em; 
+    font-weight: bold;
+    margin-bottom: 20px;
+    text-shadow: 0 0 5px rgba(255,255,255,0.3);
+}
+.game-result-message-wrapper .profile-message {
+    font-size: 1.1em;
+}
+.game-result-message-wrapper .profile-message a {
+    color: #ffdd77; /* Brighter gold for link */
+    text-decoration: underline;
+    font-weight: bold;
+}
+.game-result-message-wrapper .profile-message a:hover {
+    color: #fff0aa;
+}
+
+/* Ensure game message in combat controls doesn't overlap with this */
+#game-message {
+    position: relative; 
+    z-index: 1;
+}
+
+/* Style for stat lock indicator in game panels */
+.stat-lock-indicator {
+    display: block; 
+    color: #ff9800; 
+    font-size: 0.8em;
+    margin-left: 10px; /* If appended to stats header */
+    font-style: italic;
+}
+
+/* Ensure game message in combat controls doesn't overlap with this */
+#game-message {
+    position: relative; 
+    z-index: 1;
+}
+
+/* Ensure character panels in game screen have relative positioning if needed for stat lock */
+.character-panel .character-stats .stats-header {
+    position: relative; /* For positioning the lock indicator if appended here */
+}
+
+/* Modern Lobby - Player Count */
+.lobby-header .player-count {
+    color: #8a9bb8;
+    font-size: 14px;
+    margin-left: 15px; /* Added some margin */
+}

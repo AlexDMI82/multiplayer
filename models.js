@@ -29,6 +29,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: 'avatar1.png'
   },
+  characterClass: {
+    type: String,
+    enum: ['shadowsteel', 'ironbound', 'flameheart', 'venomfang', null],
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -69,6 +74,11 @@ const statsSchema = new mongoose.Schema({
     default: 10,
     min: 1,
     max: 100
+  },
+  specialAbility: {
+    type: String,
+    enum: ['evade', 'ignoreBlock', 'criticalHit', 'poison', null],
+    default: null
   },
   availablePoints: {
     type: Number,

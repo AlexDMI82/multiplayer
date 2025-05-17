@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choose Your Character | Multiplayer Arena</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="character-select.css">
+</head>
+<body>
+    <div id="character-select-screen" class="screen">
+        <div class="container">
+            <h1>Choose Your Character</h1>
+            
+            <div class="selection-description">
+                <p>Select a character class to begin your journey. Each class has unique bonuses and special abilities.</p>
+            </div>
+            
+            <div class="characters-container">
+                <!-- Shadowsteel Character -->
+                <div class="character-card" data-character="shadowsteel">
+                    <div class="character-header">
+                        <h2>Shadowsteel</h2>
+                        <div class="character-type">Shadow Warrior</div>
+                    </div>
+                    <div class="character-image-container">
+                        <img src="images/characters/shadowsteel.jpg" alt="Shadowsteel Warrior" class="character-image">
+                        <div class="selection-indicator"></div>
+                    </div>
+                    <div class="character-description">
+                        <p>Dark-armored warriors who can partially merge with shadows. Their black metal weapons absorb light, making them difficult to track in combat. Their armor is forged from a rare alloy infused with shadow essence, allowing them to phase through attacks momentarily.</p>
+                    </div>
+                    <div class="character-stats">
+                        <div class="stat-bonus">
+                            <span class="stat-name">Agility</span>
+                            <span class="stat-value">+7</span>
+                        </div>
+                        <div class="stat-bonus">
+                            <span class="stat-name">Strength</span>
+                            <span class="stat-value">+3</span>
+                        </div>
+                    </div>
+                    <div class="character-perk">
+                        <div class="perk-label">Special Ability</div>
+                        <div class="perk-description">5% chance to evade attacks completely</div>
+                    </div>
+                </div>
+                
+                <!-- Ironbound Character -->
+                <div class="character-card" data-character="ironbound">
+                    <div class="character-header">
+                        <h2>Ironbound</h2>
+                        <div class="character-type">Metal Berserker</div>
+                    </div>
+                    <div class="character-image-container">
+                        <img src="images/characters/ironbound.jpg" alt="Ironbound Warrior" class="character-image">
+                        <div class="selection-indicator"></div>
+                    </div>
+                    <div class="character-description">
+                        <p>Hulking humanoids with metallic skin patterns and glowing veins. Known for tremendous strength and endurance, they wield massive two-handed weapons that others can barely lift.</p>
+                    </div>
+                    <div class="character-stats">
+                        <div class="stat-bonus">
+                            <span class="stat-name">Endurance</span>
+                            <span class="stat-value">+5</span>
+                        </div>
+                        <div class="stat-bonus">
+                            <span class="stat-name">Strength</span>
+                            <span class="stat-value">+5</span>
+                        </div>
+                    </div>
+                    <div class="character-perk">
+                        <div class="perk-label">Special Ability</div>
+                        <div class="perk-description">5% chance to ignore enemy blocks</div>
+                    </div>
+                </div>
+                
+                <!-- Flameheart Character -->
+                <div class="character-card" data-character="flameheart">
+                    <div class="character-header">
+                        <h2>Flameheart</h2>
+                        <div class="character-type">Fire Warrior</div>
+                    </div>
+                    <div class="character-image-container">
+                        <img src="images/characters/flameheart.jpg" alt="Flameheart Warrior" class="character-image">
+                        <div class="selection-indicator"></div>
+                    </div>
+                    <div class="character-description">
+                        <p>Muscular warriors with skin that glows like embers in battle, orange-red hair that moves like flames, and eyes that burn with inner fire. Specialists in explosive combat techniques.</p>
+                    </div>
+                    <div class="character-stats">
+                        <div class="stat-bonus">
+                            <span class="stat-name">Intuition</span>
+                            <span class="stat-value">+7</span>
+                        </div>
+                        <div class="stat-bonus">
+                            <span class="stat-name">Strength</span>
+                            <span class="stat-value">+3</span>
+                        </div>
+                    </div>
+                    <div class="character-perk">
+                        <div class="perk-label">Special Ability</div>
+                        <div class="perk-description">5% chance to land critical hits</div>
+                    </div>
+                </div>
+                
+                <!-- Venomfang Character -->
+                <div class="character-card" data-character="venomfang">
+                    <div class="character-header">
+                        <h2>Venomfang</h2>
+                        <div class="character-type">Poison Assassin</div>
+                    </div>
+                    <div class="character-image-container">
+                        <img src="images/characters/venomfang.jpg" alt="Venomfang Warrior" class="character-image">
+                        <div class="selection-indicator"></div>
+                    </div>
+                    <div class="character-description">
+                        <p>Reptilian warriors with scaled skin, slitted pupils, and retractable poisoned claws. They wield curved, venom-coated blades and move with unsettling flexibility.</p>
+                    </div>
+                    <div class="character-stats">
+                        <div class="stat-bonus">
+                            <span class="stat-name">Agility</span>
+                            <span class="stat-value">+5</span>
+                        </div>
+                        <div class="stat-bonus">
+                            <span class="stat-name">Strength</span>
+                            <span class="stat-value">+5</span>
+                        </div>
+                    </div>
+                    <div class="character-perk">
+                        <div class="perk-label">Special Ability</div>
+                        <div class="perk-description">5% chance to poison enemies for additional damage</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="selection-controls">
+                <button id="select-character-btn" disabled>Choose Character</button>
+                <div class="selection-message">Please select a character to continue</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/auth.js"></script>
+    <script src="character-select.js"></script>
+</body>
+</html>
