@@ -1,4 +1,3 @@
-// character-profile.js - Logic for character profile page
 
 // Connect to Socket.io server
 const socket = io({
@@ -8,6 +7,8 @@ const socket = io({
 // DOM Elements
 const characterNameElement = document.getElementById('character-name');
 const characterAvatarElement = document.getElementById('character-avatar');
+const characterClassElement = document.getElementById('character-class');
+const characterSubclassElement = document.getElementById('character-subclass');
 const playerLevelElement = document.getElementById('player-level');
 const playerWinsElement = document.getElementById('player-wins');
 const winsForLevelElement = document.getElementById('wins-for-level');
@@ -58,6 +59,54 @@ const statIncreaseButtons = document.querySelectorAll('.stat-increase');
 const WINS_PER_LEVEL = 10;
 const POINTS_PER_LEVEL = 5;
 
+// Character class constants
+const CHARACTER_CLASSES = {
+    shadowsteel: {
+        name: 'Shadowsteel',
+        subclass: 'Shadow Warrior',
+        bonuses: {
+            strength: 3,
+            agility: 7,
+            intuition: 0,
+            endurance: 0
+        },
+        specialAbility: 'evade'
+    },
+    ironbound: {
+        name: 'Ironbound',
+        subclass: 'Metal Berserker',
+        bonuses: {
+            strength: 5,
+            agility: 0, 
+            intuition: 0,
+            endurance: 5
+        },
+        specialAbility: 'ignoreBlock'
+    },
+    flameheart: {
+        name: 'Flameheart',
+        subclass: 'Fire Warrior',
+        bonuses: {
+            strength: 3,
+            agility: 0,
+            intuition: 7,
+            endurance: 0
+        },
+        specialAbility: 'criticalHit'
+    },
+    venomfang: {
+        name: 'Venomfang',
+        subclass: 'Poison Assassin',
+        bonuses: {
+            strength: 5,
+            agility: 5,
+            intuition: 0,
+            endurance: 0
+        },
+        specialAbility: 'poison'
+    }
+};
+
 // State
 let playerData = null;
 let playerStats = null;
@@ -87,7 +136,7 @@ function initialize() {
         // Set up event listeners
         setupEventListeners();
         
-        // Load initial user data
+        // Load initial user data and apply character class
         loadUserData();
     } catch (error) {
         console.error('Error initializing profile page:', error);
@@ -223,11 +272,37 @@ function requestPlayerData() {
 }
 
 function loadUserData() {
-    // Set character name and avatar from localStorage
-    if (playerData) {
-        characterNameElement.textContent = playerData.username;
+    if (!playerData) return;
+    
+    // Set character name
+    characterNameElement.textContent = playerData.username;
+    
+    // Set character class information
+    if (playerData.characterClass) {
+        // Get character class data
+        const classData = CHARACTER_CLASSES[playerData.characterClass];
         
-        // Set avatar
+        // Set character image from the character class
+        const characterImagePath = `images/characters/${playerData.characterClass}.png`;
+        characterAvatarElement.src = characterImagePath;
+        
+        // Set character class style
+        const characterOverview = document.getElementById('character-overview');
+        // Clear existing classes
+        characterOverview.className = 'character-overview';
+        // Add character-specific class
+        characterOverview.classList.add(playerData.characterClass);
+        
+        // Set character class and subclass if elements exist
+        if (characterClassElement) {
+            characterClassElement.textContent = classData.name;
+        }
+        
+        if (characterSubclassElement) {
+            characterSubclassElement.textContent = classData.subclass;
+        }
+    } else {
+        // Fallback to avatar if no character class is selected
         const avatarSrc = playerData.avatar.startsWith('images/') ? 
             playerData.avatar : `images/${playerData.avatar}`;
         characterAvatarElement.src = avatarSrc;
@@ -246,6 +321,12 @@ function updateProfileUI(data) {
     winsForLevelElement.textContent = WINS_PER_LEVEL;
     levelProgressFillElement.style.width = `${progress}%`;
     
+    // Update character profile user data if needed
+    if (data.user) {
+        playerData = data.user;
+        loadUserData();
+    }
+    
     // If we have stats data, update it
     if (data.stats) {
         playerStats = data.stats;
@@ -263,7 +344,14 @@ function updateProfileUI(data) {
 function updateStatsUI() {
     if (!playerStats) return;
     
-    // Update base stats
+    // Get character bonuses
+    let characterBonuses = { strength: 0, agility: 0, intuition: 0, endurance: 0 };
+    
+    if (playerData && playerData.characterClass) {
+        characterBonuses = CHARACTER_CLASSES[playerData.characterClass].bonuses;
+    }
+    
+    // Update base stats (now we are showing the actual stats with bonuses already applied)
     strengthValueElement.textContent = playerStats.strength || 10;
     agilityValueElement.textContent = playerStats.agility || 10;
     intuitionValueElement.textContent = playerStats.intuition || 10;
@@ -276,7 +364,7 @@ function updateStatsUI() {
     let totalAttack = baseAttack + strengthBonus;
     
     // Add weapon damage if equipped
-    if (playerInventory && playerInventory.equipped.weapon) {
+    if (playerInventory && playerInventory.equipped && playerInventory.equipped.weapon) {
         totalAttack += playerInventory.equipped.weapon.damage || 0;
     }
     

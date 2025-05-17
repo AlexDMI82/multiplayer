@@ -6,6 +6,81 @@
     <title>Player Profile - Multiplayer Game</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="profile.css">
+    <style>
+        /* Additional character display styles */
+        .character-avatar-container {
+            position: relative;
+            width: 200px;
+            height: 230px;
+            overflow: hidden;
+            border-radius: 10px;
+            border: 5px solid #4a69bd;
+            margin-bottom: 15px;
+            background-color: #161b27;
+        }
+        
+        .character-avatar {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .character-class-badge {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(74, 105, 189, 0.8);
+            color: white;
+            padding: 5px;
+            text-align: center;
+            font-weight: bold;
+            text-transform: capitalize;
+        }
+        
+        .character-subclass {
+            font-size: 0.9em;
+            color: #a0a0cc;
+            margin-top: 3px;
+        }
+        
+        /* Character-specific coloring */
+        .shadowsteel .character-avatar-container {
+            border-color: #4a69bd;
+            box-shadow: 0 0 15px rgba(74, 105, 189, 0.7);
+        }
+        
+        .shadowsteel .character-class-badge {
+            background-color: rgba(74, 105, 189, 0.8);
+        }
+        
+        .ironbound .character-avatar-container {
+            border-color: #7a7a7a;
+            box-shadow: 0 0 15px rgba(122, 122, 122, 0.7);
+        }
+        
+        .ironbound .character-class-badge {
+            background-color: rgba(122, 122, 122, 0.8);
+        }
+        
+        .flameheart .character-avatar-container {
+            border-color: #bd4a4a;
+            box-shadow: 0 0 15px rgba(189, 74, 74, 0.7);
+        }
+        
+        .flameheart .character-class-badge {
+            background-color: rgba(189, 74, 74, 0.8);
+        }
+        
+        .venomfang .character-avatar-container {
+            border-color: #4abd4a;
+            box-shadow: 0 0 15px rgba(74, 189, 74, 0.7);
+        }
+        
+        .venomfang .character-class-badge {
+            background-color: rgba(74, 189, 74, 0.8);
+        }
+    </style>
 </head>
 <body>
     <div id="profile-container" class="container">
@@ -13,6 +88,7 @@
             <h1>Player Profile</h1>
             <div class="header-buttons">
                 <button id="back-to-lobby" class="button">Back to Lobby</button>
+                <button id="view-character" class="button">Character Stats</button>
                 <button id="logout-btn" class="button">Logout</button>
             </div>
         </div>
@@ -26,8 +102,21 @@
             <div class="profile-grid">
                 <!-- Left Side - Player Info -->
                 <div class="profile-info">
-                    <div class="avatar-section">
-                        <img id="profile-avatar" src="" alt="Player Avatar">
+                    <div id="avatar-section" class="avatar-section">
+                        <!-- Regular avatar (shown if no character class selected) -->
+                        <img id="profile-avatar" src="" alt="Player Avatar" class="hidden">
+                        
+                        <!-- Character avatar (shown if character class is selected) -->
+                        <div id="character-display" class="hidden">
+                            <div class="character-avatar-container">
+                                <img id="character-avatar" src="" alt="Character" class="character-avatar">
+                                <div class="character-class-badge">
+                                    <div id="character-class-name">Class Name</div>
+                                    <div id="character-subclass" class="character-subclass">Subclass</div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <button id="change-avatar-btn" class="small-button">Change Avatar</button>
                     </div>
                     
@@ -203,15 +292,28 @@
             const profileContent = document.getElementById('profile-content');
             const loadingSpinner = document.getElementById('loading-spinner');
             const backToLobbyBtn = document.getElementById('back-to-lobby');
+            const viewCharacterBtn = document.getElementById('view-character');
             const logoutBtn = document.getElementById('logout-btn');
             const changeAvatarBtn = document.getElementById('change-avatar-btn');
             const editProfileBtn = document.getElementById('edit-profile-btn');
             const changePasswordBtn = document.getElementById('change-password-btn');
             
+            // Character display elements
+            const profileAvatar = document.getElementById('profile-avatar');
+            const characterDisplay = document.getElementById('character-display');
+            const characterAvatar = document.getElementById('character-avatar');
+            const characterClassName = document.getElementById('character-class-name');
+            const characterSubclass = document.getElementById('character-subclass');
+            
             // Modals
             const avatarModal = document.getElementById('avatar-modal');
             const editProfileModal = document.getElementById('edit-profile-modal');
             const changePasswordModal = document.getElementById('change-password-modal');
+            
+            // View Character Stats button
+            viewCharacterBtn.addEventListener('click', () => {
+                window.location.href = '/character-profile.html';
+            });
             
             // Logout function
             logoutBtn.addEventListener('click', async () => {
@@ -391,6 +493,23 @@
                 hideModal(changePasswordModal);
             });
             
+            // Helper functions for modals
+            function showModal(modal) {
+                modal.classList.remove('hidden');
+            }
+            
+            function hideModal(modal) {
+                modal.classList.add('hidden');
+            }
+            
+            // Character class display mapping
+            const classSubclassMap = {
+                shadowsteel: 'Shadow Warrior',
+                ironbound: 'Metal Berserker',
+                flameheart: 'Fire Warrior',
+                venomfang: 'Poison Assassin'
+            };
+            
             // Fetch profile data
             async function fetchProfile() {
                 try {
@@ -415,11 +534,42 @@
                     const data = await response.json();
                     
                     // Update profile info
-                    document.getElementById('profile-avatar').src = `images/${data.user.avatar}`;
                     document.getElementById('profile-username').textContent = data.user.username;
                     document.getElementById('profile-email').textContent = data.user.email;
                     document.getElementById('profile-joined').textContent = new Date(data.user.createdAt).toLocaleDateString();
                     document.getElementById('profile-last-active').textContent = new Date(data.user.lastLogin).toLocaleDateString();
+                    
+                    // Set character display based on character class
+                    const characterClass = data.user.characterClass;
+                    const avatarSection = document.getElementById('avatar-section');
+                    
+                    if (characterClass) {
+                        // Show character display
+                        profileAvatar.classList.add('hidden');
+                        characterDisplay.classList.remove('hidden');
+                        
+                        // Remove any existing character class
+                        avatarSection.className = 'avatar-section';
+                        avatarSection.classList.add(characterClass);
+                        
+                        // Set correct character image
+                        characterAvatar.src = `images/characters/${characterClass}.png`;
+                        
+                        // Set character name and subclass
+                        characterClassName.textContent = characterClass.charAt(0).toUpperCase() + characterClass.slice(1);
+                        characterSubclass.textContent = classSubclassMap[characterClass] || 'Warrior';
+                        
+                        // Hide change avatar button if character is selected
+                        changeAvatarBtn.style.display = 'none';
+                    } else {
+                        // Show regular avatar
+                        profileAvatar.classList.remove('hidden');
+                        characterDisplay.classList.add('hidden');
+                        profileAvatar.src = `images/${data.user.avatar}`;
+                        
+                        // Show change avatar button
+                        changeAvatarBtn.style.display = 'inline-block';
+                    }
                     
                     // Update stats
                     document.getElementById('stat-strength').textContent = data.stats.strength;
@@ -469,15 +619,6 @@
                     console.error('Profile fetch error:', error);
                     alert('Failed to load profile data');
                 }
-            }
-            
-            // Helper functions for modals
-            function showModal(modal) {
-                modal.classList.remove('hidden');
-            }
-            
-            function hideModal(modal) {
-                modal.classList.add('hidden');
             }
             
             // Initial profile load

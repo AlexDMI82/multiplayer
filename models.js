@@ -1,4 +1,3 @@
-// models.js - Database schemas and models
 
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
@@ -140,6 +139,30 @@ const inventorySchema = new mongoose.Schema({
   inventory: [Object]
 });
 
+// NEW: Player Level Schema
+const playerLevelSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    unique: true
+  },
+  level: {
+    type: Number,
+    default: 1,
+    min: 1
+  },
+  wins: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  lastUpdated: {
+    type: Date,
+    default: Date.now
+  }
+});
+
 // Add pre-save hook to hash passwords
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {
@@ -164,5 +187,7 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 const User = mongoose.model('User', userSchema);
 const Stats = mongoose.model('Stats', statsSchema);
 const Inventory = mongoose.model('Inventory', inventorySchema);
+const PlayerLevel = mongoose.model('PlayerLevel', playerLevelSchema);
 
-module.exports = { User, Stats, Inventory };
+// Export all models including the new PlayerLevel model
+module.exports = { User, Stats, Inventory, PlayerLevel };

@@ -1,4 +1,3 @@
-// Client-side authentication helper
 
 // Check if user is logged in
 function isLoggedIn() {
@@ -64,6 +63,7 @@ function getCurrentUser() {
     return JSON.parse(userStr);
   } catch (e) {
     console.error('Error parsing user data', e);
+    localStorage.removeItem('user'); // Remove corrupted data
     return null;
   }
 }
@@ -108,7 +108,17 @@ function authFetch(url, options = {}) {
     }
   };
   
-  return fetch(url, authOptions);
+  return fetch(url, authOptions)
+    .then(response => {
+      // If we get a 401 Unauthorized, clear tokens and redirect to login
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login.html';
+        throw new Error('Authentication failed');
+      }
+      return response;
+    });
 }
 
 // Connect socket.io with auth
@@ -125,13 +135,23 @@ function connectAuthSocket(socket) {
     });
     
     socket.on('authenticated', (data) => {
-      // Check if user needs character selection after authentication
-      if (data.user && !data.user.characterClass) {
-        const pendingGameId = localStorage.getItem('pendingGameId');
+      // Update local user data with any changes from server
+      if (data.user) {
+        const currentUser = getCurrentUser();
+        if (currentUser) {
+          // Merge server data with local data
+          const updatedUser = {...currentUser, ...data.user};
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+        }
         
-        // Only redirect if not currently in a game
-        if (!pendingGameId && window.location.pathname !== '/character-select.html') {
-          window.location.href = '/character-select.html';
+        // Check if user needs character selection after authentication
+        if (data.user && !data.user.characterClass) {
+          const pendingGameId = localStorage.getItem('pendingGameId');
+          
+          // Only redirect if not currently in a game
+          if (!pendingGameId && window.location.pathname !== '/character-select.html') {
+            window.location.href = '/character-select.html';
+          }
         }
       }
     });
@@ -139,7 +159,7 @@ function connectAuthSocket(socket) {
     socket.on('authError', (error) => {
       console.error('Socket authentication error:', error);
       if (error.message === 'Authentication required' || error.message === 'Invalid token') {
-        // Token is invalid, try to refresh or log out
+        // Token is invalid, log out
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/login.html';

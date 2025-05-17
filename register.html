@@ -12,6 +12,7 @@
         <div class="auth-form">
             <h1>Create Account</h1>
             <div id="error-message" class="error-message hidden"></div>
+            <div id="success-message" class="success-message hidden"></div>
             
             <form id="register-form">
                 <div class="form-group">
@@ -43,7 +44,7 @@
                     </div>
                 </div>
                 
-                <button type="submit" class="button">Create Account</button>
+                <button type="submit" id="submit-button" class="button">Create Account</button>
             </form>
             
             <div class="auth-links">
@@ -58,6 +59,22 @@
             const avatarOptions = document.querySelectorAll('.avatar-option');
             const registerForm = document.getElementById('register-form');
             const errorMessage = document.getElementById('error-message');
+            const successMessage = document.getElementById('success-message');
+            const submitButton = document.getElementById('submit-button');
+            
+            // Add success message style
+            const style = document.createElement('style');
+            style.textContent = `
+                .success-message {
+                    background-color: #d4edda;
+                    color: #155724;
+                    padding: 10px;
+                    border-radius: 5px;
+                    margin-bottom: 20px;
+                    text-align: center;
+                }
+            `;
+            document.head.appendChild(style);
             
             // Avatar selection
             avatarOptions.forEach(option => {
@@ -75,6 +92,14 @@
             registerForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
+                // Disable submit button and show processing state
+                submitButton.disabled = true;
+                submitButton.textContent = 'Creating Account...';
+                
+                // Hide any previous messages
+                errorMessage.classList.add('hidden');
+                successMessage.classList.add('hidden');
+                
                 // Get form data
                 const username = document.getElementById('username').value.trim();
                 const email = document.getElementById('email').value.trim();
@@ -84,6 +109,8 @@
                 // Validate passwords match
                 if (password !== confirmPassword) {
                     showError('Passwords do not match');
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Create Account';
                     return;
                 }
                 
@@ -96,6 +123,7 @@
                 };
                 
                 try {
+                    console.log('Sending registration request...');
                     // Send registration request
                     const response = await fetch('/api/register', {
                         method: 'POST',
@@ -105,22 +133,34 @@
                         body: JSON.stringify(userData)
                     });
                     
+                    console.log('Response status:', response.status);
                     const data = await response.json();
+                    console.log('Response data:', data);
                     
                     if (!response.ok) {
                         showError(data.message || 'Registration failed');
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Create Account';
                         return;
                     }
+                    
+                    // Show success message
+                    showSuccess('Account created successfully! Redirecting...');
                     
                     // Store token in localStorage
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('user', JSON.stringify(data.user));
                     
-                    // Redirect to lobby
-                    window.location.href = '/';
+                    // Redirect to lobby after short delay
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1500);
+                    
                 } catch (error) {
-                    showError('Error connecting to server');
                     console.error('Registration error:', error);
+                    showError('Error connecting to server. Please try again.');
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Create Account';
                 }
             });
             
@@ -133,6 +173,12 @@
                 setTimeout(() => {
                     errorMessage.classList.add('hidden');
                 }, 5000);
+            }
+            
+            // Helper function to show success message
+            function showSuccess(message) {
+                successMessage.textContent = message;
+                successMessage.classList.remove('hidden');
             }
         });
     </script>

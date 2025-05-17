@@ -3,145 +3,427 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Choose Your Character | Multiplayer Arena</title>
+    <title>Character Selection - Multiplayer Game</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="character-select.css">
+    <style>
+        body {
+            background-color: #0f1118;
+            color: #e0e0ff;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 3rem;
+            color: #4a69bd;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(74, 105, 189, 0.5);
+        }
+        
+        .intro-text {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #a0a0cc;
+            font-size: 1.2rem;
+        }
+        
+        .character-grid {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            gap: 20px;
+            flex: 1;
+        }
+        
+        .character-card {
+            flex: 1;
+            background-color: #1a1f2e;
+            border-radius: 10px;
+            overflow: hidden;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: 2px solid transparent;
+            display: flex;
+            flex-direction: column;
+            max-width: 440px;
+            position: relative;
+        }
+        
+        .character-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        .character-card.selected {
+            border-color: #4a69bd;
+            box-shadow: 0 0 15px #4a69bd;
+        }
+        
+        .character-header {
+            padding: 15px;
+            background-color: #222840;
+            border-bottom: 1px solid #333;
+            z-index: 1;
+        }
+        
+        .character-name {
+            text-align: center;
+            font-size: 1.5rem;
+            margin: 0;
+            color: #fff;
+        }
+        
+        .character-subclass {
+            text-align: center;
+            font-size: 1rem;
+            margin: 5px 0 0;
+            color: #a0a0cc;
+        }
+        
+        .character-image-container {
+            height: 400px;
+            position: relative;
+            overflow: hidden;
+            background-color: #000;
+        }
+        
+        .character-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+        
+        .character-description {
+            padding: 15px;
+            font-size: 0.9rem;
+            color: #c0c0dd;
+            line-height: 1.4;
+            height: 80px;
+            overflow-y: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .character-stats {
+            display: flex;
+            padding: 10px 15px;
+            background-color: #161b27;
+        }
+        
+        .stat {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #a0a0cc;
+        }
+        
+        .stat-value {
+            font-size: 1.2rem;
+            color: #4a69bd;
+            font-weight: bold;
+        }
+        
+        .special-ability {
+            padding: 10px 15px;
+            border-top: 1px solid #333;
+        }
+        
+        .ability-label {
+            font-size: 0.9rem;
+            color: #a0a0cc;
+            margin-bottom: 5px;
+        }
+        
+        .ability-value {
+            font-size: 1rem;
+            color: #e0e0ff;
+        }
+        
+        .selected-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #4a69bd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            z-index: 10;
+        }
+        
+        .continue-button {
+            display: block;
+            width: 250px;
+            margin: 30px auto 0;
+            padding: 15px;
+            background-color: #4a69bd;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-align: center;
+        }
+        
+        .continue-button:hover {
+            background-color: #3a5998;
+        }
+        
+        .continue-button:disabled {
+            background-color: #999;
+            cursor: not-allowed;
+        }
+        
+        /* Media query for smaller screens */
+        @media (max-width: 1200px) {
+            .character-grid {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .character-card {
+                min-width: 300px;
+                margin-bottom: 20px;
+                max-width: 45%;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .character-card {
+                max-width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div id="character-select-screen" class="screen">
-        <div class="container">
-            <h1>Choose Your Character</h1>
-            
-            <div class="selection-description">
-                <p>Select a character class to begin your journey. Each class has unique bonuses and special abilities.</p>
-            </div>
-            
-            <div class="characters-container">
-                <!-- Shadowsteel Character -->
-                <div class="character-card" data-character="shadowsteel">
-                    <div class="character-header">
-                        <h2>Shadowsteel</h2>
-                        <div class="character-type">Shadow Warrior</div>
+    <div class="container">
+        <h1>Choose Your Character</h1>
+        <p class="intro-text">Select a character class to begin your journey. Each class has unique bonuses and special abilities.</p>
+        
+        <div class="character-grid">
+            <!-- Shadowsteel Character -->
+            <div class="character-card" data-class="shadowsteel">
+                <div class="character-header">
+                    <h2 class="character-name">Shadowsteel</h2>
+                    <p class="character-subclass">Shadow Warrior</p>
+                </div>
+                <div class="character-image-container">
+                    <img src="/images/characters/shadowsteel.png" alt="Shadowsteel Warrior" class="character-image">
+                </div>
+                <div class="character-description">
+                    Dark-armored warriors who can partially merge with shadows. Their black metal weapons absorb light, making them difficult to track in combat. Their armor is forged from a rare alloy infused with shadow essence.
+                </div>
+                <div class="character-stats">
+                    <div class="stat">
+                        <div class="stat-label">Agility</div>
+                        <div class="stat-value">+7</div>
                     </div>
-                    <div class="character-image-container">
-                        <img src="images/characters/shadowsteel.jpg" alt="Shadowsteel Warrior" class="character-image">
-                        <div class="selection-indicator"></div>
-                    </div>
-                    <div class="character-description">
-                        <p>Dark-armored warriors who can partially merge with shadows. Their black metal weapons absorb light, making them difficult to track in combat. Their armor is forged from a rare alloy infused with shadow essence, allowing them to phase through attacks momentarily.</p>
-                    </div>
-                    <div class="character-stats">
-                        <div class="stat-bonus">
-                            <span class="stat-name">Agility</span>
-                            <span class="stat-value">+7</span>
-                        </div>
-                        <div class="stat-bonus">
-                            <span class="stat-name">Strength</span>
-                            <span class="stat-value">+3</span>
-                        </div>
-                    </div>
-                    <div class="character-perk">
-                        <div class="perk-label">Special Ability</div>
-                        <div class="perk-description">5% chance to evade attacks completely</div>
+                    <div class="stat">
+                        <div class="stat-label">Strength</div>
+                        <div class="stat-value">+3</div>
                     </div>
                 </div>
-                
-                <!-- Ironbound Character -->
-                <div class="character-card" data-character="ironbound">
-                    <div class="character-header">
-                        <h2>Ironbound</h2>
-                        <div class="character-type">Metal Berserker</div>
-                    </div>
-                    <div class="character-image-container">
-                        <img src="images/characters/ironbound.jpg" alt="Ironbound Warrior" class="character-image">
-                        <div class="selection-indicator"></div>
-                    </div>
-                    <div class="character-description">
-                        <p>Hulking humanoids with metallic skin patterns and glowing veins. Known for tremendous strength and endurance, they wield massive two-handed weapons that others can barely lift.</p>
-                    </div>
-                    <div class="character-stats">
-                        <div class="stat-bonus">
-                            <span class="stat-name">Endurance</span>
-                            <span class="stat-value">+5</span>
-                        </div>
-                        <div class="stat-bonus">
-                            <span class="stat-name">Strength</span>
-                            <span class="stat-value">+5</span>
-                        </div>
-                    </div>
-                    <div class="character-perk">
-                        <div class="perk-label">Special Ability</div>
-                        <div class="perk-description">5% chance to ignore enemy blocks</div>
-                    </div>
-                </div>
-                
-                <!-- Flameheart Character -->
-                <div class="character-card" data-character="flameheart">
-                    <div class="character-header">
-                        <h2>Flameheart</h2>
-                        <div class="character-type">Fire Warrior</div>
-                    </div>
-                    <div class="character-image-container">
-                        <img src="images/characters/flameheart.jpg" alt="Flameheart Warrior" class="character-image">
-                        <div class="selection-indicator"></div>
-                    </div>
-                    <div class="character-description">
-                        <p>Muscular warriors with skin that glows like embers in battle, orange-red hair that moves like flames, and eyes that burn with inner fire. Specialists in explosive combat techniques.</p>
-                    </div>
-                    <div class="character-stats">
-                        <div class="stat-bonus">
-                            <span class="stat-name">Intuition</span>
-                            <span class="stat-value">+7</span>
-                        </div>
-                        <div class="stat-bonus">
-                            <span class="stat-name">Strength</span>
-                            <span class="stat-value">+3</span>
-                        </div>
-                    </div>
-                    <div class="character-perk">
-                        <div class="perk-label">Special Ability</div>
-                        <div class="perk-description">5% chance to land critical hits</div>
-                    </div>
-                </div>
-                
-                <!-- Venomfang Character -->
-                <div class="character-card" data-character="venomfang">
-                    <div class="character-header">
-                        <h2>Venomfang</h2>
-                        <div class="character-type">Poison Assassin</div>
-                    </div>
-                    <div class="character-image-container">
-                        <img src="images/characters/venomfang.jpg" alt="Venomfang Warrior" class="character-image">
-                        <div class="selection-indicator"></div>
-                    </div>
-                    <div class="character-description">
-                        <p>Reptilian warriors with scaled skin, slitted pupils, and retractable poisoned claws. They wield curved, venom-coated blades and move with unsettling flexibility.</p>
-                    </div>
-                    <div class="character-stats">
-                        <div class="stat-bonus">
-                            <span class="stat-name">Agility</span>
-                            <span class="stat-value">+5</span>
-                        </div>
-                        <div class="stat-bonus">
-                            <span class="stat-name">Strength</span>
-                            <span class="stat-value">+5</span>
-                        </div>
-                    </div>
-                    <div class="character-perk">
-                        <div class="perk-label">Special Ability</div>
-                        <div class="perk-description">5% chance to poison enemies for additional damage</div>
-                    </div>
+                <div class="special-ability">
+                    <div class="ability-label">Special Ability</div>
+                    <div class="ability-value">Enhanced evasion</div>
                 </div>
             </div>
             
-            <div class="selection-controls">
-                <button id="select-character-btn" disabled>Choose Character</button>
-                <div class="selection-message">Please select a character to continue</div>
+            <!-- Ironbound Character -->
+            <div class="character-card" data-class="ironbound">
+                <div class="character-header">
+                    <h2 class="character-name">Ironbound</h2>
+                    <p class="character-subclass">Metal Berserker</p>
+                </div>
+                <div class="character-image-container">
+                    <img src="/images/characters/ironbound.png" alt="Ironbound Warrior" class="character-image">
+                </div>
+                <div class="character-description">
+                    Hulking humanoids with metallic skin patterns and glowing veins. Known for tremendous strength and endurance, they wield massive two-handed weapons that others can barely lift.
+                </div>
+                <div class="character-stats">
+                    <div class="stat">
+                        <div class="stat-label">Endurance</div>
+                        <div class="stat-value">+5</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Strength</div>
+                        <div class="stat-value">+5</div>
+                    </div>
+                </div>
+                <div class="special-ability">
+                    <div class="ability-label">Special Ability</div>
+                    <div class="ability-value">Ignore Block</div>
+                </div>
+            </div>
+            
+            <!-- Flameheart Character -->
+            <div class="character-card" data-class="flameheart">
+                <div class="character-header">
+                    <h2 class="character-name">Flameheart</h2>
+                    <p class="character-subclass">Fire Warrior</p>
+                </div>
+                <div class="character-image-container">
+                    <img src="/images/characters/flameheart.png" alt="Flameheart Warrior" class="character-image">
+                </div>
+                <div class="character-description">
+                    Muscular warriors with skin that glows like embers in battle, orange-red hair that moves like flames, and eyes that burn with inner fire. Specialists in explosive combat techniques.
+                </div>
+                <div class="character-stats">
+                    <div class="stat">
+                        <div class="stat-label">Intuition</div>
+                        <div class="stat-value">+7</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Strength</div>
+                        <div class="stat-value">+3</div>
+                    </div>
+                </div>
+                <div class="special-ability">
+                    <div class="ability-label">Special Ability</div>
+                    <div class="ability-value">Critical Hit</div>
+                </div>
+            </div>
+            
+            <!-- Venomfang Character -->
+            <div class="character-card" data-class="venomfang">
+                <div class="character-header">
+                    <h2 class="character-name">Venomfang</h2>
+                    <p class="character-subclass">Poison Assassin</p>
+                </div>
+                <div class="character-image-container">
+                    <img src="/images/characters/venomfang.png" alt="Venomfang Warrior" class="character-image">
+                </div>
+                <div class="character-description">
+                    Reptilian warriors with scaled skin, slitted pupils, and retractable poisoned claws. They wield curved, venom-coated blades and move with unsettling flexibility.
+                </div>
+                <div class="character-stats">
+                    <div class="stat">
+                        <div class="stat-label">Agility</div>
+                        <div class="stat-value">+5</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Strength</div>
+                        <div class="stat-value">+5</div>
+                    </div>
+                </div>
+                <div class="special-ability">
+                    <div class="ability-label">Special Ability</div>
+                    <div class="ability-value">Poison Attack</div>
+                </div>
             </div>
         </div>
+        
+        <button id="continue-button" class="continue-button" disabled>Continue</button>
     </div>
 
     <script src="/auth.js"></script>
-    <script src="character-select.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check authentication
+            if (!isLoggedIn()) {
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            const characterCards = document.querySelectorAll('.character-card');
+            const continueButton = document.getElementById('continue-button');
+            let selectedClass = null;
+            
+            // Character selection
+            characterCards.forEach(card => {
+                card.addEventListener('click', () => {
+                    // Remove selected class from all cards
+                    characterCards.forEach(c => c.classList.remove('selected'));
+                    
+                    // Add selected class to clicked card
+                    card.classList.add('selected');
+                    
+                    // Store selected character class
+                    selectedClass = card.getAttribute('data-class');
+                    
+                    // Check if a selected indicator already exists
+                    const existingIndicator = document.querySelector('.selected-indicator');
+                    if (existingIndicator) {
+                        existingIndicator.remove();
+                    }
+                    
+                    // Add selected indicator
+                    const indicator = document.createElement('div');
+                    indicator.className = 'selected-indicator';
+                    indicator.innerHTML = '✓';
+                    card.style.position = 'relative';
+                    card.appendChild(indicator);
+                    
+                    // Enable continue button
+                    continueButton.disabled = false;
+                });
+            });
+            
+            // Continue button handler
+            continueButton.addEventListener('click', async () => {
+                if (!selectedClass) return;
+                
+                try {
+                    // Get character bonuses
+                    const characterBonuses = getCharacterBonuses(selectedClass);
+                    
+                    // Send character selection to server
+                    const response = await fetch('/api/select-character', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${getToken()}`
+                        },
+                        body: JSON.stringify({
+                            characterClass: selectedClass
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        console.error('Character selection failed:', data.error);
+                        alert(`Failed to select character: ${data.error || 'Unknown error'}`);
+                        return;
+                    }
+                    
+                    // Update local user data
+                    updateUserCharacterClass(selectedClass, characterBonuses);
+                    
+                    // Redirect to game lobby
+                    window.location.href = '/';
+                } catch (error) {
+                    console.error('Error selecting character:', error);
+                    alert('Failed to select character. Please try again.');
+                }
+            });
+        });
+    </script>
 </body>
 </html>
