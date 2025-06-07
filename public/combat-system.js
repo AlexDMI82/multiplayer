@@ -1,79 +1,102 @@
+// DEBUG VERSION - Add extensive logging to find where extra damage comes from
 
 class CombatSystem {
     constructor() {
         this.baseAttackDamage = {
-            'head': 25,
-            'body': 15,
+            'head': 10,
+            'body': 10,
             'legs': 10
         };
     }
     
-    // Calculate total damage for an attack
     calculateDamage(attacker, defender, attackArea, isBlocked) {
+        console.log(`\n=== DAMAGE CALCULATION START ===`);
+        console.log(`Attacker: ${attacker.username}, Defender: ${defender.username}`);
+        console.log(`Attack Area: ${attackArea}, Is Blocked: ${isBlocked}`);
+        
         // If attack was blocked, check for ignore block ability (Ironbound)
         if (isBlocked) {
-            // Check if attacker has ignore block ability (Ironbound)
             const ignoreBlockChance = this.hasSpecialAbility(attacker, 'ignoreBlock') ? 0.05 : 0;
             const ignoreBlockRoll = Math.random();
             
             if (ignoreBlockRoll <= ignoreBlockChance) {
                 console.log('Ignore block ability activated!');
-                // Continue with damage calculation as if not blocked
             } else {
-                // Attack was blocked and ability didn't activate
-                return 0;
+                console.log('Attack blocked, returning 0 damage');
+                return { 
+                    damage: 0, 
+                    isCritical: false, 
+                    wasEvaded: false, 
+                    ignoreBlock: false, 
+                    poisonActivated: false 
+                };
             }
         }
         
         // Get base damage for the attack area
         let damage = this.baseAttackDamage[attackArea] || 0;
+        console.log(`1. Base damage: ${damage}`);
         
         // Add weapon damage if equipped
         if (attacker.equipment && attacker.equipment.weapon) {
-            damage += attacker.equipment.weapon.damage || 0;
+            const weaponDamage = attacker.equipment.weapon.damage || 0;
+            damage += weaponDamage;
+            console.log(`2. After weapon (+${weaponDamage}): ${damage}`);
         }
         
         // Add strength bonus (2 damage per strength point)
         if (attacker.damageBonus) {
             damage += attacker.damageBonus;
+            console.log(`3. After strength bonus (+${attacker.damageBonus}): ${damage}`);
         }
         
         // Calculate if this is a critical hit
         const isCritical = this.rollForCritical(attacker);
+        console.log(`4. Is Critical Hit: ${isCritical}`);
+        
         if (isCritical) {
+            const preCritDamage = damage;
             damage *= 2;
-            console.log('Critical hit! Damage doubled to:', damage);
+            console.log(`5. Critical damage: ${preCritDamage} × 2 = ${damage}`);
         }
         
         // If attack wasn't blocked, check if it was evaded
         const wasEvaded = this.checkEvasion(attacker, defender);
         if (wasEvaded) {
             console.log('Attack evaded!');
-            return 0;
+            return { 
+                damage: 0, 
+                isCritical: false, 
+                wasEvaded: true, 
+                ignoreBlock: false, 
+                poisonActivated: false 
+            };
         }
         
         // Apply armor and shield defense if not evaded
         let totalDefense = 0;
         
-        // Apply armor defense if equipped
         if (defender.equipment && defender.equipment.armor) {
             totalDefense += defender.equipment.armor.defense || 0;
         }
         
-        // Apply shield defense if equipped
         if (defender.equipment && defender.equipment.shield) {
             totalDefense += defender.equipment.shield.defense || 0;
         }
         
-        // Apply helmet defense if equipped
         if (defender.equipment && defender.equipment.helmet) {
             totalDefense += defender.equipment.helmet.defense || 0;
         }
         
+        console.log(`6. Total defense: ${totalDefense}`);
+        
         // Reduce damage by total defense, but not below 1
+        const preDefenseDamage = damage;
         damage = Math.max(1, damage - totalDefense);
+        console.log(`7. After defense: ${preDefenseDamage} - ${totalDefense} = ${damage}`);
         
         // Apply poison effect (Venomfang)
+        let poisonActivated = false;
         if (this.hasSpecialAbility(attacker, 'poison')) {
             const poisonChance = 0.05; // 5%
             const poisonRoll = Math.random();
@@ -81,29 +104,40 @@ class CombatSystem {
             if (poisonRoll <= poisonChance) {
                 const poisonDamage = Math.floor(damage * 0.5); // 50% extra damage
                 damage += poisonDamage;
-                console.log('Poison ability activated! Added damage:', poisonDamage);
+                poisonActivated = true;
+                console.log(`8. Poison activated: +${poisonDamage} = ${damage}`);
             }
         }
         
-        return damage;
+        console.log(`=== FINAL DAMAGE: ${damage} ===\n`);
+        
+        return { 
+            damage: damage, 
+            isCritical: isCritical, 
+            wasEvaded: false, 
+            ignoreBlock: isBlocked && damage > 0,
+            poisonActivated: poisonActivated 
+        };
     }
     
     // Check if the attack was evaded
     checkEvasion(attacker, defender) {
-        // Base evasion chance from agility (1% per point)
-        let evasionChance = defender.evasionChance || 0;
+        // Base evasion chance from agility (0.5% per point instead of 1%)
+        let evasionChance = (defender.evasionChance || 0) * 0.5;
         
         // Bonus evasion for Shadowsteel
         if (this.hasSpecialAbility(defender, 'evade')) {
-            evasionChance += 5; // Additional 5% chance to evade
+            evasionChance += 2.5; // Reduced from 5
         }
         
         // Reduce evasion chance based on attacker's intuition
-        const evasionReduction = attacker.enemyEvasionReduction || 0;
+        const evasionReduction = (attacker.enemyEvasionReduction || 0) * 0.5;
         evasionChance = Math.max(0, evasionChance - evasionReduction);
         
         // Roll for evasion (random number from 1-100)
         const roll = Math.floor(Math.random() * 100) + 1;
+        
+        console.log(`Evasion check: ${roll} vs ${evasionChance}%`);
         
         // If roll is less than or equal to evasion chance, attack is evaded
         return roll <= evasionChance;
@@ -111,16 +145,18 @@ class CombatSystem {
     
     // Roll for critical hit
     rollForCritical(attacker) {
-        // Critical hit chance from intuition (1% per point)
-        let criticalChance = attacker.criticalChance || 0;
+        // Critical hit chance from intuition (0.5% per point instead of 1%)
+        let criticalChance = (attacker.criticalChance || 0) * 0.5;
         
         // Bonus critical chance for Flameheart
         if (this.hasSpecialAbility(attacker, 'criticalHit')) {
-            criticalChance += 5; // Additional 5% chance to crit
+            criticalChance += 2.5; // Reduced from 5
         }
         
         // Roll for critical hit (random number from 1-100)
         const roll = Math.floor(Math.random() * 100) + 1;
+        
+        console.log(`Critical check: ${roll} vs ${criticalChance}%`);
         
         // If roll is less than or equal to critical chance, it's a critical hit
         return roll <= criticalChance;
@@ -133,6 +169,9 @@ class CombatSystem {
     
     // Process a full round of combat
     processRound(players, moves) {
+        console.log(`\n🎯 PROCESSING COMBAT ROUND`);
+        console.log(`Players:`, Object.keys(players));
+        
         const playerIds = Object.keys(players);
         const damageDealt = {};
         const combatLog = [];
@@ -144,6 +183,10 @@ class CombatSystem {
             const defender = players[defenderId];
             const attackerMove = moves[attackerId];
             const defenderMove = moves[defenderId];
+            
+            console.log(`\n👤 ${attacker.username} vs ${defender.username}`);
+            console.log(`Attacker health before: ${attacker.health}`);
+            console.log(`Defender health before: ${defender.health}`);
             
             // Initialize damage for this player
             damageDealt[attackerId] = 0;
@@ -163,49 +206,63 @@ class CombatSystem {
                                    defenderMove.blockArea === attackerMove.attackArea;
             
             // Calculate damage
-            const damage = this.calculateDamage(
+            const damageResult = this.calculateDamage(
                 attacker, 
                 defender, 
                 attackerMove.attackArea, 
                 successfulBlock
             );
+
+            const damage = damageResult.damage;
+            const isCritical = damageResult.isCritical;
+            const wasEvaded = damageResult.wasEvaded;
+            const ignoreBlock = damageResult.ignoreBlock;
+            const poisonActivated = damageResult.poisonActivated;
+            
+            console.log(`💥 Calculated damage: ${damage}`);
             
             // Record the damage dealt
             damageDealt[attackerId] = damage;
             
             // Apply the damage to defender
+            const oldHealth = defender.health;
             defender.health = Math.max(0, defender.health - damage);
+            const actualDamageApplied = oldHealth - defender.health;
             
-            // Add to combat log
+            console.log(`🩸 Health change: ${oldHealth} → ${defender.health} (${actualDamageApplied} damage applied)`);
+            
+            // ⚠️ CHECK FOR DISCREPANCY
+            if (damage !== actualDamageApplied) {
+                console.error(`🚨 DAMAGE MISMATCH!`);
+                console.error(`   Calculated: ${damage}`);
+                console.error(`   Actually applied: ${actualDamageApplied}`);
+                console.error(`   Difference: ${actualDamageApplied - damage}`);
+            }
+            
+            // Add to combat log (rest of the function stays the same)
             if (successfulBlock && damage === 0) {
-                // Blocked successfully
                 combatLog.push({
                     type: 'block',
                     player: defenderId,
                     message: `${defender.username} blocked ${attacker.username}'s attack to the ${attackerMove.attackArea}!`
                 });
-            } else if (successfulBlock && damage > 0) {
-                // Block ignored (Ironbound ability)
+            } else if (ignoreBlock) {
                 combatLog.push({
                     type: 'hit',
                     player: attackerId,
                     targetArea: attackerMove.attackArea,
                     damage: damage,
-                    critical: false,
+                    critical: isCritical,
                     ignoreBlock: true,
                     message: `${attacker.username} broke through ${defender.username}'s block with overwhelming force, dealing ${damage} damage!`
                 });
-            } else if (damage === 0) {
-                // Evaded
+            } else if (wasEvaded) {
                 combatLog.push({
                     type: 'evade',
                     player: defenderId,
                     message: `${defender.username} evaded ${attacker.username}'s attack to the ${attackerMove.attackArea}!`
                 });
-            } else {
-                // Normal hit or critical hit
-                const isCritical = damage > this.baseAttackDamage[attackerMove.attackArea] * 1.5;
-                
+            } else if (damage > 0) {
                 if (isCritical) {
                     combatLog.push({
                         type: 'hit',
@@ -215,8 +272,7 @@ class CombatSystem {
                         critical: true,
                         message: `${attacker.username} landed a CRITICAL HIT on ${defender.username}'s ${attackerMove.attackArea} for ${damage} damage!`
                     });
-                } else if (damage > this.baseAttackDamage[attackerMove.attackArea] && this.hasSpecialAbility(attacker, 'poison')) {
-                    // Poison hit
+                } else if (poisonActivated) {
                     combatLog.push({
                         type: 'hit',
                         player: attackerId,
@@ -226,7 +282,6 @@ class CombatSystem {
                         message: `${attacker.username}'s poisoned blade struck ${defender.username}'s ${attackerMove.attackArea}, dealing ${damage} damage!`
                     });
                 } else {
-                    // Regular hit
                     combatLog.push({
                         type: 'hit',
                         player: attackerId,
@@ -261,6 +316,10 @@ class CombatSystem {
                 });
             }
         });
+        
+        console.log(`\n🏁 ROUND COMPLETE`);
+        console.log(`Damage dealt:`, damageDealt);
+        console.log(`Final health:`, Object.fromEntries(playerIds.map(id => [id, players[id].health])));
         
         return {
             damageDealt,

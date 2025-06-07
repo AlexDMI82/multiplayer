@@ -3,300 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Shop</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>The Provisioner - Game Shop</title>
+ <link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/shop-styles.css">
 </head>
 <body>
 
-<div id="app">
-    <div id="shop-screen" class="screen">
-        <div class="container">
-            <div class="header">
-                <h1>Item Shop</h1>
-                <div>
-                    <span>Gold: <span id="player-gold-shop">0</span></span> 
-                    <button id="back-to-lobby-from-shop" class="button">Return to Lobby</button>
-                </div>
+<div id="shop-screen" class="screen">
+    <!-- Shop Header -->
+    <div class="shop-header">
+        <h1 class="shop-title">The Provisioner</h1>
+        <div class="shop-gold-display">
+            <div class="gold-amount">
+                <span id="player-gold-shop">0</span>
+            </div>
+            <button id="back-to-lobby-from-shop" class="button">Return to Lobby</button>
+        </div>
+    </div>
+
+    <!-- Main Shop Container -->
+    <div class="shop-main-container">
+        <!-- Left Panel - Character Display -->
+   <!-- Updated Character Panel HTML - Replace the existing character-panel content -->
+<div class="character-panel">
+    <!-- Character Image Preview - Matches item preview styling -->
+    <div class="character-image-preview" id="character-image-preview">
+        <img id="shop-character-model" src="" alt="Character">
+    </div>
+    
+    <!-- Equipment Grid - Compact layout -->
+    <div class="equipment-grid">
+        <div class="equipment-slot-shop slot-helmet" data-slot="helmet">
+            <img src="images/slot-helmet.svg" class="slot-icon">
+            <div class="slot-name" id="shop-helmet-name">None</div>
+        </div>
+        <div class="equipment-slot-shop slot-weapon" data-slot="weapon">
+            <img src="images/slot-sword.svg" class="slot-icon">
+            <div class="slot-name" id="shop-weapon-name">None</div>
+        </div>
+        <div class="equipment-slot-shop slot-armor" data-slot="armor">
+            <img src="images/slot-armor.svg" class="slot-icon">
+            <div class="slot-name" id="shop-armor-name">None</div>
+        </div>
+        <div class="equipment-slot-shop slot-shield" data-slot="shield">
+            <img src="images/slot-shield.svg" class="slot-icon">
+            <div class="slot-name" id="shop-shield-name">None</div>
+        </div>
+        <div class="equipment-slot-shop slot-gloves" data-slot="gloves">
+            <img src="images/slot-gloves.svg" class="slot-icon">
+            <div class="slot-name" id="shop-gloves-name">None</div>
+        </div>
+        <div class="equipment-slot-shop slot-boots" data-slot="boots">
+            <img src="images/slot-boots.svg" class="slot-icon">
+            <div class="slot-name" id="shop-boots-name">None</div>
+        </div>
+        <div class="equipment-slot-shop slot-amulet" data-slot="amulet">
+            <img src="images/slot-amulet.svg" class="slot-icon">
+            <div class="slot-name" id="shop-amulet-name">None</div>
+        </div>
+        <div class="equipment-slot-shop slot-ring" data-slot="ring">
+            <img src="images/slot-ring.svg" class="slot-icon">
+            <div class="slot-name" id="shop-ring-name">None</div>
+        </div>
+    </div>
+    
+    <!-- Character Stats - Matches item info styling -->
+    <div class="character-stats">
+        <div class="character-name" id="shop-character-name">Player Name</div>
+        <div class="character-class" id="shop-character-class">Warrior Class</div>
+        
+        <div class="stat-row">
+            <span>Attack Power</span>
+            <span class="stat-value" id="shop-attack-power">0</span>
+        </div>
+        <div class="stat-row">
+            <span>Defense</span>
+            <span class="stat-value" id="shop-defense">0</span>
+        </div>
+        <div class="stat-row">
+            <span>Health</span>
+            <span class="stat-value" id="shop-health">100</span>
+        </div>
+        <div class="stat-row">
+            <span>Critical Chance</span>
+            <span class="stat-value" id="shop-crit-chance">10%</span>
+        </div>
+    </div>
+</div>
+        <!-- Middle Panel - Shop Items -->
+        <div class="shop-items-panel">
+            <div class="shop-categories">
+                <button class="category-btn active" data-category="weapons">Weapons</button>
+                <button class="category-btn" data-category="armor">Armor</button>
+                <button class="category-btn" data-category="shields">Shields</button>
+                <button class="category-btn" data-category="helmets">Helmets</button>
+                <button class="category-btn" data-category="accessories">Accessories</button>
             </div>
             
-            <div class="shop-container">
-                <div class="shop-categories">
-                    <button class="category-btn active" data-category="weapons">Weapons</button>
-                    <button class="category-btn" data-category="armor">Armor</button>
-                    <button class="category-btn" data-category="shields">Shields</button>
-                    <button class="category-btn" data-category="helmets">Helmets</button>
+            <div class="shop-items-grid" id="shop-items-container">
+                <!-- Shop items will be populated here -->
+            </div>
+        </div>
+
+        <!-- Right Panel - Item Details -->
+        <div class="item-details-panel">
+            <div class="item-preview" id="item-preview">
+                <div class="no-item-selected">Select an item to view details</div>
+            </div>
+            
+            <div class="item-info" id="item-info" style="display: none;">
+                <h2 class="item-title" id="item-title"></h2>
+                <div class="item-rarity" id="item-rarity"></div>
+                
+                <div class="item-attributes" id="item-attributes">
+                    <!-- Item attributes will be populated here -->
                 </div>
                 
-                <div class="shop-items" id="shop-items-container">
-                    <!-- Shop items will be populated here -->
+                <div class="item-description" id="item-description"></div>
+                
+                <div class="purchase-section">
+                    <button class="buy-button" id="buy-selected-item">
+                        Purchase - <span id="item-price-button">0</span> Gold
+                    </button>
+                    <div class="insufficient-funds" id="insufficient-funds" style="display: none;">
+                        Insufficient funds!
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Inventory Modal -->
-    <div id="inventory-modal" class="modal hidden">
-        <div class="modal-content inventory-modal-content">
-            <h2>Inventory</h2>
-            
-            <div class="equipped-items">
-                <h3>Equipped</h3>
-                <div class="equipment-slots">
-                    <div class="equipment-slot" data-slot="weapon">
-                        <div class="slot-label">Weapon</div>
-                        <div class="slot-item" id="equipped-weapon">None</div>
-                    </div>
-                    <div class="equipment-slot" data-slot="armor">
-                        <div class="slot-label">Armor</div>
-                        <div class="slot-item" id="equipped-armor">None</div>
-                    </div>
-                    <div class="equipment-slot" data-slot="shield">
-                        <div class="slot-label">Shield</div>
-                        <div class="slot-item" id="equipped-shield">None</div>
-                    </div>
-                    <div class="equipment-slot" data-slot="helmet">
-                        <div class="slot-label">Helmet</div>
-                        <div class="slot-item" id="equipped-helmet">None</div>
-                    </div>
+<!-- Inventory Modal (Hidden - for compatibility) -->
+<div id="inventory-modal" class="modal hidden">
+    <div class="modal-content inventory-modal-content">
+        <h2>Inventory</h2>
+        <div class="equipped-items">
+            <h3>Equipped</h3>
+            <div class="equipment-slots">
+                <div class="equipment-slot" data-slot="weapon">
+                    <div class="slot-label">Weapon</div>
+                    <div class="slot-item" id="equipped-weapon">None</div>
+                </div>
+                <div class="equipment-slot" data-slot="armor">
+                    <div class="slot-label">Armor</div>
+                    <div class="slot-item" id="equipped-armor">None</div>
+                </div>
+                <div class="equipment-slot" data-slot="shield">
+                    <div class="slot-label">Shield</div>
+                    <div class="slot-item" id="equipped-shield">None</div>
+                </div>
+                <div class="equipment-slot" data-slot="helmet">
+                    <div class="slot-label">Helmet</div>
+                    <div class="slot-item" id="equipped-helmet">None</div>
                 </div>
             </div>
-            
-            <div class="inventory-items">
-                <h3>Inventory</h3>
-                <div id="inventory-items-container">
-                    <!-- Inventory items will be populated here -->
-                </div>
-            </div>
-            
-            <div class="player-gold-container" style="text-align: center; margin-top:10px;">
-                Gold: <span id="player-gold">0</span>
-            </div>
-            
-            <div class="modal-buttons">
-                <button id="close-inventory">Close</button>
-            </div>
+        </div>
+        <div class="inventory-items">
+            <h3>Inventory</h3>
+            <div id="inventory-items-container"></div>
+        </div>
+        <div class="player-gold-container">
+            Gold: <span id="player-gold">0</span>
+        </div>
+        <div class="modal-buttons">
+            <button id="close-inventory">Close</button>
         </div>
     </div>
 </div>
 
 <script src="/auth.js"></script>
 <script src="/socket.io/socket.io.js"></script>
-
-<!-- Add this shop-specific JavaScript -->
-<script>
-// Connect to Socket.io server
-const socket = io({
-    autoConnect: false
-});
-
-// DOM elements
-const playerGoldSpan = document.getElementById('player-gold');
-const playerGoldShopSpan = document.getElementById('player-gold-shop');
-const shopItemsContainer = document.getElementById('shop-items-container');
-const inventoryItemsContainer = document.getElementById('inventory-items-container');
-const backToLobbyBtn = document.getElementById('back-to-lobby-from-shop');
-const inventoryModal = document.getElementById('inventory-modal');
-const closeInventoryBtn = document.getElementById('close-inventory');
-const equippedWeapon = document.getElementById('equipped-weapon');
-const equippedArmor = document.getElementById('equipped-armor');
-const equippedShield = document.getElementById('equipped-shield');
-const equippedHelmet = document.getElementById('equipped-helmet');
-
-// Global state
-let shopData = null;
-let currentUser = null;
-
-// Initialize
-function init() {
-    // Check if user is logged in
-    const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user');
-
-    if (!token || !userStr) {
-        window.location.href = '/login.html';
-        return;
-    }
-    
-    try {
-        currentUser = JSON.parse(userStr);
-        setupEventListeners();
-        
-        // Connect to socket
-        socket.auth = { token };
-        socket.connect();
-        
-        // Request shop items when page loads
-        socket.on('connect', () => {
-            // Authenticate first
-            socket.emit('authenticate', token);
-        });
-        
-        socket.on('authenticated', () => {
-            socket.emit('getShopItems');
-            socket.emit('getInventory');
-        });
-    } catch (error) {
-        console.error('Error initializing shop:', error);
-        window.location.href = '/login.html';
-    }
-}
-
-// Set up event listeners
-function setupEventListeners() {
-    // Shop category buttons
-    document.querySelectorAll('.category-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            const category = btn.getAttribute('data-category');
-            displayShopItems(category);
-        });
-    });
-    
-    // Back to lobby button
-    if (backToLobbyBtn) {
-        backToLobbyBtn.addEventListener('click', () => {
-            window.location.href = '/index.html';
-        });
-    }
-    
-    // Inventory modal close button
-    if (closeInventoryBtn) {
-        closeInventoryBtn.addEventListener('click', () => {
-            hideModal(inventoryModal);
-        });
-    }
-}
-
-// Show modal
-function showModal(modal) {
-    modal.classList.remove('hidden');
-}
-
-// Hide modal
-function hideModal(modal) {
-    modal.classList.add('hidden');
-}
-
-// Display shop items
-function displayShopItems(category) {
-    if (!shopData) return;
-    shopItemsContainer.innerHTML = '';
-    
-    // Handle the case where the category doesn't exist
-    if (!shopData[category] || shopData[category].length === 0) {
-        shopItemsContainer.innerHTML = '<div class="empty-shop">No items available in this category</div>';
-        return;
-    }
-    
-    shopData[category].forEach(item => {
-        const itemEl = document.createElement('div');
-        itemEl.classList.add('shop-item');
-        let statsText = '';
-        if (item.damage) {
-            statsText = `Damage: +${item.damage}`;
-        } else if (item.defense) {
-            statsText = `Defense: +${item.defense}`;
-        }
-        itemEl.innerHTML = `
-            <div class="item-name">${item.name}</div>
-            <div class="item-stats">${statsText}</div>
-            <div class="item-price">
-                <span class="gold">${item.price} Gold</span>
-                <button class="buy-btn" data-id="${item.id}" data-type="${item.type}">Buy</button>
-            </div>
-        `;
-        const buyBtn = itemEl.querySelector('.buy-btn');
-        buyBtn.addEventListener('click', () => {
-            buyItem(item.id, item.type);
-        });
-        shopItemsContainer.appendChild(itemEl);
-    });
-}
-
-// Buy item
-function buyItem(itemId, itemType) {
-    socket.emit('buyItem', { itemId, itemType });
-}
-
-// Update inventory display
-function updateInventoryDisplay(inventoryData) {
-    if (playerGoldSpan) playerGoldSpan.textContent = inventoryData.gold;
-    if (playerGoldShopSpan) playerGoldShopSpan.textContent = inventoryData.gold;
-    
-    const equipped = inventoryData.equipped;
-    if (equippedWeapon) equippedWeapon.textContent = equipped.weapon ? equipped.weapon.name : 'None';
-    if (equippedArmor) equippedArmor.textContent = equipped.armor ? equipped.armor.name : 'None';
-    if (equippedShield) equippedShield.textContent = equipped.shield ? equipped.shield.name : 'None';
-    if (equippedHelmet) equippedHelmet.textContent = equipped.helmet ? equipped.helmet.name : 'None';
-    
-    if (!inventoryItemsContainer) return;
-    
-    inventoryItemsContainer.innerHTML = '';
-    if (inventoryData.inventory.length === 0) {
-        inventoryItemsContainer.innerHTML = '<div class="empty-inventory">No items</div>';
-        return;
-    }
-    
-    inventoryData.inventory.forEach(item => {
-        const itemEl = document.createElement('div');
-        itemEl.classList.add('inventory-item');
-        let statsText = '';
-        if (item.damage) {
-            statsText = `Damage: +${item.damage}`;
-        } else if (item.defense) {
-            statsText = `Defense: +${item.defense}`;
-        }
-        itemEl.innerHTML = `
-            <div class="item-name">${item.name}</div>
-            <div class="item-stats">${statsText}</div>
-            <button class="equip-btn" data-id="${item.id}" data-type="${item.type}">Equip</button>
-        `;
-        const equipBtn = itemEl.querySelector('.equip-btn');
-        equipBtn.addEventListener('click', () => {
-            equipItem(item.id, item.type);
-        });
-        inventoryItemsContainer.appendChild(itemEl);
-    });
-}
-
-// Equip item
-function equipItem(itemId, itemType) {
-    socket.emit('equipItem', { itemId, itemType });
-}
-
-// Socket event handlers
-socket.on('shopItems', (items) => {
-    shopData = items;
-    displayShopItems('weapons'); // Display weapons by default
-});
-
-socket.on('inventory', (inventoryData) => {
-    updateInventoryDisplay(inventoryData);
-});
-
-socket.on('purchaseComplete', (data) => {
-    alert(`You purchased ${data.item.name}!`);
-    if (playerGoldSpan) playerGoldSpan.textContent = data.newGold;
-    if (playerGoldShopSpan) playerGoldShopSpan.textContent = data.newGold;
-    socket.emit('getInventory');
-});
-
-socket.on('purchaseFailed', (data) => {
-    alert(`Purchase failed: ${data.reason}`);
-});
-
-socket.on('equipmentUpdated', (data) => {
-    updateInventoryDisplay({
-        gold: parseInt(playerGoldSpan ? playerGoldSpan.textContent : 0),
-        equipped: data.equipped,
-        inventory: data.inventory
-    });
-});
-
-// Initialize the application
-document.addEventListener('DOMContentLoaded', init);
-</script>
+<script src="/shop.js"></script>
 
 </body>
 </html>

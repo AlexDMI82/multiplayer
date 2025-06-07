@@ -200,6 +200,21 @@ function setupSocketConnection(token) {
         showLevelUpNotification(data.level, data.bonusPoints);
         requestPlayerData(); // Refresh all data
     });
+
+    socket.on('statUpdated', (data) => {
+    console.log('Stat updated:', data);
+    // Update playerStats with the new values from server
+    if (data.stats) {
+        playerStats = data.stats;
+        updateStatsUI();
+    }
+});
+
+socket.on('statsUpdateFailed', (data) => {
+    console.error('Failed to update stat:', data.message);
+    // Refresh stats from server to correct optimistic update
+    socket.emit('requestStats');
+});
 }
 
 function setupEventListeners() {
@@ -369,11 +384,11 @@ function updateStatsUI() {
     }
     
     attackValueElement.textContent = totalAttack;
-    evadeChanceElement.textContent = `${playerStats.agility || 10}%`;
-    criticalChanceElement.textContent = `${playerStats.intuition || 10}%`;
+    evadeChanceElement.textContent = `${(playerStats.agility || 10) * 0.5}%`;
+    criticalChanceElement.textContent = `${(playerStats.intuition || 10) * 0.5}%`;
     
     // Calculate max health
-    const baseHealth = 100;
+    const baseHealth = 200;
     const enduranceBonus = (playerStats.endurance || 10) * 10; // 10 HP per endurance point
     healthValueElement.textContent = `${baseHealth + enduranceBonus} HP`;
     
@@ -402,15 +417,15 @@ function updateStatButtons() {
 function increasePlayerStat(stat) {
     if (!playerStats || playerStats.availablePoints <= 0) return;
     
-    // Create updated stats object
-    const updatedStats = {
-        ...playerStats,
-        [stat]: playerStats[stat] + 1,
-        availablePoints: playerStats.availablePoints - 1
-    };
+    // Send just the stat type to increase, not the entire stats object
+    socket.emit('updateStat', {
+        statType: stat
+    });
     
-    // Send update to server
-    socket.emit('updateStats', updatedStats);
+    // Optimistically update the UI (will be corrected by server response)
+    playerStats[stat] += 1;
+    playerStats.availablePoints -= 1;
+    updateStatsUI();
 }
 
 function updateInventoryUI() {
@@ -553,3 +568,109 @@ function showModal(modal) {
 function hideModal(modal) {
     modal.classList.add('hidden');
 }
+
+
+
+// Additional equipment elements
+const amuletNameElement = document.getElementById('amulet-name');
+const ringNameElement = document.getElementById('ring-name');
+const bootsNameElement = document.getElementById('boots-name');
+
+// Override the loadUserData function to update header name
+const originalLoadUserData = window.loadUserData || function() {};
+window.loadUserData = function() {
+    if (typeof originalLoadUserData === 'function') {
+        originalLoadUserData();
+    }
+    
+    if (playerData) {
+        // Update header player name (replacing "Character Profile" with player name)
+        const headerPlayerName = document.getElementById('header-player-name');
+        if (headerPlayerName) {
+            headerPlayerName.textContent = playerData.username;
+        }
+        
+        // Remove character name from above image since it's now in the header
+        if (characterNameElement) {
+            characterNameElement.style.display = 'none';
+        }
+    }
+};
+
+// Update the updateEquipmentDisplay function to handle additional slots
+const originalUpdateEquipmentDisplay = window.updateEquipmentDisplay || function() {};
+window.updateEquipmentDisplay = function() {
+    if (typeof originalUpdateEquipmentDisplay === 'function') {
+        originalUpdateEquipmentDisplay();
+    }
+    
+    if (!playerInventory) return;
+    
+    // Update additional equipment slots if they exist
+    if (amuletNameElement && playerInventory.equipped.amulet) {
+        amuletNameElement.textContent = playerInventory.equipped.amulet.name;
+    } else if (amuletNameElement) {
+        amuletNameElement.textContent = 'None';
+    }
+    
+    if (ringNameElement && playerInventory.equipped.ring) {
+        ringNameElement.textContent = playerInventory.equipped.ring.name;
+    } else if (ringNameElement) {
+        ringNameElement.textContent = 'None';
+    }
+    
+    if (bootsNameElement && playerInventory.equipped.boots) {
+        bootsNameElement.textContent = playerInventory.equipped.boots.name;
+    } else if (bootsNameElement) {
+        bootsNameElement.textContent = 'None';
+    }
+    
+    // Update equipment quality classes for additional slots
+    updateEquipmentQualityClass('amulet', playerInventory.equipped.amulet);
+    updateEquipmentQualityClass('ring', playerInventory.equipped.ring);
+    updateEquipmentQualityClass('boots', playerInventory.equipped.boots);
+};
+
+// Add support for additional equipment quality classes
+const originalUpdateEquipmentQualityClass = window.updateEquipmentQualityClass || function() {};
+window.updateEquipmentQualityClass = function(type, item) {
+    if (typeof originalUpdateEquipmentQualityClass === 'function') {
+        originalUpdateEquipmentQualityClass(type, item);
+    }
+    
+    // Handle additional slot types
+    let slotElement;
+    
+    switch (type) {
+        case 'amulet':
+            slotElement = document.querySelector('.amulet-slot');
+            break;
+        case 'ring':
+            slotElement = document.querySelector('.ring-slot');
+            break;
+        case 'boots':
+            slotElement = document.querySelector('.boots-slot');
+            break;
+    }
+    
+    if (!slotElement) return;
+    
+    // Reset classes
+    slotElement.classList.remove('equipped', 'common', 'uncommon', 'rare', 'epic', 'legendary');
+    
+    if (!item) return;
+    
+    // Add equipped class
+    slotElement.classList.add('equipped');
+    
+    // Determine quality class based on stats
+    let quality = 'common';
+    const statValue = ['weapon'].includes(type) ? (item.damage || 0) : (item.defense || 0);
+    
+    if (statValue >= 15) quality = 'legendary';
+    else if (statValue >= 10) quality = 'epic';
+    else if (statValue >= 8) quality = 'rare';
+    else if (statValue >= 5) quality = 'uncommon';
+    
+    slotElement.classList.add(quality);
+};

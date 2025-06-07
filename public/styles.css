@@ -1085,3 +1085,216 @@ h3 {
     white-space: nowrap;
     max-width: 100%;
 }
+
+/* Fixed Online Players List Styling */
+.online-players {
+    margin-top: 20px;
+}
+
+.online-players h3 {
+    color: #4a9eff;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.players-container {
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+/* Custom scrollbar for players container */
+.players-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.players-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.players-container::-webkit-scrollbar-thumb {
+    background: #4a9eff;
+    border-radius: 3px;
+}
+
+.players-container::-webkit-scrollbar-thumb:hover {
+    background: #3a8eef;
+}
+
+/* Individual Player Item */
+.player-item {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+    min-height: 60px;
+}
+
+.player-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: #4a9eff;
+    transform: translateY(-1px);
+}
+
+/* Player Details Section */
+.player-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0; /* Allows text to truncate */
+}
+
+.player-name-list-item {
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Bot indicator styling */
+.player-name-list-item .bot-indicator,
+.player-name-list-item:contains("🤖") {
+    opacity: 0.8;
+    font-size: 12px;
+}
+
+.player-level {
+    color: #4a9eff;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.player-class {
+    color: #888;
+    font-size: 11px;
+    text-transform: capitalize;
+}
+
+/* Challenge Button */
+.challenge-btn {
+    background: linear-gradient(135deg, #4a9eff 0%, #3a8eef 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 70px;
+    height: 32px;
+    flex-shrink: 0;
+}
+
+.challenge-btn:hover {
+    background: linear-gradient(135deg, #3a8eef 0%, #2a7edf 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
+}
+
+.challenge-btn:active {
+    transform: translateY(0);
+}
+
+/* No Players Message */
+.no-players-msg {
+    text-align: center;
+    color: #888;
+    font-style: italic;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+/* Player Count Header */
+.lobby-header .player-count {
+    color: #4a9eff;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+/* Character Class Specific Colors */
+.player-item[data-class="shadowsteel"] .player-class {
+    color: #4a69bd;
+}
+
+.player-item[data-class="ironbound"] .player-class {
+    color: #7a7a7a;
+}
+
+.player-item[data-class="flameheart"] .player-class {
+    color: #bd4a4a;
+}
+
+.player-item[data-class="venomfang"] .player-class {
+    color: #4abd4a;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .player-item {
+        padding: 10px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+    
+    .player-details {
+        align-items: center;
+        text-align: center;
+    }
+    
+    .challenge-btn {
+        width: 100%;
+        margin-top: 5px;
+    }
+}
+
+/* Animation for new players joining */
+@keyframes slideInFromRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.player-item.new-player {
+    animation: slideInFromRight 0.5s ease-out;
+}
+
+/* Loading state */
+.players-container.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.players-container.loading::after {
+    content: "Loading players...";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #4a9eff;
+    font-weight: 500;
+}
+

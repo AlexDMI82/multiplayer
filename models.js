@@ -191,3 +191,4 @@ const PlayerLevel = mongoose.model('PlayerLevel', playerLevelSchema);
 
 // Export all models including the new PlayerLevel model
 module.exports = { User, Stats, Inventory, PlayerLevel };
+

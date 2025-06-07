@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character Profile - Multiplayer Game</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="profile.css">
+    <link rel="stylesheet" href="character-profile.css">
+    <style>
+        /* Enhanced styling for improved character display */
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 5px;
+            color: #e0e0ff;
+            text-shadow: 0 0 10px rgba(100, 100, 255, 0.7);
+        }
+        
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .profile-container {
+            display: grid;
+            grid-template-columns: 400px 1fr; /* Increased left column width */
+            gap: 30px;
+            margin-top: 20px;
+            background-color: rgba(15, 15, 15, 0.8);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Character Overview Panel */
+        .character-overview {
+            display: flex;
+            flex-direction: column;
+            background-color: #222;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Move Level display to character stats column */
+        .stats-header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
+        }
+        
+        .level-display {
+            text-align: right;
+        }
+        
+        .level-number {
+            color: #ffcc00;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(255, 204, 0, 0.5);
+        }
+        
+        .wins-count {
+            color: #aaa;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        /* Enhanced avatar container with equipment overlays */
+        .character-frame {
+            position: relative;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        
+        .avatar-container {
+            position: relative;
+            width: 100%; /* Full width of container */
+            height: 500px; /* Increased height */
+            background-color: #000;
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.5), 0 0 20px rgba(0, 0, 255, 0.3);
+            border: 3px solid rgba(80, 80, 120, 0.7);
+        }
+        
+        #character-avatar {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Ensure image is fully visible */
+        }
+        
+        /* Character class banners */
+        .character-class-badge {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px;
+            text-align: center;
+            font-weight: bold;
+            text-transform: capitalize;
+            font-size: 1.2rem;
+        }
+        
+        .character-subclass {
+            font-size: 0.9em;
+            color: #a0a0cc;
+            margin-top: 2px;
+        }
+        
+        /* Character-specific styling */
+        .shadowsteel .avatar-container {
+            box-shadow: 0 0 15px rgba(0, 0, 100, 0.8), 0 0 30px rgba(0, 0, 255, 0.5);
+            border-color: #4a69bd;
+        }
+        
+        .ironbound .avatar-container {
+            box-shadow: 0 0 15px rgba(100, 100, 100, 0.8), 0 0 30px rgba(150, 150, 150, 0.5);
+            border-color: #7a7a7a;
+        }
+        
+        .flameheart .avatar-container {
+            box-shadow: 0 0 15px rgba(200, 50, 0, 0.8), 0 0 30px rgba(255, 80, 0, 0.5);
+            border-color: #bd4a4a;
+        }
+        
+        .venomfang .avatar-container {
+            box-shadow: 0 0 15px rgba(0, 100, 0, 0.8), 0 0 30px rgba(0, 150, 0, 0.5);
+            border-color: #4abd4a;
+        }
+        
+        /* Equipment slots overlay */
+        .equipment-slot {
+            position: absolute;
+            background-color: rgba(40, 40, 40, 0.8);
+            border: 2px solid rgba(100, 100, 120, 0.8);
+            border-radius: 8px;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .equipment-slot:hover {
+            background-color: rgba(60, 60, 80, 0.9);
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(100, 150, 255, 0.7);
+        }
+        
+        /* Positioned slots */
+        .helmet-slot {
+            top: 10px;
+            left: 10px;
+        }
+        
+        .weapon-slot {
+            top: 10px;
+            right: 10px;
+        }
+        
+        .armor-slot {
+            top: 80px;
+            left: 10px;
+        }
+        
+        .amulet-slot {
+            top: 80px;
+            right: 10px;
+        }
+        
+        .shield-slot {
+            top: 150px;
+            left: 10px;
+        }
+        
+        .ring-slot {
+            top: 150px;
+            right: 10px;
+        }
+        
+        .boots-slot {
+            top: 220px;
+            left: 10px;
+        }
+        
+        .gloves-slot {
+            top: 220px;
+            right: 10px;
+        }
+        
+        .slot-icon {
+            width: 30px;
+            height: 30px;
+            opacity: 0.8;
+        }
+        
+        .equipment-name {
+            font-size: 10px;
+            color: #ddd;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 90%;
+            margin-top: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div id="character-profile-screen" class="screen">
+        <div class="container">
+            <div class="header">
+                <h1 id="header-player-name">Character Profile</h1>
+                <div class="header-buttons">
+                    <button id="back-to-lobby-btn" class="button">Back to Lobby</button>
+                    <button id="open-inventory-btn" class="button">Inventory</button>
+                    <button id="open-shop-btn" class="button">Shop</button>
+                    <button id="logout-btn" class="button">Logout</button>
+                </div>
+            </div>
+
+            <div class="profile-container">
+                <!-- Character Overview Panel -->
+                <div id="character-overview" class="character-overview">
+                    <div class="character-frame">
+                        <div class="avatar-container">
+                            <img id="character-avatar" src="" alt="Character Avatar">
+                            <div class="character-class-badge">
+                                <div id="character-class">Class Name</div>
+                                <div id="character-subclass" class="character-subclass">Subclass</div>
+                            </div>
+                            
+                            <!-- Equipment slots as an overlay -->
+                            <!-- Left side slots -->
+                            <div class="equipment-slot helmet-slot" title="Helmet">
+                                <img src="images/slot-helmet.svg" class="slot-icon">
+                                <div id="helmet-name" class="equipment-name">None</div>
+                            </div>
+                            
+                            <div class="equipment-slot armor-slot" title="Armor">
+                                <img src="images/slot-armor.svg" class="slot-icon">
+                                <div id="armor-name" class="equipment-name">None</div>
+                            </div>
+                            
+                            <div class="equipment-slot shield-slot" title="Shield">
+                                <img src="images/slot-shield.svg" class="slot-icon">
+                                <div id="shield-name" class="equipment-name">None</div>
+                            </div>
+                            
+                            <div class="equipment-slot boots-slot" title="Boots">
+                                <img src="images/slot-boots.svg" class="slot-icon">
+                                <div id="boots-name" class="equipment-name">None</div>
+                            </div>
+                            
+                            <!-- Right side slots -->
+                            <div class="equipment-slot weapon-slot" title="Weapon">
+                                <img src="images/slot-sword.svg" class="slot-icon">
+                                <div id="weapon-name" class="equipment-name">None</div>
+                            </div>
+                            
+                            <div class="equipment-slot amulet-slot" title="Amulet">
+                                <img src="images/slot-amulet.svg" class="slot-icon">
+                                <div id="amulet-name" class="equipment-name">None</div>
+                            </div>
+                            
+                            <div class="equipment-slot ring-slot" title="Ring">
+                                <img src="images/slot-ring.svg" class="slot-icon">
+                                <div id="ring-name" class="equipment-name">None</div>
+                            </div>
+                            
+                            <div class="equipment-slot gloves-slot" title="Gloves">
+                                <img src="images/slot-gloves.svg" class="slot-icon">
+                                <div id="gloves-name" class="equipment-name">None</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Hidden player name for compatibility with original script -->
+                    <div class="character-name" id="character-name" style="display: none;"></div>
+                    
+                    <!-- Hidden level elements for compatibility with original script -->
+                    <div class="player-level" style="display: none;">
+                        <h2>LVL:<span id="player-level">1</span></h2>
+                        <div class="level-progress">
+                            <div class="progress-bar">
+                                <div id="level-progress-fill" class="progress-fill"></div>
+                            </div>
+                            <div class="progress-text">
+                                Wins: <span id="player-wins">0</span>/<span id="wins-for-level">10</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Character Stats Panel -->
+                <div class="character-stats-panel">
+                    <div class="combat-stats">
+                        <div class="stats-header-section">
+                            <h2>Combat Stats</h2>
+                            <div class="level-display">
+                                <!-- <div class="level-number">LVL:<span id="display-level">1</span></div> -->
+                                <div class="wins-count">Wins: <span id="display-wins">0</span>/<span id="display-wins-needed">10</span></div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-item">
+                            <div class="stat-label">Attack</div>
+                            <div id="attack-value" class="stat-value">20</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Evade Chance</div>
+                            <div id="evade-chance" class="stat-value">5%</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Critical Chance</div>
+                            <div id="critical-chance" class="stat-value">5%</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Health</div>
+                            <div id="health-value" class="stat-value">150 HP</div>
+                        </div>
+                        
+                        <h3 class="stats-subtitle">Record</h3>
+                        <div class="stat-item">
+                            <div class="stat-label">Wins</div>
+                            <div id="total-wins" class="stat-value">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Losses</div>
+                            <div id="total-losses" class="stat-value">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Win Rate</div>
+                            <div id="win-rate" class="stat-value">0%</div>
+                        </div>
+                    </div>
+                    
+                    <div class="base-stats">
+                        <h2 class="stats-header">Character Stats</h2>
+                        
+                        <div class="stat-row">
+                            <div class="stat-name">
+                                STRENGTH
+                                <div class="stat-tooltip">Each point increases damage by 2</div>
+                            </div>
+                            <div class="stat-value">
+                                <span id="strength-value">10</span>
+                                <button class="stat-increase" data-stat="strength">+</button>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-row">
+                            <div class="stat-name">
+                                AGILITY
+                                <div class="stat-tooltip">Each point increases evasion chance by 1%</div>
+                            </div>
+                            <div class="stat-value">
+                                <span id="agility-value">10</span>
+                                <button class="stat-increase" data-stat="agility">+</button>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-row">
+                            <div class="stat-name">
+                                INTUITION
+                                <div class="stat-tooltip">Each point increases critical hit chance by 1% and decreases enemy evasion by 0.5%</div>
+                            </div>
+                            <div class="stat-value">
+                                <span id="intuition-value">10</span>
+                                <button class="stat-increase" data-stat="intuition">+</button>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-row">
+                            <div class="stat-name">
+                                ENDURANCE
+                                <div class="stat-tooltip">Each point increases max health by 10</div>
+                            </div>
+                            <div class="stat-value">
+                                <span id="endurance-value">10</span>
+                                <button class="stat-increase" data-stat="endurance">+</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Available points -->
+                        <div class="available-points">
+                            Available Points: <span id="available-points">5</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Inventory Modal (reused from main game) -->
+    <div id="inventory-modal" class="modal hidden">
+        <div class="modal-content inventory-modal-content">
+            <h2>Inventory</h2>
+            
+            <div class="equipped-items">
+                <h3>Equipped</h3>
+                <div class="equipment-slots">
+                    <div class="equipment-slot" data-slot="weapon">
+                        <div class="slot-label">Weapon</div>
+                        <div class="slot-item" id="equipped-weapon">None</div>
+                    </div>
+                    <div class="equipment-slot" data-slot="armor">
+                        <div class="slot-label">Armor</div>
+                        <div class="slot-item" id="equipped-armor">None</div>
+                    </div>
+                    <div class="equipment-slot" data-slot="shield">
+                        <div class="slot-label">Shield</div>
+                        <div class="slot-item" id="equipped-shield">None</div>
+                    </div>
+                    <div class="equipment-slot" data-slot="helmet">
+                        <div class="slot-label">Helmet</div>
+                        <div class="slot-item" id="equipped-helmet">None</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="inventory-items">
+                <h3>Inventory</h3>
+                <div id="inventory-items-container">
+                    <!-- Inventory items will be populated here -->
+                </div>
+            </div>
+            
+            <div class="player-gold">
+                Gold: <span id="player-gold">0</span>
+            </div>
+            
+            <div class="modal-buttons">
+                <button id="close-inventory" class="button">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Socket.io client script -->
+    <script src="/socket.io/socket.io.js"></script>
+    
+    <!-- Game scripts -->
+    <script src="/auth.js"></script>
+    <script src="character-profile.js"></script>
+    
+    <!-- Compatibility script to adapt the original script to our new layout -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Helper function to update the displayed values
+        function updateDisplayedValues() {
+            // Get values from the original script
+            const playerLevel = document.getElementById('player-level').textContent;
+            const playerWins = document.getElementById('player-wins').textContent;
+            const winsForLevel = document.getElementById('wins-for-level').textContent;
+            
+            // Update the displayed values in our new layout
+            document.getElementById('display-level').textContent = playerLevel;
+            document.getElementById('display-wins').textContent = playerWins;
+            document.getElementById('display-wins-needed').textContent = winsForLevel;
+        }
+        
+        // Update character name in header
+        function updateHeaderName() {
+            const characterName = document.getElementById('character-name').textContent;
+            if (characterName && characterName !== 'Player Name') {
+                document.getElementById('header-player-name').textContent = characterName;
+            }
+        }
+        
+        // Update character class styling
+        function updateCharacterClass() {
+            try {
+                const userStr = localStorage.getItem('user');
+                if (userStr) {
+                    const userData = JSON.parse(userStr);
+                    if (userData.characterClass) {
+                        // Add character class to the overview div for styling
+                        const overview = document.getElementById('character-overview');
+                        
+                        // Clear existing classes and add the character class
+                        const classes = ['shadowsteel', 'ironbound', 'flameheart', 'venomfang'];
+                        classes.forEach(cls => overview.classList.remove(cls));
+                        overview.classList.add(userData.characterClass);
+                        
+                        // Set class name and subclass in badge
+                        const classMap = {
+                            'shadowsteel': 'Shadow Warrior',
+                            'ironbound': 'Metal Berserker',
+                            'flameheart': 'Fire Warrior',
+                            'venomfang': 'Poison Assassin'
+                        };
+                        
+                        document.getElementById('character-class').textContent = 
+                            userData.characterClass.charAt(0).toUpperCase() + userData.characterClass.slice(1);
+                        document.getElementById('character-subclass').textContent = 
+                            classMap[userData.characterClass] || 'Warrior';
+                    }
+                }
+            } catch (e) {
+                console.error('Error updating character class:', e);
+            }
+        }
+        
+        // Create a MutationObserver to watch for changes to the player-level element
+        const levelObserver = new MutationObserver(function(mutations) {
+            updateDisplayedValues();
+        });
+        
+        // Create a MutationObserver to watch for changes to the character-name element
+        const nameObserver = new MutationObserver(function(mutations) {
+            updateHeaderName();
+        });
+        
+        // Start observing
+        const playerLevelEl = document.getElementById('player-level');
+        if (playerLevelEl) {
+            levelObserver.observe(playerLevelEl, { childList: true });
+        }
+        
+        const characterNameEl = document.getElementById('character-name');
+        if (characterNameEl) {
+            nameObserver.observe(characterNameEl, { childList: true });
+        }
+        
+        // Run these functions once on load
+        setTimeout(function() {
+            updateDisplayedValues();
+            updateHeaderName();
+            updateCharacterClass();
+        }, 500);
+        
+        // Periodically update values in case the observers miss something
+        setInterval(function() {
+            updateDisplayedValues();
+            updateHeaderName();
+        }, 2000);
+    });
+    </script>
+</body>
+</html>
