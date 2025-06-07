@@ -257,3 +257,311 @@
 .hidden {
     display: none;
 }
+
+
+
+
+/* Enhanced Equipment Display Styles */
+
+/* Equipment slot styling improvements */
+.equipment-slot {
+    position: absolute;
+    background-color: rgba(40, 40, 40, 0.9);
+    border: 2px solid rgba(100, 100, 120, 0.8);
+    border-radius: 8px;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.equipment-slot:hover {
+    background-color: rgba(60, 60, 80, 0.9);
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(100, 150, 255, 0.7);
+    z-index: 10;
+}
+
+/* Slot icon styling */
+.equipment-slot .slot-icon {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    transition: all 0.3s ease;
+    border-radius: 4px;
+}
+
+/* Equipment name styling */
+.equipment-slot .equipment-name {
+    position: absolute;
+    bottom: 2px;
+    left: 2px;
+    right: 2px;
+    font-size: 9px;
+    color: #ddd;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 2px;
+    padding: 1px;
+    line-height: 1.1;
+}
+
+/* Equipped item styling */
+.equipment-slot.equipped {
+    border-color: rgba(100, 255, 100, 0.8);
+    background-color: rgba(50, 70, 50, 0.9);
+    box-shadow: 0 0 10px rgba(100, 255, 100, 0.5);
+}
+
+.equipment-slot.equipped .slot-icon {
+    width: 50px;
+    height: 50px;
+}
+
+.equipment-slot.equipped .equipment-name {
+    color: #90EE90;
+    font-weight: bold;
+}
+
+/* Item rarity colors */
+.equipment-slot.common {
+    border-color: #9d9d9d;
+}
+
+.equipment-slot.common.equipped {
+    border-color: #bdbdbd;
+    box-shadow: 0 0 10px rgba(157, 157, 157, 0.5);
+}
+
+.equipment-slot.uncommon {
+    border-color: #1eff00;
+}
+
+.equipment-slot.uncommon.equipped {
+    border-color: #1eff00;
+    box-shadow: 0 0 10px rgba(30, 255, 0, 0.6);
+}
+
+.equipment-slot.rare {
+    border-color: #0070dd;
+}
+
+.equipment-slot.rare.equipped {
+    border-color: #0070dd;
+    box-shadow: 0 0 10px rgba(0, 112, 221, 0.6);
+}
+
+.equipment-slot.epic {
+    border-color: #a335ee;
+}
+
+.equipment-slot.epic.equipped {
+    border-color: #a335ee;
+    box-shadow: 0 0 10px rgba(163, 53, 238, 0.6);
+}
+
+.equipment-slot.legendary {
+    border-color: #ff8000;
+    animation: legendary-glow 2s ease-in-out infinite alternate;
+}
+
+.equipment-slot.legendary.equipped {
+    border-color: #ff8000;
+    box-shadow: 0 0 15px rgba(255, 128, 0, 0.8);
+}
+
+@keyframes legendary-glow {
+    0% { box-shadow: 0 0 10px rgba(255, 128, 0, 0.6); }
+    100% { box-shadow: 0 0 20px rgba(255, 128, 0, 1); }
+}
+
+/* Inventory item styling improvements */
+.inventory-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: rgba(40, 40, 40, 0.8);
+    border-radius: 8px;
+    border: 1px solid rgba(100, 100, 120, 0.5);
+    transition: all 0.3s ease;
+}
+
+.inventory-item:hover {
+    background-color: rgba(60, 60, 80, 0.9);
+    border-color: rgba(100, 150, 255, 0.7);
+    transform: translateY(-2px);
+}
+
+.inventory-item.compatible-item {
+    border-color: rgba(100, 255, 100, 0.8);
+    background-color: rgba(50, 80, 50, 0.8);
+    animation: compatible-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes compatible-pulse {
+    0%, 100% { background-color: rgba(50, 80, 50, 0.8); }
+    50% { background-color: rgba(70, 100, 70, 0.9); }
+}
+
+.inventory-item .item-icon {
+    width: 50px;
+    height: 50px;
+    flex-shrink: 0;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 2px solid rgba(100, 100, 120, 0.5);
+}
+
+.inventory-item .item-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.inventory-item .item-details {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.inventory-item .item-name {
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.inventory-item .item-name.common { color: #9d9d9d; }
+.inventory-item .item-name.uncommon { color: #1eff00; }
+.inventory-item .item-name.rare { color: #0070dd; }
+.inventory-item .item-name.epic { color: #a335ee; }
+.inventory-item .item-name.legendary { 
+    color: #ff8000;
+    text-shadow: 0 0 5px rgba(255, 128, 0, 0.7);
+}
+
+.inventory-item .item-stats {
+    font-size: 12px;
+    color: #4CAF50;
+    margin-bottom: 2px;
+}
+
+.inventory-item .item-description {
+    font-size: 11px;
+    color: #aaa;
+    font-style: italic;
+}
+
+.inventory-item .equip-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.inventory-item .equip-btn:hover {
+    background-color: #45a049;
+    transform: scale(1.05);
+}
+
+/* Rarity borders for inventory items */
+.inventory-item.rarity-common .item-icon { border-color: #9d9d9d; }
+.inventory-item.rarity-uncommon .item-icon { border-color: #1eff00; }
+.inventory-item.rarity-rare .item-icon { border-color: #0070dd; }
+.inventory-item.rarity-epic .item-icon { border-color: #a335ee; }
+.inventory-item.rarity-legendary .item-icon { 
+    border-color: #ff8000;
+    box-shadow: 0 0 10px rgba(255, 128, 0, 0.5);
+}
+
+/* Empty inventory styling */
+.empty-inventory {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 30px;
+    border: 2px dashed #444;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+/* Animation for newly equipped items */
+.equipment-slot.just-equipped {
+    animation: equip-flash 1s ease;
+}
+
+@keyframes equip-flash {
+    0% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
+    25% { box-shadow: 0 0 25px rgba(100, 255, 100, 1); }
+    50% { box-shadow: 0 0 15px rgba(255, 255, 255, 0.8); }
+    75% { box-shadow: 0 0 25px rgba(100, 255, 100, 1); }
+    100% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
+}
+
+/* Character class specific equipment glow */
+.character-overview.shadowsteel .equipment-slot.equipped {
+    box-shadow: 0 0 12px rgba(0, 0, 255, 0.6);
+}
+
+.character-overview.ironbound .equipment-slot.equipped {
+    box-shadow: 0 0 12px rgba(150, 150, 150, 0.6);
+}
+
+.character-overview.flameheart .equipment-slot.equipped {
+    box-shadow: 0 0 12px rgba(255, 80, 0, 0.6);
+}
+
+.character-overview.venomfang .equipment-slot.equipped {
+    box-shadow: 0 0 12px rgba(0, 150, 0, 0.6);
+}
+
+/* Responsive adjustments for equipment slots */
+@media (max-width: 768px) {
+    .equipment-slot {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .equipment-slot .slot-icon {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .equipment-slot.equipped .slot-icon {
+        width: 42px;
+        height: 42px;
+    }
+    
+    .equipment-slot .equipment-name {
+        font-size: 8px;
+    }
+}
+
+/* Loading state for equipment */
+.equipment-slot.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.equipment-slot.loading .slot-icon {
+    animation: loading-spin 1s linear infinite;
+}
+
+@keyframes loading-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
