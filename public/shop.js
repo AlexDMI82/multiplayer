@@ -1,4 +1,4 @@
-// shop.js - Enhanced shop functionality
+// shop.js - Enhanced shop functionality with proper server sync
 
 // Connect to Socket.io server
 const socket = io({
@@ -57,300 +57,7 @@ let selectedItem = null;
 let playerInventory = null;
 let playerStats = null;
 let socketConnected = false;
-
-// Complete mock shop data - matches server data structure
-const mockShopData = {
-    weapons: [
-        {
-            id: 'sword_001',
-            name: 'Dark Sword',
-            type: 'weapon',
-            price: 100,
-            damage: 5,
-            rarity: 'common',
-            image: '/images/swords/DarkSword.jpg',
-            description: 'A basic iron sword, reliable and sturdy.'
-        },
-        {
-            id: 'sword_002',
-            name: 'Flaming Sword',
-            type: 'weapon',
-            price: 500,
-            damage: 12,
-            rarity: 'rare',
-            image: '/images/swords/FlamingSword.jpg',
-            description: 'A sword imbued with the essence of fire, burns enemies on hit.'
-        },
-        {
-            id: 'sword_003',
-            name: 'Poison Sword',
-            type: 'weapon',
-            price: 800,
-            damage: 15,
-            rarity: 'epic',
-            image: '/images/swords/PoisonSword.jpg',
-            description: 'A venomous blade that poisons enemies with each strike.'
-        },
-        {
-            id: 'sword_004',
-            name: 'Soul Sword',
-            type: 'weapon',
-            price: 1200,
-            damage: 18,
-            rarity: 'epic',
-            image: '/images/swords/SoulSword.jpg',
-            description: 'Forged in darkness, this blade drains the life force of enemies.'
-        },
-        {
-            id: 'sword_005',
-            name: 'Spectral Sword',
-            type: 'weapon',
-            price: 1500,
-            damage: 20,
-            rarity: 'legendary',
-            image: '/images/swords/SpectralSword.jpg',
-            description: 'A ghostly blade that phases through armor.'
-        },
-        {
-            id: 'sword_006',
-            name: 'Vampire Sword',
-            type: 'weapon',
-            price: 2000,
-            damage: 22,
-            rarity: 'legendary',
-            image: '/images/swords/VampireSword.jpg',
-            description: 'This cursed blade heals the wielder with each successful hit.'
-        }
-    ],
-    armor: [
-        {
-            id: 'armor_001',
-            name: 'Leather Vest',
-            type: 'armor',
-            price: 150,
-            defense: 5,
-            rarity: 'common',
-            image: '/images/armor/leather.png',
-            description: 'Basic leather protection for adventurers.'
-        },
-        {
-            id: 'armor_002',
-            name: 'Iron Chestplate',
-            type: 'armor',
-            price: 400,
-            defense: 10,
-            rarity: 'uncommon',
-            image: '/images/armor/iron.png',
-            description: 'Solid iron protection for the torso.'
-        },
-        {
-            id: 'armor_003',
-            name: 'Steel Plate Armor',
-            type: 'armor',
-            price: 800,
-            defense: 15,
-            rarity: 'rare',
-            image: '/images/armor/steel.png',
-            description: 'Heavy steel armor providing excellent protection.'
-        },
-        {
-            id: 'armor_004',
-            name: 'Dragon Scale Armor',
-            type: 'armor',
-            price: 1500,
-            defense: 20,
-            rarity: 'legendary',
-            image: '/images/armor/dragon.png',
-            description: 'Legendary armor crafted from ancient dragon scales.'
-        }
-    ],
-    shields: [
-        {
-            id: 'shield_001',
-            name: 'Dark Shield',
-            type: 'shield',
-            price: 100,
-            defense: 3,
-            rarity: 'common',
-            image: '/images/shields/darkShield.jpg',
-            description: 'A basic dark shield providing minimal protection.'
-        },
-        {
-            id: 'shield_002',
-            name: 'Flame Shield',
-            type: 'shield',
-            price: 300,
-            defense: 7,
-            rarity: 'uncommon',
-            image: '/images/shields/flameShield.jpg',
-            description: 'A shield imbued with fire magic, burns attackers on contact.'
-        },
-        {
-            id: 'shield_003',
-            name: 'Long Shield',
-            type: 'shield',
-            price: 600,
-            defense: 12,
-            rarity: 'rare',
-            image: '/images/shields/longShield.jpg',
-            description: 'An elongated shield providing excellent coverage and protection.'
-        },
-        {
-            id: 'shield_004',
-            name: 'Poison Shield',
-            type: 'shield',
-            price: 800,
-            defense: 15,
-            rarity: 'epic',
-            image: '/images/shields/poisonShield.jpg',
-            description: 'A toxic shield that poisons enemies who strike it.'
-        },
-        {
-            id: 'shield_005',
-            name: 'Spectral Shield',
-            type: 'shield',
-            price: 1200,
-            defense: 18,
-            rarity: 'legendary',
-            image: '/images/shields/spectralShield.jpg',
-            description: 'A ghostly shield that can phase through certain attacks.'
-        },
-        {
-            id: 'shield_006',
-            name: 'Undead Shield',
-            type: 'shield',
-            price: 1500,
-            defense: 20,
-            rarity: 'legendary',
-            image: '/images/shields/undeadShield.jpg',
-            description: 'A cursed shield crafted from undead essence, radiates dark energy.'
-        }
-    ],
-    helmets: [
-        {
-            id: 'helmet_001',
-            name: 'Dark Helm',
-            type: 'helmet',
-            price: 100,
-            defense: 2,
-            rarity: 'common',
-            image: '/images/helm/darHelm.jpg',
-            description: 'A basic dark helmet providing minimal head protection.'
-        },
-        {
-            id: 'helmet_002',
-            name: 'Fire Helm',
-            type: 'helmet',
-            price: 300,
-            defense: 5,
-            rarity: 'uncommon',
-            image: '/images/helm/fireHelm.jpg',
-            description: 'A helmet forged with fire magic, radiates warmth and protection.'
-        },
-        {
-            id: 'helmet_003',
-            name: 'Poison Helm',
-            type: 'helmet',
-            price: 600,
-            defense: 8,
-            rarity: 'rare',
-            image: '/images/helm/poisonHelm.jpg',
-            description: 'A toxic helmet that creates a poisonous aura around the wearer.'
-        },
-        {
-            id: 'helmet_004',
-            name: 'Soul Helm',
-            type: 'helmet',
-            price: 900,
-            defense: 12,
-            rarity: 'epic',
-            image: '/images/helm/soulsHelm.jpg',
-            description: 'A cursed helmet that channels the power of trapped souls.'
-        },
-        {
-            id: 'helmet_005',
-            name: 'Spectral Helm',
-            type: 'helmet',
-            price: 1200,
-            defense: 15,
-            rarity: 'legendary',
-            image: '/images/helm/spectralHelm.jpg',
-            description: 'A ghostly helmet that provides ethereal protection and enhanced vision.'
-        },
-        {
-            id: 'helmet_006',
-            name: 'Vampire Helm',
-            type: 'helmet',
-            price: 1500,
-            defense: 18,
-            rarity: 'legendary',
-            image: '/images/helm/vampireHelm.jpg',
-            description: 'A vampiric helmet that drains enemy life force and transfers it to the wearer.'
-        }
-    ],
-    accessories: [
-        {
-            id: 'boots_001',
-            name: 'Leather Boots',
-            type: 'boots',
-            price: 80,
-            defense: 1,
-            rarity: 'common',
-            image: '/images/accessories/boots.png',
-            description: 'Comfortable leather boots for long journeys.'
-        },
-        {
-            id: 'boots_002',
-            name: 'Steel Boots',
-            type: 'boots',
-            price: 200,
-            defense: 3,
-            rarity: 'uncommon',
-            image: '/images/accessories/steel_boots.png',
-            description: 'Heavy steel boots with reinforced toes.'
-        },
-        {
-            id: 'gloves_001',
-            name: 'Leather Gloves',
-            type: 'gloves',
-            price: 60,
-            defense: 1,
-            rarity: 'common',
-            image: '/images/accessories/gloves.png',
-            description: 'Basic leather gloves for protection.'
-        },
-        {
-            id: 'gloves_002',
-            name: 'Steel Gauntlets',
-            type: 'gloves',
-            price: 180,
-            defense: 3,
-            rarity: 'uncommon',
-            image: '/images/accessories/gauntlets.png',
-            description: 'Reinforced steel gauntlets for protection.'
-        },
-        {
-            id: 'amulet_001',
-            name: 'Health Amulet',
-            type: 'amulet',
-            price: 300,
-            defense: 0,
-            rarity: 'rare',
-            image: '/images/accessories/amulet.png',
-            description: 'Mystical amulet that boosts vitality.'
-        },
-        {
-            id: 'ring_001',
-            name: 'Power Ring',
-            type: 'ring',
-            price: 250,
-            defense: 0,
-            rarity: 'rare',
-            image: '/images/accessories/ring.png',
-            description: 'Ring imbued with magical power.'
-        }
-    ]
-};
+let actualPlayerGold = 0; // Track the real gold amount from server
 
 // Character class data
 const characterClasses = {
@@ -377,17 +84,12 @@ function init() {
         currentUser = JSON.parse(userStr);
         console.log('✅ Current user loaded:', currentUser.username);
         
-        // Initialize shop data immediately
-        shopData = mockShopData;
-        console.log('✅ Mock shop data loaded');
-        
         // Set up UI
         setupEventListeners();
         updateCharacterDisplay();
-        updateGoldDisplay();
         
-        // Display weapons by default
-        displayShopItems('weapons');
+        // IMPORTANT: Don't show any gold amount until we get real data from server
+        updateGoldDisplay(0); // Show 0 until we get real data
         
         // Try to connect to socket for real data
         connectToServer(token);
@@ -399,9 +101,12 @@ function init() {
 }
 
 // Connect to server
+// Replace your connectToServer function in shop.js with this:
+
 function connectToServer(token) {
     if (typeof io === 'undefined') {
-        console.log('⚠️ Socket.io not available, using mock data only');
+        console.log('⚠️ Socket.io not available, using fallback data');
+        loadFallbackShopData();
         return;
     }
     
@@ -412,6 +117,12 @@ function connectToServer(token) {
         console.log('🔗 Socket connected to server');
         socketConnected = true;
         socket.emit('authenticate', token);
+        
+        // Request shop data immediately
+        setTimeout(() => {
+            console.log('📡 Requesting shop data...');
+            socket.emit('getShopItems');
+        }, 500);
     });
     
     socket.on('authenticated', () => {
@@ -421,10 +132,185 @@ function connectToServer(token) {
         socket.emit('getProfile');
     });
     
-    socket.on('connect_error', (error) => {
-        console.log('⚠️ Socket connection failed, using mock data:', error.message);
-        socketConnected = false;
+    socket.on('shopItems', (items) => {
+        console.log('📥 Received shop items from server:', items);
+        shopData = items;
+        displayShopItems('weapons');
     });
+    
+    socket.on('connect_error', (error) => {
+        console.log('⚠️ Socket connection failed:', error.message);
+        socketConnected = false;
+        loadFallbackShopData();
+    });
+    
+    // Fallback: Load shop data after 3 seconds if not received
+    setTimeout(() => {
+        if (!shopData) {
+            console.log('⚠️ No shop data received, loading fallback');
+            loadFallbackShopData();
+        }
+    }, 3000);
+}
+
+
+function loadFallbackShopData() {
+    console.log('📦 Loading complete fallback shop data');
+    shopData = {
+        weapons: [
+            {
+                id: 'sword_001', name: 'Dark Sword', type: 'weapon', price: 100, damage: 5, rarity: 'common',
+                image: '/images/swords/DarkSword.jpg', description: 'A basic iron sword, reliable and sturdy.'
+            },
+            {
+                id: 'sword_002', name: 'Flaming Sword', type: 'weapon', price: 500, damage: 12, rarity: 'rare',
+                image: '/images/swords/FlamingSword.jpg', description: 'A sword imbued with the essence of fire, burns enemies on hit.'
+            },
+            {
+                id: 'sword_003', name: 'Poison Sword', type: 'weapon', price: 800, damage: 15, rarity: 'epic',
+                image: '/images/swords/PoisonSword.jpg', description: 'A venomous blade that poisons enemies with each strike.'
+            },
+            {
+                id: 'sword_004', name: 'Soul Sword', type: 'weapon', price: 1200, damage: 18, rarity: 'epic',
+                image: '/images/swords/SoulSword.jpg', description: 'Forged in darkness, this blade drains the life force of enemies.'
+            },
+            {
+                id: 'sword_005', name: 'Spectral Sword', type: 'weapon', price: 1500, damage: 20, rarity: 'legendary',
+                image: '/images/swords/SpectralSword.jpg', description: 'A ghostly blade that phases through armor.'
+            },
+            {
+                id: 'sword_006', name: 'Vampire Sword', type: 'weapon', price: 2000, damage: 22, rarity: 'legendary',
+                image: '/images/swords/VampireSword.jpg', description: 'This cursed blade heals the wielder with each successful hit.'
+            }
+        ],
+        armor: [
+            {
+                id: 'armor_001', name: 'Leather Vest', type: 'armor', price: 150, defense: 5, rarity: 'common',
+                image: '/images/armor/leather.png', description: 'Basic leather protection for adventurers.'
+            },
+            {
+                id: 'armor_002', name: 'Iron Chestplate', type: 'armor', price: 400, defense: 10, rarity: 'uncommon',
+                image: '/images/armor/iron.png', description: 'Solid iron protection for the torso.'
+            },
+            {
+                id: 'armor_003', name: 'Steel Plate Armor', type: 'armor', price: 800, defense: 15, rarity: 'rare',
+                image: '/images/armor/steel.png', description: 'Heavy steel armor providing excellent protection.'
+            },
+            {
+                id: 'armor_004', name: 'Dragon Scale Armor', type: 'armor', price: 1500, defense: 20, rarity: 'legendary',
+                image: '/images/armor/dragon.png', description: 'Legendary armor crafted from ancient dragon scales.'
+            }
+        ],
+        shields: [
+            {
+                id: 'shield_001', name: 'Dark Shield', type: 'shield', price: 100, defense: 3, rarity: 'common',
+                image: '/images/shields/darkShield.jpg', description: 'A basic dark shield providing minimal protection.'
+            },
+            {
+                id: 'shield_002', name: 'Flame Shield', type: 'shield', price: 300, defense: 7, rarity: 'uncommon',
+                image: '/images/shields/flameShield.jpg', description: 'A shield imbued with fire magic, burns attackers on contact.'
+            },
+            {
+                id: 'shield_003', name: 'Long Shield', type: 'shield', price: 600, defense: 12, rarity: 'rare',
+                image: '/images/shields/longShield.jpg', description: 'An elongated shield providing excellent coverage and protection.'
+            },
+            {
+                id: 'shield_004', name: 'Poison Shield', type: 'shield', price: 800, defense: 15, rarity: 'epic',
+                image: '/images/shields/poisonShield.jpg', description: 'A toxic shield that poisons enemies who strike it.'
+            },
+            {
+                id: 'shield_005', name: 'Spectral Shield', type: 'shield', price: 1200, defense: 18, rarity: 'legendary',
+                image: '/images/shields/spectralShield.jpg', description: 'A ghostly shield that can phase through certain attacks.'
+            },
+            {
+                id: 'shield_006', name: 'Undead Shield', type: 'shield', price: 1500, defense: 20, rarity: 'legendary',
+                image: '/images/shields/undeadShield.jpg', description: 'A cursed shield crafted from undead essence, radiates dark energy.'
+            }
+        ],
+        helmets: [
+            {
+                id: 'helmet_001', name: 'Dark Helm', type: 'helmet', price: 100, defense: 2, rarity: 'common',
+                image: '/images/helm/darHelm.jpg', description: 'A basic dark helmet providing minimal head protection.'
+            },
+            {
+                id: 'helmet_002', name: 'Fire Helm', type: 'helmet', price: 300, defense: 5, rarity: 'uncommon',
+                image: '/images/helm/fireHelm.jpg', description: 'A helmet forged with fire magic, radiates warmth and protection.'
+            },
+            {
+                id: 'helmet_003', name: 'Poison Helm', type: 'helmet', price: 600, defense: 8, rarity: 'rare',
+                image: '/images/helm/poisonHelm.jpg', description: 'A toxic helmet that creates a poisonous aura around the wearer.'
+            },
+            {
+                id: 'helmet_004', name: 'Soul Helm', type: 'helmet', price: 900, defense: 12, rarity: 'epic',
+                image: '/images/helm/soulsHelm.jpg', description: 'A cursed helmet that channels the power of trapped souls.'
+            },
+            {
+                id: 'helmet_005', name: 'Spectral Helm', type: 'helmet', price: 1200, defense: 15, rarity: 'legendary',
+                image: '/images/helm/spectralHelm.jpg', description: 'A ghostly helmet that provides ethereal protection and enhanced vision.'
+            },
+            {
+                id: 'helmet_006', name: 'Vampire Helm', type: 'helmet', price: 1500, defense: 18, rarity: 'legendary',
+                image: '/images/helm/vampireHelm.jpg', description: 'A vampiric helmet that drains enemy life force and transfers it to the wearer.'
+            }
+        ],
+        accessories: [
+            {
+                id: 'boots_001', name: 'Leather Boots', type: 'boots', price: 80, defense: 1, rarity: 'common',
+                image: '/images/accessories/boots.png', description: 'Comfortable leather boots for long journeys.'
+            },
+            {
+                id: 'boots_002', name: 'Steel Boots', type: 'boots', price: 200, defense: 3, rarity: 'uncommon',
+                image: '/images/accessories/steel_boots.png', description: 'Heavy steel boots with reinforced toes.'
+            },
+            {
+                id: 'gloves_001', name: 'Leather Gloves', type: 'gloves', price: 60, defense: 1, rarity: 'common',
+                image: '/images/accessories/gloves.png', description: 'Basic leather gloves for protection.'
+            },
+            {
+                id: 'gloves_002', name: 'Steel Gauntlets', type: 'gloves', price: 180, defense: 3, rarity: 'uncommon',
+                image: '/images/accessories/gauntlets.png', description: 'Reinforced steel gauntlets for protection.'
+            },
+            {
+                id: 'amulet_001', name: 'Health Amulet', type: 'amulet', price: 300, defense: 0, rarity: 'rare',
+                image: '/images/accessories/amulet.png', description: 'Mystical amulet that boosts vitality.'
+            },
+            {
+                id: 'ring_001', name: 'Power Ring', type: 'ring', price: 250, defense: 0, rarity: 'rare',
+                image: '/images/accessories/ring.png', description: 'Ring imbued with magical power.'
+            }
+        ]
+    };
+    
+    console.log('✅ Complete fallback shop data loaded:', {
+        weapons: shopData.weapons.length,
+        armor: shopData.armor.length,
+        shields: shopData.shields.length,
+        helmets: shopData.helmets.length,
+        accessories: shopData.accessories.length
+    });
+    
+    displayShopItems('weapons');
+}
+// Show error message
+function showError(message) {
+    const errorEl = document.createElement('div');
+    errorEl.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #ff4444;
+        color: white;
+        padding: 15px;
+        border-radius: 5px;
+        z-index: 1000;
+        max-width: 300px;
+    `;
+    errorEl.textContent = message;
+    document.body.appendChild(errorEl);
+    
+    setTimeout(() => {
+        errorEl.remove();
+    }, 5000);
 }
 
 // Update character display
@@ -469,11 +355,17 @@ function updateCharacterDisplay() {
     }
 }
 
-// Update gold display
-function updateGoldDisplay() {
-    const gold = currentUser?.gold || 1000; // Default gold for demo
-    if (playerGoldShopSpan) playerGoldShopSpan.textContent = gold;
-    if (playerGoldSpan) playerGoldSpan.textContent = gold;
+// Update gold display - FIXED to use actual server data
+function updateGoldDisplay(goldAmount = null) {
+    if (goldAmount !== null) {
+        actualPlayerGold = goldAmount;
+    }
+    
+    const displayGold = actualPlayerGold;
+    console.log('💰 Updating gold display:', displayGold);
+    
+    if (playerGoldShopSpan) playerGoldShopSpan.textContent = displayGold;
+    if (playerGoldSpan) playerGoldSpan.textContent = displayGold;
 }
 
 // Update equipment display
@@ -589,11 +481,10 @@ function setupEventListeners() {
 // Display shop items
 function displayShopItems(category) {
     console.log(`🛍️ Displaying items for category: ${category}`);
-    console.log('📦 Available shop data:', Object.keys(shopData || {}));
     
     if (!shopData) {
         console.error('❌ No shop data available');
-        showEmptyShop('Shop data not loaded');
+        showEmptyShop('Loading shop data...');
         return;
     }
     
@@ -671,15 +562,13 @@ function selectItem(item, element) {
         element.classList.add('selected');
     }
     
-   if (itemPreview) {
+    if (itemPreview) {
         if (item.image) {
-            // FIXED: Clean image display without extra text
             itemPreview.innerHTML = `<img src="${item.image}" alt="" title="">`;
         } else {
             itemPreview.innerHTML = `<div class="no-item-image">${item.name}</div>`;
         }
     }
-
     
     // Update item info
     if (itemTitle) itemTitle.textContent = item.name;
@@ -718,60 +607,64 @@ function selectItem(item, element) {
         itemPriceButton.textContent = item.price;
     }
     
-    // Check if player can afford
-    const playerGold = parseInt(playerGoldShopSpan?.textContent) || 1000;
-    if (playerGold < item.price) {
-        if (buySelectedItemBtn) buySelectedItemBtn.disabled = true;
-        if (insufficientFunds) insufficientFunds.style.display = 'block';
-    } else {
-        if (buySelectedItemBtn) buySelectedItemBtn.disabled = false;
-        if (insufficientFunds) insufficientFunds.style.display = 'none';
+    // Check if player can afford - USE ACTUAL GOLD AMOUNT
+    const canAfford = actualPlayerGold >= item.price;
+    console.log(`💰 Can afford ${item.name}? ${canAfford} (Has: ${actualPlayerGold}, Needs: ${item.price})`);
+    
+    if (buySelectedItemBtn) {
+        buySelectedItemBtn.disabled = !canAfford;
+    }
+    
+    if (insufficientFunds) {
+        insufficientFunds.style.display = canAfford ? 'none' : 'block';
     }
     
     // Show item info
     if (itemInfo) itemInfo.style.display = 'block';
 }
 
-// Buy item
+// Buy item - ENHANCED with better error handling
 function buyItem(itemId, itemType) {
     console.log('💰 Attempting to buy item:', itemId, itemType);
     
-    if (socketConnected && socket.connected) {
-        socket.emit('buyItem', { itemId, itemType });
-    } else {
-        // Mock purchase for demo
-        console.log('🔄 Using mock purchase (server not connected)');
-        const playerGold = parseInt(playerGoldShopSpan?.textContent) || 1000;
-        if (selectedItem && playerGold >= selectedItem.price) {
-            const newGold = playerGold - selectedItem.price;
-            
-            // Update gold display
-            if (playerGoldShopSpan) playerGoldShopSpan.textContent = newGold;
-            if (playerGoldSpan) playerGoldSpan.textContent = newGold;
-            
-            // Update user data
-            currentUser.gold = newGold;
-            localStorage.setItem('user', JSON.stringify(currentUser));
-            
-            alert(`✅ You purchased ${selectedItem.name} for ${selectedItem.price} gold!`);
-            
-            // Re-check if we can still afford selected item
-            if (selectedItem) {
-                selectItem(selectedItem);
-            }
-        } else {
-            alert('❌ Insufficient funds!');
-        }
+    if (!socketConnected) {
+        alert('❌ Not connected to server. Please refresh the page.');
+        return;
     }
+    
+    if (!selectedItem) {
+        alert('❌ No item selected.');
+        return;
+    }
+    
+    // Double-check we can afford it
+    if (actualPlayerGold < selectedItem.price) {
+        alert(`❌ You need ${selectedItem.price} gold, but only have ${actualPlayerGold} gold.`);
+        return;
+    }
+    
+    console.log('📤 Sending buy request to server...');
+    socket.emit('buyItem', { itemId, itemType });
 }
 
-// Update inventory display
+// Update inventory display - ENHANCED with proper gold handling
 function updateInventoryDisplay(inventoryData) {
     console.log('📦 Updating inventory display:', inventoryData);
+    
+    if (!inventoryData) {
+        console.error('❌ No inventory data received');
+        return;
+    }
+    
     playerInventory = inventoryData;
     
-    if (playerGoldSpan) playerGoldSpan.textContent = inventoryData.gold;
-    if (playerGoldShopSpan) playerGoldShopSpan.textContent = inventoryData.gold;
+    // IMPORTANT: Update gold display with real server data
+    if (typeof inventoryData.gold === 'number') {
+        console.log('💰 Received real gold amount from server:', inventoryData.gold);
+        updateGoldDisplay(inventoryData.gold);
+    } else {
+        console.warn('⚠️ No gold amount in inventory data');
+    }
     
     if (inventoryData.equipped) {
         updateEquipmentDisplay(inventoryData.equipped);
@@ -783,7 +676,7 @@ function updateInventoryDisplay(inventoryData) {
     if (!inventoryItemsContainer) return;
     
     inventoryItemsContainer.innerHTML = '';
-    if (inventoryData.inventory.length === 0) {
+    if (!inventoryData.inventory || inventoryData.inventory.length === 0) {
         inventoryItemsContainer.innerHTML = '<div class="empty-inventory">No items</div>';
         return;
     }
@@ -815,15 +708,17 @@ function equipItem(itemId, itemType) {
     }
 }
 
-// Socket event handlers (only if socket is available)
+// Socket event handlers
 if (typeof io !== 'undefined') {
     socket.on('shopItems', (items) => {
         console.log('📥 Received shop items from server:', items);
         shopData = items;
+        // Display weapons by default when shop data arrives
         displayShopItems('weapons');
     });
 
     socket.on('inventory', (inventoryData) => {
+        console.log('📥 Received inventory from server:', inventoryData);
         updateInventoryDisplay(inventoryData);
     });
 
@@ -837,30 +732,60 @@ if (typeof io !== 'undefined') {
             currentUser = { ...currentUser, ...data.user };
             updateCharacterDisplay();
         }
+        // Handle gold from profile data
+        if (data.inventory && typeof data.inventory.gold === 'number') {
+            console.log('💰 Profile data contains gold:', data.inventory.gold);
+            updateGoldDisplay(data.inventory.gold);
+        }
     });
 
     socket.on('purchaseComplete', (data) => {
         console.log('✅ Purchase complete:', data);
-        alert(`You purchased ${data.item.name}!`);
-        if (playerGoldSpan) playerGoldSpan.textContent = data.newGold;
-        if (playerGoldShopSpan) playerGoldShopSpan.textContent = data.newGold;
-        socket.emit('getInventory');
+        
+        // Show success message
+        const successEl = document.createElement('div');
+        successEl.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            z-index: 1000;
+            max-width: 300px;
+        `;
+        successEl.textContent = `✅ Purchased ${data.itemName || 'item'} for ${data.item?.price || 0} gold!`;
+        document.body.appendChild(successEl);
+        
+        setTimeout(() => {
+            successEl.remove();
+        }, 3000);
+        
+        // Update gold display with new amount
+        if (typeof data.newGold === 'number') {
+            console.log('💰 Updating gold after purchase:', data.newGold);
+            updateGoldDisplay(data.newGold);
+        }
         
         // Re-check if we can still afford selected item
         if (selectedItem) {
             selectItem(selectedItem);
         }
+        
+        // Request updated inventory
+        socket.emit('getInventory');
     });
 
     socket.on('purchaseFailed', (data) => {
         console.log('❌ Purchase failed:', data);
-        alert(`Purchase failed: ${data.reason}`);
+        alert(`❌ Purchase failed: ${data.message || data.reason || 'Unknown error'}`);
     });
 
     socket.on('equipmentUpdated', (data) => {
         console.log('🛡️ Equipment updated:', data);
         updateInventoryDisplay({
-            gold: parseInt(playerGoldSpan ? playerGoldSpan.textContent : 0),
+            gold: data.gold || actualPlayerGold,
             equipped: data.equipped,
             inventory: data.inventory
         });

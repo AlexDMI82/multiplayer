@@ -10,8 +10,473 @@ const { User, Stats, Inventory, PlayerLevel } = require('./models');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const activeChallenges = new Map(); // Track active challenges to prevent duplicates
-const ShopHandlers = require('./server/handlers/shopHandlers');
-const shopHandlers = new ShopHandlers(io); // Move this here
+
+// Create the ShopHandlers class inline since we don't have the directory structure
+class ShopHandlers {
+    constructor(io) {
+        this.io = io;
+        // Shop data that matches the client
+        this.SHOP_DATA = {
+            weapons: [
+                {
+                    id: 'sword_001',
+                    name: 'Dark Sword',
+                    type: 'weapon',
+                    price: 100,
+                    damage: 5,
+                    rarity: 'common',
+                    image: '/images/swords/DarkSword.jpg',
+                    description: 'A basic iron sword, reliable and sturdy.'
+                },
+                {
+                    id: 'sword_002',
+                    name: 'Flaming Sword',
+                    type: 'weapon',
+                    price: 500,
+                    damage: 12,
+                    rarity: 'rare',
+                    image: '/images/swords/FlamingSword.jpg',
+                    description: 'A sword imbued with the essence of fire, burns enemies on hit.'
+                },
+                {
+                    id: 'sword_003',
+                    name: 'Poison Sword',
+                    type: 'weapon',
+                    price: 800,
+                    damage: 15,
+                    rarity: 'epic',
+                    image: '/images/swords/PoisonSword.jpg',
+                    description: 'A venomous blade that poisons enemies with each strike.'
+                },
+                {
+                    id: 'sword_004',
+                    name: 'Soul Sword',
+                    type: 'weapon',
+                    price: 1200,
+                    damage: 18,
+                    rarity: 'epic',
+                    image: '/images/swords/SoulSword.jpg',
+                    description: 'Forged in darkness, this blade drains the life force of enemies.'
+                },
+                {
+                    id: 'sword_005',
+                    name: 'Spectral Sword',
+                    type: 'weapon',
+                    price: 1500,
+                    damage: 20,
+                    rarity: 'legendary',
+                    image: '/images/swords/SpectralSword.jpg',
+                    description: 'A ghostly blade that phases through armor.'
+                },
+                {
+                    id: 'sword_006',
+                    name: 'Vampire Sword',
+                    type: 'weapon',
+                    price: 2000,
+                    damage: 22,
+                    rarity: 'legendary',
+                    image: '/images/swords/VampireSword.jpg',
+                    description: 'This cursed blade heals the wielder with each successful hit.'
+                }
+            ],
+            armor: [
+                {
+                    id: 'armor_001',
+                    name: 'Leather Vest',
+                    type: 'armor',
+                    price: 150,
+                    defense: 5,
+                    rarity: 'common',
+                    image: '/images/armor/leather.png',
+                    description: 'Basic leather protection for adventurers.'
+                },
+                {
+                    id: 'armor_002',
+                    name: 'Iron Chestplate',
+                    type: 'armor',
+                    price: 400,
+                    defense: 10,
+                    rarity: 'uncommon',
+                    image: '/images/armor/iron.png',
+                    description: 'Solid iron protection for the torso.'
+                },
+                {
+                    id: 'armor_003',
+                    name: 'Steel Plate Armor',
+                    type: 'armor',
+                    price: 800,
+                    defense: 15,
+                    rarity: 'rare',
+                    image: '/images/armor/steel.png',
+                    description: 'Heavy steel armor providing excellent protection.'
+                },
+                {
+                    id: 'armor_004',
+                    name: 'Dragon Scale Armor',
+                    type: 'armor',
+                    price: 1500,
+                    defense: 20,
+                    rarity: 'legendary',
+                    image: '/images/armor/dragon.png',
+                    description: 'Legendary armor crafted from ancient dragon scales.'
+                }
+            ],
+            shields: [
+                {
+                    id: 'shield_001',
+                    name: 'Dark Shield',
+                    type: 'shield',
+                    price: 100,
+                    defense: 3,
+                    rarity: 'common',
+                    image: '/images/shields/darkShield.jpg',
+                    description: 'A basic dark shield providing minimal protection.'
+                },
+                {
+                    id: 'shield_002',
+                    name: 'Flame Shield',
+                    type: 'shield',
+                    price: 300,
+                    defense: 7,
+                    rarity: 'uncommon',
+                    image: '/images/shields/flameShield.jpg',
+                    description: 'A shield imbued with fire magic, burns attackers on contact.'
+                },
+                {
+                    id: 'shield_003',
+                    name: 'Long Shield',
+                    type: 'shield',
+                    price: 600,
+                    defense: 12,
+                    rarity: 'rare',
+                    image: '/images/shields/longShield.jpg',
+                    description: 'An elongated shield providing excellent coverage and protection.'
+                },
+                {
+                    id: 'shield_004',
+                    name: 'Poison Shield',
+                    type: 'shield',
+                    price: 800,
+                    defense: 15,
+                    rarity: 'epic',
+                    image: '/images/shields/poisonShield.jpg',
+                    description: 'A toxic shield that poisons enemies who strike it.'
+                },
+                {
+                    id: 'shield_005',
+                    name: 'Spectral Shield',
+                    type: 'shield',
+                    price: 1200,
+                    defense: 18,
+                    rarity: 'legendary',
+                    image: '/images/shields/spectralShield.jpg',
+                    description: 'A ghostly shield that can phase through certain attacks.'
+                },
+                {
+                    id: 'shield_006',
+                    name: 'Undead Shield',
+                    type: 'shield',
+                    price: 1500,
+                    defense: 20,
+                    rarity: 'legendary',
+                    image: '/images/shields/undeadShield.jpg',
+                    description: 'A cursed shield crafted from undead essence, radiates dark energy.'
+                }
+            ],
+            helmets: [
+                {
+                    id: 'helmet_001',
+                    name: 'Dark Helm',
+                    type: 'helmet',
+                    price: 100,
+                    defense: 2,
+                    rarity: 'common',
+                    image: '/images/helm/darHelm.jpg',
+                    description: 'A basic dark helmet providing minimal head protection.'
+                },
+                {
+                    id: 'helmet_002',
+                    name: 'Fire Helm',
+                    type: 'helmet',
+                    price: 300,
+                    defense: 5,
+                    rarity: 'uncommon',
+                    image: '/images/helm/fireHelm.jpg',
+                    description: 'A helmet forged with fire magic, radiates warmth and protection.'
+                },
+                {
+                    id: 'helmet_003',
+                    name: 'Poison Helm',
+                    type: 'helmet',
+                    price: 600,
+                    defense: 8,
+                    rarity: 'rare',
+                    image: '/images/helm/poisonHelm.jpg',
+                    description: 'A toxic helmet that creates a poisonous aura around the wearer.'
+                },
+                {
+                    id: 'helmet_004',
+                    name: 'Soul Helm',
+                    type: 'helmet',
+                    price: 900,
+                    defense: 12,
+                    rarity: 'epic',
+                    image: '/images/helm/soulsHelm.jpg',
+                    description: 'A cursed helmet that channels the power of trapped souls.'
+                },
+                {
+                    id: 'helmet_005',
+                    name: 'Spectral Helm',
+                    type: 'helmet',
+                    price: 1200,
+                    defense: 15,
+                    rarity: 'legendary',
+                    image: '/images/helm/spectralHelm.jpg',
+                    description: 'A ghostly helmet that provides ethereal protection and enhanced vision.'
+                },
+                {
+                    id: 'helmet_006',
+                    name: 'Vampire Helm',
+                    type: 'helmet',
+                    price: 1500,
+                    defense: 18,
+                    rarity: 'legendary',
+                    image: '/images/helm/vampireHelm.jpg',
+                    description: 'A vampiric helmet that drains enemy life force and transfers it to the wearer.'
+                }
+            ],
+            accessories: [
+                {
+                    id: 'boots_001',
+                    name: 'Leather Boots',
+                    type: 'boots',
+                    price: 80,
+                    defense: 1,
+                    rarity: 'common',
+                    image: '/images/accessories/boots.png',
+                    description: 'Comfortable leather boots for long journeys.'
+                },
+                {
+                    id: 'boots_002',
+                    name: 'Steel Boots',
+                    type: 'boots',
+                    price: 200,
+                    defense: 3,
+                    rarity: 'uncommon',
+                    image: '/images/accessories/steel_boots.png',
+                    description: 'Heavy steel boots with reinforced toes.'
+                },
+                {
+                    id: 'gloves_001',
+                    name: 'Leather Gloves',
+                    type: 'gloves',
+                    price: 60,
+                    defense: 1,
+                    rarity: 'common',
+                    image: '/images/accessories/gloves.png',
+                    description: 'Basic leather gloves for protection.'
+                },
+                {
+                    id: 'gloves_002',
+                    name: 'Steel Gauntlets',
+                    type: 'gloves',
+                    price: 180,
+                    defense: 3,
+                    rarity: 'uncommon',
+                    image: '/images/accessories/gauntlets.png',
+                    description: 'Reinforced steel gauntlets for protection.'
+                },
+                {
+                    id: 'amulet_001',
+                    name: 'Health Amulet',
+                    type: 'amulet',
+                    price: 300,
+                    defense: 0,
+                    rarity: 'rare',
+                    image: '/images/accessories/amulet.png',
+                    description: 'Mystical amulet that boosts vitality.'
+                },
+                {
+                    id: 'ring_001',
+                    name: 'Power Ring',
+                    type: 'ring',
+                    price: 250,
+                    defense: 0,
+                    rarity: 'rare',
+                    image: '/images/accessories/ring.png',
+                    description: 'Ring imbued with magical power.'
+                }
+            ]
+        };
+    }
+
+    findItemById(itemId) {
+        for (const category of Object.values(this.SHOP_DATA)) {
+            const item = category.find(item => item.id === itemId);
+            if (item) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    registerHandlers(socket) {
+        console.log(`🏪 Registering shop handlers for ${socket.user.username}`);
+
+        // Send shop items when requested
+        socket.on('getShopItems', () => {
+            console.log(`📦 Sending shop items to ${socket.user.username}`);
+            socket.emit('shopItems', this.SHOP_DATA);
+        });
+
+        // Handle item purchase
+        socket.on('buyItem', async (data) => {
+            try {
+                console.log(`💰 Purchase request from ${socket.user.username}:`, data);
+                
+                const { itemId, itemType } = data;
+                
+                // Find the item
+                const item = this.findItemById(itemId);
+                if (!item) {
+                    console.log(`❌ Item not found: ${itemId}`);
+                    socket.emit('purchaseFailed', { 
+                        reason: 'Item not found',
+                        message: `Item with ID ${itemId} not found in shop` 
+                    });
+                    return;
+                }
+
+                // Get player's inventory
+                let inventory = await Inventory.findOne({ userId: socket.user._id });
+                if (!inventory) {
+                    console.log(`Creating new inventory for ${socket.user.username}`);
+                    inventory = await Inventory.create({ 
+                        userId: socket.user._id,
+                        gold: 1000,
+                        equipped: {},
+                        inventory: []
+                    });
+                }
+
+                // Check if player has enough gold
+                if (inventory.gold < item.price) {
+                    console.log(`❌ Insufficient funds for ${socket.user.username}. Has: ${inventory.gold}, Needs: ${item.price}`);
+                    socket.emit('purchaseFailed', { 
+                        reason: 'Insufficient funds',
+                        message: `You need ${item.price} gold, but only have ${inventory.gold}` 
+                    });
+                    return;
+                }
+
+                // Create inventory item
+                const inventoryItem = {
+                    id: item.id,
+                    name: item.name,
+                    type: item.type,
+                    image: item.image,
+                    description: item.description,
+                    rarity: item.rarity,
+                    price: item.price
+                };
+
+                // Add damage or defense stats
+                if (item.damage) {
+                    inventoryItem.damage = item.damage;
+                }
+                if (item.defense) {
+                    inventoryItem.defense = item.defense;
+                }
+
+                // Add item to inventory and deduct gold
+                const newGold = inventory.gold - item.price;
+                
+                await Inventory.findOneAndUpdate(
+                    { userId: socket.user._id },
+                    {
+                        $push: { inventory: inventoryItem },
+                        $set: { gold: newGold }
+                    },
+                    { new: true }
+                );
+
+                console.log(`✅ Purchase successful for ${socket.user.username}: ${item.name} for ${item.price} gold. New gold: ${newGold}`);
+
+                // Send success response
+                socket.emit('purchaseComplete', {
+                    item: inventoryItem,
+                    newGold: newGold,
+                    itemName: item.name,
+                    message: `Successfully purchased ${item.name}!`
+                });
+
+                // Send updated inventory
+                const updatedInventory = await Inventory.findOne({ userId: socket.user._id });
+                socket.emit('inventory', updatedInventory);
+
+            } catch (error) {
+                console.error('Error processing purchase:', error);
+                socket.emit('purchaseFailed', { 
+                    reason: 'Server error',
+                    message: 'An error occurred while processing your purchase' 
+                });
+            }
+        });
+
+        // Handle item equipping
+        socket.on('equipItem', async (data) => {
+            try {
+                console.log(`⚔️ Equip request from ${socket.user.username}:`, data);
+                
+                const { itemId, itemType } = data;
+
+                const inventory = await Inventory.findOne({ userId: socket.user._id });
+                if (!inventory) {
+                    socket.emit('equipFailed', { message: 'Inventory not found' });
+                    return;
+                }
+
+                // Find item in inventory
+                const itemIndex = inventory.inventory.findIndex(item => item.id === itemId);
+                if (itemIndex === -1) {
+                    socket.emit('equipFailed', { message: 'Item not found in inventory' });
+                    return;
+                }
+
+                const item = inventory.inventory[itemIndex];
+
+                // Unequip current item if any (move back to inventory)
+                if (inventory.equipped[itemType]) {
+                    inventory.inventory.push(inventory.equipped[itemType]);
+                }
+
+                // Equip new item
+                inventory.equipped[itemType] = item;
+
+                // Remove item from inventory
+                inventory.inventory.splice(itemIndex, 1);
+
+                // Save changes
+                await inventory.save();
+
+                console.log(`✅ Item equipped successfully for ${socket.user.username}: ${item.name}`);
+
+                // Send updated equipment and inventory
+                socket.emit('equipmentUpdated', {
+                    equipped: inventory.equipped,
+                    inventory: inventory.inventory,
+                    gold: inventory.gold
+                });
+
+            } catch (error) {
+                console.error('Error equipping item:', error);
+                socket.emit('equipFailed', { message: 'Failed to equip item' });
+            }
+        });
+    }
+}
+
+const shopHandlers = new ShopHandlers(io);
 const BotManager = require('./server/botManager');
 
 app.use(express.json());
@@ -110,11 +575,67 @@ const botManager = new BotManager(io, combatSystem);
 // Make connectedPlayers globally accessible for bot manager
 global.connectedPlayers = connectedPlayers;
 
+async function ensureInventoryExists(userId) {
+    try {
+        let inventory = await Inventory.findOne({ userId });
+        
+        if (!inventory) {
+            console.log(`📦 Creating new inventory for user ${userId}`);
+            inventory = await Inventory.create({
+                userId: userId,
+                gold: 1000,
+                equipped: {
+                    weapon: null,
+                    armor: null,
+                    shield: null,
+                    helmet: null,
+                    boots: null,
+                    gloves: null,
+                    amulet: null,
+                    ring: null
+                },
+                inventory: []
+            });
+            console.log(`✅ New inventory created with 1000 gold`);
+        } else {
+            // Ensure existing inventory has proper structure
+            let needsSave = false;
+            
+            if (typeof inventory.gold !== 'number') {
+                inventory.gold = 1000;
+                needsSave = true;
+                console.log(`🔧 Fixed gold for user ${userId}: set to 1000`);
+            }
+            
+            if (!inventory.equipped || typeof inventory.equipped !== 'object') {
+                inventory.equipped = {
+                    weapon: null, armor: null, shield: null, helmet: null,
+                    boots: null, gloves: null, amulet: null, ring: null
+                };
+                needsSave = true;
+            }
+            
+            if (!Array.isArray(inventory.inventory)) {
+                inventory.inventory = [];
+                needsSave = true;
+            }
+            
+            if (needsSave) {
+                await inventory.save();
+                console.log(`✅ Inventory structure fixed for user ${userId}`);
+            }
+        }
+        
+        return inventory;
+    } catch (error) {
+        console.error(`❌ Error ensuring inventory exists for user ${userId}:`, error);
+        throw error;
+    }
+}
+
+
 // Connect to MongoDB
-mongoose.connect('mongodb+srv://braucamkopa:Y1ytE02fH8ErX3qi@cluster0.eedzhyr.mongodb.net/multiplayer-game?retryWrites=true&w=majority&appName=Cluster0', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
+mongoose.connect('mongodb+srv://braucamkopa:Y1ytE02fH8ErX3qi@cluster0.eedzhyr.mongodb.net/multiplayer-game?retryWrites=true&w=majority&appName=Cluster0')
 .then(async () => {
   console.log('Connected to MongoDB');
   
@@ -191,7 +712,7 @@ app.post('/api/register', async (req, res) => {
     
     console.log('Creating stats, inventory, player level...');
     await Stats.create([{ userId: user._id }], { session: mongoSession });
-    await Inventory.create([{ userId: user._id }], { session: mongoSession });
+    await Inventory.create([{ userId: user._id, gold: 1000 }], { session: mongoSession }); // Give new players 1000 gold
     await PlayerLevel.create([{ userId: user._id, level: 1, wins: 0 }], { session: mongoSession });
     console.log('Initial documents created successfully.');
     
@@ -348,7 +869,7 @@ app.get('/api/profile', authenticate, async (req, res) => {
     if (!stats) stats = await Stats.create({ userId });
     
     let inventory = await Inventory.findOne({ userId });
-    if (!inventory) inventory = await Inventory.create({ userId });
+    if (!inventory) inventory = await Inventory.create({ userId, gold: 1000 });
     
     let playerLevel = await PlayerLevel.findOne({ userId });
     if (!playerLevel) playerLevel = await PlayerLevel.create({ userId, level: 1, wins: 0 });
@@ -478,9 +999,13 @@ io.on('connection', async (socket) => {
 
   // Fetch player stats and inventory for game purposes
   const stats = await Stats.findOne({ userId: user._id });
-  const inventory = await Inventory.findOne({ userId: user._id });
+  
+  // FIXED: Use ensureInventoryExists instead of manual checks
+  let inventory = await ensureInventoryExists(user._id);
+  
   const playerLevel = await PlayerLevel.findOne({ userId: user._id });
 
+  // Register shop handlers for this socket
   shopHandlers.registerHandlers(socket);
 
   const playerData = {
@@ -500,7 +1025,7 @@ io.on('connection', async (socket) => {
   io.emit('updatePlayerList', botManager.getAllPlayersIncludingBots());
   console.log(`Player list updated. Current players: ${Array.from(connectedPlayers.values()).map(p=>p.username).join(', ')}`);
 
-  // Send profile data to the connected player
+  // Send profile data to the connected player - INCLUDE INVENTORY
   socket.emit('profileData', {
     user: {
       id: user._id,
@@ -518,10 +1043,14 @@ io.on('connection', async (socket) => {
       totalWins: stats.totalWins || 0,
       totalLosses: stats.totalLosses || 0
     } : null,
-    inventory: inventory,
+    inventory: inventory, // CRITICAL: Include inventory in profile data
     level: playerLevel ? playerLevel.level : 1,
     wins: playerLevel ? playerLevel.wins : 0
   });
+
+  // ALSO send inventory separately to ensure client gets it
+  socket.emit('inventory', inventory);
+  console.log(`💰 User ${user.username} has ${inventory.gold} gold`);
 
   // Handle authenticate event from client
   socket.on('authenticate', async (token) => {
@@ -538,11 +1067,148 @@ io.on('connection', async (socket) => {
     }
   });
 
-  // Handle getProfile request
+  // Add this right after your socket.on('authenticate') handler in server.js
+
+// Replace your getShopItems handler in server.js with this complete version:
+
+socket.on('getShopItems', () => {
+  console.log(`📦 Shop items requested by ${socket.user.username}`);
+  
+  // Send COMPLETE shop data
+  const COMPLETE_SHOP_DATA = {
+    weapons: [
+      {
+        id: 'sword_001', name: 'Dark Sword', type: 'weapon', price: 100, damage: 5, rarity: 'common',
+        image: '/images/swords/DarkSword.jpg', description: 'A basic iron sword, reliable and sturdy.'
+      },
+      {
+        id: 'sword_002', name: 'Flaming Sword', type: 'weapon', price: 500, damage: 12, rarity: 'rare',
+        image: '/images/swords/FlamingSword.jpg', description: 'A sword imbued with the essence of fire, burns enemies on hit.'
+      },
+      {
+        id: 'sword_003', name: 'Poison Sword', type: 'weapon', price: 800, damage: 15, rarity: 'epic',
+        image: '/images/swords/PoisonSword.jpg', description: 'A venomous blade that poisons enemies with each strike.'
+      },
+      {
+        id: 'sword_004', name: 'Soul Sword', type: 'weapon', price: 1200, damage: 18, rarity: 'epic',
+        image: '/images/swords/SoulSword.jpg', description: 'Forged in darkness, this blade drains the life force of enemies.'
+      },
+      {
+        id: 'sword_005', name: 'Spectral Sword', type: 'weapon', price: 1500, damage: 20, rarity: 'legendary',
+        image: '/images/swords/SpectralSword.jpg', description: 'A ghostly blade that phases through armor.'
+      },
+      {
+        id: 'sword_006', name: 'Vampire Sword', type: 'weapon', price: 2000, damage: 22, rarity: 'legendary',
+        image: '/images/swords/VampireSword.jpg', description: 'This cursed blade heals the wielder with each successful hit.'
+      }
+    ],
+    armor: [
+      {
+        id: 'armor_001', name: 'Leather Vest', type: 'armor', price: 150, defense: 5, rarity: 'common',
+        image: '/images/armor/leather.png', description: 'Basic leather protection for adventurers.'
+      },
+      {
+        id: 'armor_002', name: 'Iron Chestplate', type: 'armor', price: 400, defense: 10, rarity: 'uncommon',
+        image: '/images/armor/iron.png', description: 'Solid iron protection for the torso.'
+      },
+      {
+        id: 'armor_003', name: 'Steel Plate Armor', type: 'armor', price: 800, defense: 15, rarity: 'rare',
+        image: '/images/armor/steel.png', description: 'Heavy steel armor providing excellent protection.'
+      },
+      {
+        id: 'armor_004', name: 'Dragon Scale Armor', type: 'armor', price: 1500, defense: 20, rarity: 'legendary',
+        image: '/images/armor/dragon.png', description: 'Legendary armor crafted from ancient dragon scales.'
+      }
+    ],
+    shields: [
+      {
+        id: 'shield_001', name: 'Dark Shield', type: 'shield', price: 100, defense: 3, rarity: 'common',
+        image: '/images/shields/darkShield.jpg', description: 'A basic dark shield providing minimal protection.'
+      },
+      {
+        id: 'shield_002', name: 'Flame Shield', type: 'shield', price: 300, defense: 7, rarity: 'uncommon',
+        image: '/images/shields/flameShield.jpg', description: 'A shield imbued with fire magic, burns attackers on contact.'
+      },
+      {
+        id: 'shield_003', name: 'Long Shield', type: 'shield', price: 600, defense: 12, rarity: 'rare',
+        image: '/images/shields/longShield.jpg', description: 'An elongated shield providing excellent coverage and protection.'
+      },
+      {
+        id: 'shield_004', name: 'Poison Shield', type: 'shield', price: 800, defense: 15, rarity: 'epic',
+        image: '/images/shields/poisonShield.jpg', description: 'A toxic shield that poisons enemies who strike it.'
+      },
+      {
+        id: 'shield_005', name: 'Spectral Shield', type: 'shield', price: 1200, defense: 18, rarity: 'legendary',
+        image: '/images/shields/spectralShield.jpg', description: 'A ghostly shield that can phase through certain attacks.'
+      },
+      {
+        id: 'shield_006', name: 'Undead Shield', type: 'shield', price: 1500, defense: 20, rarity: 'legendary',
+        image: '/images/shields/undeadShield.jpg', description: 'A cursed shield crafted from undead essence, radiates dark energy.'
+      }
+    ],
+    helmets: [
+      {
+        id: 'helmet_001', name: 'Dark Helm', type: 'helmet', price: 100, defense: 2, rarity: 'common',
+        image: '/images/helm/darHelm.jpg', description: 'A basic dark helmet providing minimal head protection.'
+      },
+      {
+        id: 'helmet_002', name: 'Fire Helm', type: 'helmet', price: 300, defense: 5, rarity: 'uncommon',
+        image: '/images/helm/fireHelm.jpg', description: 'A helmet forged with fire magic, radiates warmth and protection.'
+      },
+      {
+        id: 'helmet_003', name: 'Poison Helm', type: 'helmet', price: 600, defense: 8, rarity: 'rare',
+        image: '/images/helm/poisonHelm.jpg', description: 'A toxic helmet that creates a poisonous aura around the wearer.'
+      },
+      {
+        id: 'helmet_004', name: 'Soul Helm', type: 'helmet', price: 900, defense: 12, rarity: 'epic',
+        image: '/images/helm/soulsHelm.jpg', description: 'A cursed helmet that channels the power of trapped souls.'
+      },
+      {
+        id: 'helmet_005', name: 'Spectral Helm', type: 'helmet', price: 1200, defense: 15, rarity: 'legendary',
+        image: '/images/helm/spectralHelm.jpg', description: 'A ghostly helmet that provides ethereal protection and enhanced vision.'
+      },
+      {
+        id: 'helmet_006', name: 'Vampire Helm', type: 'helmet', price: 1500, defense: 18, rarity: 'legendary',
+        image: '/images/helm/vampireHelm.jpg', description: 'A vampiric helmet that drains enemy life force and transfers it to the wearer.'
+      }
+    ],
+    accessories: [
+      {
+        id: 'boots_001', name: 'Leather Boots', type: 'boots', price: 80, defense: 1, rarity: 'common',
+        image: '/images/accessories/boots.png', description: 'Comfortable leather boots for long journeys.'
+      },
+      {
+        id: 'boots_002', name: 'Steel Boots', type: 'boots', price: 200, defense: 3, rarity: 'uncommon',
+        image: '/images/accessories/steel_boots.png', description: 'Heavy steel boots with reinforced toes.'
+      },
+      {
+        id: 'gloves_001', name: 'Leather Gloves', type: 'gloves', price: 60, defense: 1, rarity: 'common',
+        image: '/images/accessories/gloves.png', description: 'Basic leather gloves for protection.'
+      },
+      {
+        id: 'gloves_002', name: 'Steel Gauntlets', type: 'gloves', price: 180, defense: 3, rarity: 'uncommon',
+        image: '/images/accessories/gauntlets.png', description: 'Reinforced steel gauntlets for protection.'
+      },
+      {
+        id: 'amulet_001', name: 'Health Amulet', type: 'amulet', price: 300, defense: 0, rarity: 'rare',
+        image: '/images/accessories/amulet.png', description: 'Mystical amulet that boosts vitality.'
+      },
+      {
+        id: 'ring_001', name: 'Power Ring', type: 'ring', price: 250, defense: 0, rarity: 'rare',
+        image: '/images/accessories/ring.png', description: 'Ring imbued with magical power.'
+      }
+    ]
+  };
+  
+  socket.emit('shopItems', COMPLETE_SHOP_DATA);
+  console.log(`✅ Complete shop data sent to ${socket.user.username} - ${Object.keys(COMPLETE_SHOP_DATA.weapons).length} weapons, ${Object.keys(COMPLETE_SHOP_DATA.armor).length} armor, ${Object.keys(COMPLETE_SHOP_DATA.shields).length} shields, ${Object.keys(COMPLETE_SHOP_DATA.helmets).length} helmets, ${Object.keys(COMPLETE_SHOP_DATA.accessories).length} accessories`);
+});
+
+  // FIXED: Handle getProfile request with ensureInventoryExists
   socket.on('getProfile', async () => {
     try {
       const stats = await Stats.findOne({ userId: socket.user._id });
-      const inventory = await Inventory.findOne({ userId: socket.user._id });
+      const inventory = await ensureInventoryExists(socket.user._id); // FIXED
       const playerLevel = await PlayerLevel.findOne({ userId: socket.user._id });
       
       socket.emit('profileData', {
@@ -562,7 +1228,7 @@ io.on('connection', async (socket) => {
           totalWins: stats.totalWins || 0,
           totalLosses: stats.totalLosses || 0
         } : null,
-        inventory: inventory,
+        inventory: inventory, // Always include inventory
         level: playerLevel ? playerLevel.level : 1,
         wins: playerLevel ? playerLevel.wins : 0
       });
@@ -857,7 +1523,9 @@ io.on('connection', async (socket) => {
     // Add player to game
     const playerData = connectedPlayers.get(socket.id);
     const stats = await Stats.findOne({ userId: socket.user._id });
-    const inventory = await Inventory.findOne({ userId: socket.user._id });
+    
+    // FIXED: Use ensureInventoryExists instead of manual check
+    let inventory = await ensureInventoryExists(socket.user._id);
 
     // Calculate health with endurance bonus
     const baseHealth = 200; // New base health (changed from 100)
@@ -983,12 +1651,15 @@ io.on('connection', async (socket) => {
     }
   });
 
+  // FIXED: getInventory handler with enhanced error handling
   socket.on('getInventory', async () => {
     try {
-      const inventory = await Inventory.findOne({ userId: socket.user._id });
-      socket.emit('inventory', inventory || { gold: 0, equipped: {}, inventory: [] });
+      const inventory = await ensureInventoryExists(socket.user._id);
+      console.log(`📦 Sending inventory to ${socket.user.username}: ${inventory.gold} gold`);
+      socket.emit('inventory', inventory);
     } catch (error) {
       console.error('Error fetching inventory:', error);
+      socket.emit('inventory', { gold: 1000, equipped: {}, inventory: [] }); // Fallback
     }
   });
 
@@ -1269,9 +1940,57 @@ async function endGame(gameId, winnerId) {
   activeGames.delete(gameId);
 }
 
+
+async function fixAllUserGold() {
+    try {
+        console.log('🔧 Checking and fixing user gold amounts...');
+        
+        // Find all inventories with gold less than 1000
+        const lowGoldInventories = await Inventory.find({ gold: { $lt: 1000 } });
+        
+        console.log(`Found ${lowGoldInventories.length} users with less than 1000 gold`);
+        
+        for (const inventory of lowGoldInventories) {
+            const oldGold = inventory.gold;
+            inventory.gold = 1000;
+            await inventory.save();
+            
+            const user = await User.findById(inventory.userId);
+            console.log(`💰 Updated ${user?.username || 'Unknown'} gold: ${oldGold} → 1000`);
+        }
+        
+        // Also ensure all users have an inventory
+        const usersWithoutInventory = await User.find({
+            _id: { $nin: await Inventory.distinct('userId') }
+        });
+        
+        console.log(`Found ${usersWithoutInventory.length} users without inventory`);
+        
+        for (const user of usersWithoutInventory) {
+            await Inventory.create({
+                userId: user._id,
+                gold: 1000,
+                equipped: {},
+                inventory: []
+            });
+            console.log(`📦 Created inventory for ${user.username} with 1000 gold`);
+        }
+        
+        console.log('✅ All user gold amounts fixed!');
+        
+    } catch (error) {
+        console.error('❌ Error fixing user gold:', error);
+    }
+}
+
+
+
+
+
 // Start the server
 const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
   console.log(`Character selection API endpoint available at: http://localhost:${PORT}/api/select-character`);
+  console.log(`🏪 Shop system initialized with working buy/sell functionality`);
 });
