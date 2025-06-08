@@ -178,7 +178,7 @@ function disableStatsButtonsDuringBattle() {
             if (!header.querySelector('.battle-stats-message')) {
                 const message = document.createElement('div');
                 message.classList.add('battle-stats-message');
-                message.textContent = 'Stats cannot be changed during battle';
+                message.textContent = '';
                 message.style.color = '#ff5555';
                 message.style.fontSize = '12px';
                 message.style.marginTop = '5px';
@@ -1083,11 +1083,6 @@ function startGame(gameData) {
         if (currentUser.characterClass && currentUser.characterClass !== 'unselected') {
             player1Avatar.src = getCharacterAvatar(currentUser.characterClass);
             player1Avatar.alt = currentUser.characterClass;
-            // Add character-specific styling to player 1 container
-            const player1Container = player1Avatar.closest('.player');
-            if (player1Container) {
-                player1Container.classList.add(currentUser.characterClass);
-            }
         } else {
             player1Avatar.src = currentUser.avatar.startsWith('images/') ? 
                 currentUser.avatar : `images/${currentUser.avatar}`;
@@ -1098,11 +1093,6 @@ function startGame(gameData) {
         if (gameData.opponent.characterClass && gameData.opponent.characterClass !== 'unselected') {
             player2Avatar.src = getCharacterAvatar(gameData.opponent.characterClass);
             player2Avatar.alt = gameData.opponent.characterClass;
-            // Add character-specific styling to player 2 container
-            const player2Container = player2Avatar.closest('.player');
-            if (player2Container) {
-                player2Container.classList.add(gameData.opponent.characterClass);
-            }
         } else {
             let opponentAvatarSrc = gameData.opponent.avatar;
             if (opponentAvatarSrc && !opponentAvatarSrc.startsWith('images/')) {
@@ -1123,122 +1113,113 @@ function startGame(gameData) {
     
     showScreen(gameScreen);
     
-    // Update opponent stats after the screen is shown and elements are loaded
     setTimeout(() => {
         console.log('Joining game:', currentGameId);
         socket.emit('joinGame', currentGameId);
         addLogEntry('Connecting to game session...', 'info');
         disableStatsButtonsDuringBattle();
-        
-        // Update opponent stats directly after the screen is fully loaded
-        if (gameData.opponent && gameData.opponent.stats) {
-            console.log('🔄 Updating opponent stats with:', gameData.opponent.stats);
-            
-            // Direct update approach to avoid conflicts
-            const strengthEl = document.querySelector('.player2-strength');
-            const agilityEl = document.querySelector('.player2-agility');
-            const intuitionEl = document.querySelector('.player2-intuition');
-            const enduranceEl = document.querySelector('.player2-endurance');
-            
-            if (strengthEl) {
-                strengthEl.textContent = gameData.opponent.stats.strength;
-                console.log(`✅ Updated strength: ${gameData.opponent.stats.strength}`);
-            } else {
-                console.log('❌ Strength element not found');
-            }
-            
-            if (agilityEl) {
-                agilityEl.textContent = gameData.opponent.stats.agility;
-                console.log(`✅ Updated agility: ${gameData.opponent.stats.agility}`);
-            } else {
-                console.log('❌ Agility element not found');
-            }
-            
-            if (intuitionEl) {
-                intuitionEl.textContent = gameData.opponent.stats.intuition;
-                console.log(`✅ Updated intuition: ${gameData.opponent.stats.intuition}`);
-            } else {
-                console.log('❌ Intuition element not found');
-            }
-            
-            if (enduranceEl) {
-                enduranceEl.textContent = gameData.opponent.stats.endurance;
-                console.log(`✅ Updated endurance: ${gameData.opponent.stats.endurance}`);
-            } else {
-                console.log('❌ Endurance element not found');
-            }
-            
-            console.log('📊 Opponent stats update completed');
-            
-            // Verify the update worked
-            setTimeout(() => {
-                console.log('🔍 Verification - Current displayed values:');
-                if (strengthEl) console.log(`STRENGTH: ${strengthEl.textContent}`);
-                if (agilityEl) console.log(`AGILITY: ${agilityEl.textContent}`);
-                if (intuitionEl) console.log(`INTUITION: ${intuitionEl.textContent}`);
-                if (enduranceEl) console.log(`ENDURANCE: ${enduranceEl.textContent}`);
-            }, 100);
-        }
-    }, 1000); // Delay to ensure elements are loaded
+    }, 100);
 }
 
+// CHANGED: This function is updated to populate the new in-game stats blocks.
 function updateGameState(state) {
     gameState = state;
     console.log('🎮 Game state updated:', state);
-    
-    // Debug: Check what health values are being received
-    console.log('🔍 Health Debug:');
-    Object.keys(state.players).forEach(playerId => {
-        const player = state.players[playerId];
-        console.log(`Player ${player.username}: Health ${player.health}/${player.maxHealth}, Energy ${player.energy}/${player.maxEnergy}`);
-    });
+    console.log('🔍 MyPlayerId:', myPlayerId);
+    console.log('🔍 OpponentId:', opponentId);
+    console.log('🔍 Available players in state:', Object.keys(state.players));
     
     const player1Data = state.players[myPlayerId];
     const player2Data = state.players[opponentId];
     
+    console.log('👤 Player 1 data:', player1Data);
+    console.log('👤 Player 2 data:', player2Data);
+    
+    // Update Player 1 panel
     if (player1Data) {
-        console.log(`📊 Player1 Health Bar: ${player1Data.health}/${player1Data.maxHealth} = ${(player1Data.health / player1Data.maxHealth) * 100}%`);
-        
         player1Health.style.width = `${(player1Data.health / player1Data.maxHealth) * 100}%`;
         player1Energy.style.width = `${(player1Data.energy / player1Data.maxEnergy) * 100}%`;
         player1Health.parentElement.title = `Health: ${player1Data.health}/${player1Data.maxHealth}`;
         player1Energy.parentElement.title = `Energy: ${player1Data.energy}/${player1Data.maxEnergy}`;
         
+        console.log('⚔️ Player 1 equipment:', player1Data.equipment);
         updateEquipmentDisplay('player1', player1Data.equipment);
         
-        // Update player 1 character display if needed
-        if (player1Data.characterClass && player1Data.characterClass !== 'unselected') {
-            const currentSrc = player1Avatar.src;
-            const expectedSrc = getCharacterAvatar(player1Data.characterClass);
-            if (!currentSrc.includes(expectedSrc)) {
-                player1Avatar.src = expectedSrc;
-                const player1Container = player1Avatar.closest('.player');
-                if (player1Container) {
-                    player1Container.classList.add(player1Data.characterClass);
-                }
-            }
+        // Update Player 1 Stats
+        if (player1Data.stats) {
+            const player1StrengthEl = document.getElementById('player1-strength-value');
+            const player1AgilityEl = document.getElementById('player1-agility-value');
+            const player1IntuitionEl = document.getElementById('player1-intuition-value');
+            const player1EnduranceEl = document.getElementById('player1-endurance-value');
+            
+            if (player1StrengthEl) player1StrengthEl.textContent = player1Data.stats.strength;
+            if (player1AgilityEl) player1AgilityEl.textContent = player1Data.stats.agility;
+            if (player1IntuitionEl) player1IntuitionEl.textContent = player1Data.stats.intuition;
+            if (player1EnduranceEl) player1EnduranceEl.textContent = player1Data.stats.endurance;
         }
+    } else {
+        console.warn('❌ Player 1 data not found!');
     }
     
+    // Update Player 2 panel
     if (player2Data) {
-        console.log(`📊 Player2 Health Bar: ${player2Data.health}/${player2Data.maxHealth} = ${(player2Data.health / player2Data.maxHealth) * 100}%`);
-        
         player2Health.style.width = `${(player2Data.health / player2Data.maxHealth) * 100}%`;
         player2Energy.style.width = `${(player2Data.energy / player2Data.maxEnergy) * 100}%`;
         player2Health.parentElement.title = `Health: ${player2Data.health}/${player2Data.maxHealth}`;
         player2Energy.parentElement.title = `Energy: ${player2Data.energy}/${player2Data.maxEnergy}`;
         
+        console.log('⚔️ Player 2 equipment:', player2Data.equipment);
         updateEquipmentDisplay('player2', player2Data.equipment);
+
+        // Update Player 2 Stats
+        if (player2Data.stats) {
+            const player2StrengthEl = document.getElementById('player2-strength-value');
+            const player2AgilityEl = document.getElementById('player2-agility-value');
+            const player2IntuitionEl = document.getElementById('player2-intuition-value');
+            const player2EnduranceEl = document.getElementById('player2-endurance-value');
+            
+            if (player2StrengthEl) player2StrengthEl.textContent = player2Data.stats.strength;
+            if (player2AgilityEl) player2AgilityEl.textContent = player2Data.stats.agility;
+            if (player2IntuitionEl) player2IntuitionEl.textContent = player2Data.stats.intuition;
+            if (player2EnduranceEl) player2EnduranceEl.textContent = player2Data.stats.endurance;
+        }
+    } else {
+        console.warn('❌ Player 2 data not found!');
+        console.log('🔍 Attempting to find Player 2 data by elimination...');
         
-        // Update player 2 character display if needed
-        if (player2Data.characterClass && player2Data.characterClass !== 'unselected') {
-            const currentSrc = player2Avatar.src;
-            const expectedSrc = getCharacterAvatar(player2Data.characterClass);
-            if (!currentSrc.includes(expectedSrc)) {
-                player2Avatar.src = expectedSrc;
-                const player2Container = player2Avatar.closest('.player');
-                if (player2Container) {
-                    player2Container.classList.add(player2Data.characterClass);
+        // Try to find the opponent by process of elimination
+        const allPlayerIds = Object.keys(state.players);
+        const alternativeOpponentId = allPlayerIds.find(id => id !== myPlayerId);
+        
+        if (alternativeOpponentId) {
+            console.log('🎯 Found alternative opponent ID:', alternativeOpponentId);
+            const alternativeOpponentData = state.players[alternativeOpponentId];
+            console.log('👤 Alternative opponent data:', alternativeOpponentData);
+            
+            if (alternativeOpponentData) {
+                // Update opponentId for future use
+                opponentId = alternativeOpponentId;
+                
+                // Update Player 2 panel with alternative data
+                player2Health.style.width = `${(alternativeOpponentData.health / alternativeOpponentData.maxHealth) * 100}%`;
+                player2Energy.style.width = `${(alternativeOpponentData.energy / alternativeOpponentData.maxEnergy) * 100}%`;
+                player2Health.parentElement.title = `Health: ${alternativeOpponentData.health}/${alternativeOpponentData.maxHealth}`;
+                player2Energy.parentElement.title = `Energy: ${alternativeOpponentData.energy}/${alternativeOpponentData.maxEnergy}`;
+                
+                console.log('⚔️ Alternative Player 2 equipment:', alternativeOpponentData.equipment);
+                updateEquipmentDisplay('player2', alternativeOpponentData.equipment);
+
+                // Update Player 2 Stats
+                if (alternativeOpponentData.stats) {
+                    const player2StrengthEl = document.getElementById('player2-strength-value');
+                    const player2AgilityEl = document.getElementById('player2-agility-value');
+                    const player2IntuitionEl = document.getElementById('player2-intuition-value');
+                    const player2EnduranceEl = document.getElementById('player2-endurance-value');
+                    
+                    if (player2StrengthEl) player2StrengthEl.textContent = alternativeOpponentData.stats.strength;
+                    if (player2AgilityEl) player2AgilityEl.textContent = alternativeOpponentData.stats.agility;
+                    if (player2IntuitionEl) player2IntuitionEl.textContent = alternativeOpponentData.stats.intuition;
+                    if (player2EnduranceEl) player2EnduranceEl.textContent = alternativeOpponentData.stats.endurance;
                 }
             }
         }
@@ -1255,20 +1236,181 @@ function updateGameState(state) {
     }
 }
 
+// Add fallback images constant at the top of game.js (if not already present)
+const FALLBACK_IMAGES = {
+    weapon: 'images/slot-sword.svg',
+    armor: 'images/slot-armor.svg',
+    shield: 'images/slot-shield.svg',
+    helmet: 'images/slot-helmet.svg',
+    boots: 'images/slot-boots.svg',
+    gloves: 'images/slot-gloves.svg',
+    amulet: 'images/slot-amulet.svg',
+    ring: 'images/slot-ring.svg'
+};
+
+// Enhanced updateEquipmentDisplay function that properly handles item images
 function updateEquipmentDisplay(playerPrefix, equipment) {
-    if (!equipment) return;
+    console.log(`🔄 updateEquipmentDisplay called for ${playerPrefix}:`, equipment);
     
-    const weaponElement = document.getElementById(`${playerPrefix}-weapon-name`);
-    const armorElement = document.getElementById(`${playerPrefix}-armor-name`);
-    const shieldElement = document.getElementById(`${playerPrefix}-shield-name`);
-    const helmetElement = document.getElementById(`${playerPrefix}-helmet-name`);
+    if (!equipment) {
+        console.warn(`❌ No equipment data provided for ${playerPrefix}`);
+        return;
+    }
     
-    if (weaponElement) weaponElement.textContent = equipment.weapon ? equipment.weapon.name : 'None';
-    if (armorElement) armorElement.textContent = equipment.armor ? equipment.armor.name : 'None';
-    if (shieldElement) shieldElement.textContent = equipment.shield ? equipment.shield.name : 'None';
-    if (helmetElement) helmetElement.textContent = equipment.helmet ? equipment.helmet.name : 'None';
+    const slotTypes = ['weapon', 'armor', 'shield', 'helmet', 'boots', 'gloves', 'ring', 'amulet'];
+    
+    slotTypes.forEach(slotType => {
+        // Find the equipment slot element
+        const slotElement = document.querySelector(`.${playerPrefix}-panel .${slotType}-slot`);
+        if (!slotElement) {
+            console.warn(`Equipment slot not found: .${playerPrefix}-panel .${slotType}-slot`);
+            return;
+        }
+        
+        const slotIcon = slotElement.querySelector('.slot-icon');
+        const itemNameElement = slotElement.querySelector('.equipment-name');
+        
+        if (!slotIcon || !itemNameElement) {
+            console.warn(`Missing slot elements for ${playerPrefix} ${slotType}`);
+            return;
+        }
+        
+        // Get the equipped item for this slot
+        const equippedItem = equipment[slotType];
+        console.log(`🔍 ${playerPrefix} ${slotType}:`, equippedItem);
+        
+        // Reset classes first
+        slotElement.classList.remove('equipped', 'common', 'uncommon', 'rare', 'epic', 'legendary');
+        
+        if (equippedItem) {
+            // Item is equipped, update UI
+            itemNameElement.textContent = equippedItem.name;
+            slotElement.classList.add('equipped');
+            
+            // Add rarity class for styling
+            if (equippedItem.rarity) {
+                slotElement.classList.add(equippedItem.rarity);
+            }
+            
+            // Create tooltip with item stats
+            const statText = equippedItem.damage ? `+${equippedItem.damage} Damage` : 
+                           equippedItem.defense ? `+${equippedItem.defense} Defense` : '';
+            slotElement.title = `${equippedItem.name}\n${equippedItem.description || ''}\n${statText}`;
+            
+            // Set the item image with fallback
+            if (equippedItem.image) {
+                slotIcon.src = equippedItem.image;
+                slotIcon.onerror = () => {
+                    console.warn(`Failed to load item image: ${equippedItem.image}, using fallback`);
+                    slotIcon.src = FALLBACK_IMAGES[slotType] || 'images/slot-default.svg';
+                };
+            } else {
+                slotIcon.src = FALLBACK_IMAGES[slotType] || 'images/slot-default.svg';
+            }
+            
+            console.log(`✅ Updated ${playerPrefix} ${slotType} slot with ${equippedItem.name}`);
+            
+        } else {
+            // No item equipped, reset to placeholder
+            slotIcon.src = FALLBACK_IMAGES[slotType] || 'images/slot-default.svg';
+            slotIcon.onerror = null; // Clear previous error handler
+            slotIcon.alt = `${slotType} slot`;
+            itemNameElement.textContent = 'None';
+            slotElement.title = `${slotType.charAt(0).toUpperCase() + slotType.slice(1)} Slot`;
+            console.log(`🔄 Reset ${playerPrefix} ${slotType} slot to default`);
+        }
+    });
 }
 
+// Debug function to manually inspect game state
+function debugGameState() {
+    console.log('🔍 === GAME STATE DEBUG ===');
+    console.log('Current Game ID:', currentGameId);
+    console.log('My Player ID:', myPlayerId);
+    console.log('Opponent ID:', opponentId);
+    console.log('Game State:', gameState);
+    
+    if (gameState && gameState.players) {
+        console.log('Available Players:', Object.keys(gameState.players));
+        Object.entries(gameState.players).forEach(([playerId, playerData]) => {
+            console.log(`Player ${playerId}:`, {
+                health: playerData.health,
+                equipment: playerData.equipment,
+                stats: playerData.stats
+            });
+        });
+    }
+}
+
+// Make debug function available globally
+window.debugGameState = debugGameState;
+
+// Enhanced updateGameState function to ensure equipment display is updated
+function updateGameState(state) {
+    gameState = state;
+    console.log('🎮 Game state updated:', state);
+    
+    const player1Data = state.players[myPlayerId];
+    const player2Data = state.players[opponentId];
+    
+    // Update Player 1 panel
+    if (player1Data) {
+        player1Health.style.width = `${(player1Data.health / player1Data.maxHealth) * 100}%`;
+        player1Energy.style.width = `${(player1Data.energy / player1Data.maxEnergy) * 100}%`;
+        player1Health.parentElement.title = `Health: ${player1Data.health}/${player1Data.maxHealth}`;
+        player1Energy.parentElement.title = `Energy: ${player1Data.energy}/${player1Data.maxEnergy}`;
+        
+        // Update equipment display with enhanced function
+        updateEquipmentDisplay('player1', player1Data.equipment);
+        
+        // Update Player 1 Stats
+        if (player1Data.stats) {
+            const player1StrengthEl = document.getElementById('player1-strength-value');
+            const player1AgilityEl = document.getElementById('player1-agility-value');
+            const player1IntuitionEl = document.getElementById('player1-intuition-value');
+            const player1EnduranceEl = document.getElementById('player1-endurance-value');
+            
+            if (player1StrengthEl) player1StrengthEl.textContent = player1Data.stats.strength;
+            if (player1AgilityEl) player1AgilityEl.textContent = player1Data.stats.agility;
+            if (player1IntuitionEl) player1IntuitionEl.textContent = player1Data.stats.intuition;
+            if (player1EnduranceEl) player1EnduranceEl.textContent = player1Data.stats.endurance;
+        }
+    }
+    
+    // Update Player 2 panel
+    if (player2Data) {
+        player2Health.style.width = `${(player2Data.health / player2Data.maxHealth) * 100}%`;
+        player2Energy.style.width = `${(player2Data.energy / player2Data.maxEnergy) * 100}%`;
+        player2Health.parentElement.title = `Health: ${player2Data.health}/${player2Data.maxHealth}`;
+        player2Energy.parentElement.title = `Energy: ${player2Data.energy}/${player2Data.maxEnergy}`;
+        
+        // Update equipment display with enhanced function
+        updateEquipmentDisplay('player2', player2Data.equipment);
+
+        // Update Player 2 Stats
+        if (player2Data.stats) {
+            const player2StrengthEl = document.getElementById('player2-strength-value');
+            const player2AgilityEl = document.getElementById('player2-agility-value');
+            const player2IntuitionEl = document.getElementById('player2-intuition-value');
+            const player2EnduranceEl = document.getElementById('player2-endurance-value');
+            
+            if (player2StrengthEl) player2StrengthEl.textContent = player2Data.stats.strength;
+            if (player2AgilityEl) player2AgilityEl.textContent = player2Data.stats.agility;
+            if (player2IntuitionEl) player2IntuitionEl.textContent = player2Data.stats.intuition;
+            if (player2EnduranceEl) player2EnduranceEl.textContent = player2Data.stats.endurance;
+        }
+    }
+    
+    if (state.waitingForPlayers) {
+        gameMessage.textContent = 'Waiting for opponent...';
+        combatControls.style.display = 'none';
+    } else if (state.currentRound && !waitingForOpponent) {
+        gameMessage.textContent = 'Select an attack and block area (auto-submits when both selected)';
+        combatControls.style.display = 'flex';
+    } else if (waitingForOpponent) {
+        gameMessage.textContent = 'Waiting for opponent\'s move...';
+    }
+}
 function makeMove(attackArea, blockArea) {
     if (!currentGameId || waitingForOpponent || roundInProgress) {
         console.log('Cannot make move:', { currentGameId, waitingForOpponent, roundInProgress });
@@ -1298,14 +1440,6 @@ function addLogEntry(text, type = 'info') {
 }
 
 function showCombatResult(data) {
-    // Debug: Log the game state to see actual health values
-    console.log('🔍 Combat Result Debug:');
-    console.log('Game State Players:', gameState.players);
-    Object.keys(gameState.players).forEach(playerId => {
-        const player = gameState.players[playerId];
-        console.log(`Player ${player.username}: Health ${player.health}/${player.maxHealth}`);
-    });
-    
     let resultHTML = '<div class="combat-result">';
     resultHTML += `<h3 class="combat-round">Round ${data.round} Results</h3>`;
     
@@ -1356,18 +1490,11 @@ function showCombatResult(data) {
     Object.keys(gameState.players).forEach(playerId => {
         const player = gameState.players[playerId];
         const isMe = playerId === myPlayerId;
-        
-        // Debug: Log each player's health display
-        console.log(`Health display for ${player.username}: ${player.health}/${player.maxHealth}`);
-        
         resultHTML += `<div>${isMe ? 'Your' : player.username + "'s"} Health: ${player.health}/${player.maxHealth}</div>`;
     });
     resultHTML += '</div>';
     
     resultHTML += '</div>';
-    
-    // Debug: Log the final HTML to see what's being generated
-    console.log('📄 Generated HTML:', resultHTML);
     
     combatResultContent.innerHTML = resultHTML;
     showModal(combatResultModal);

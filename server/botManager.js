@@ -137,9 +137,12 @@ async handleBotChallenge(challengerId, botSocketId, challengeData) {
     const bot = this.activeBots.get(botSocketId);
     const gameId = `game_${Date.now()}_${challengerId.substring(0, 5)}_${botSocketId.substring(0, 5)}`;
     
-    // Get bot stats
+    // Get bot stats and inventory
     const botStats = await Stats.findOne({ userId: bot.userId });
-    
+    // --- CHANGE START ---
+    const botInventory = await Inventory.findOne({ userId: bot.userId });
+    // --- CHANGE END ---
+
     // Send game start data to challenger
     this.io.to(challengerId).emit('challengeAccepted', {
       gameId,
@@ -154,7 +157,10 @@ async handleBotChallenge(challengerId, botSocketId, challengeData) {
           agility: botStats.agility,
           intuition: botStats.intuition,
           endurance: botStats.endurance
-        } : { strength: 10, agility: 10, intuition: 10, endurance: 10 }
+        } : { strength: 10, agility: 10, intuition: 10, endurance: 10 },
+        // --- CHANGE START ---
+        equipment: botInventory ? botInventory.equipped : {} // ADDED THIS LINE
+        // --- CHANGE END ---
       }
     });
     

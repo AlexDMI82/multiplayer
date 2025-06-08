@@ -1364,7 +1364,6 @@ socket.on('getShopItems', () => {
     const { challengeId, accepted, challengerId } = data;
     console.log(`Challenge response from ${socket.user.username}: ${accepted ? 'accepted' : 'declined'} for challenge ${challengeId}`);
     
-    // Clean up the active challenge
     const challengeKey = `${challengerId}-${socket.id}`;
     activeChallenges.delete(challengeKey);
     
@@ -1375,32 +1374,16 @@ socket.on('getShopItems', () => {
         return;
     }
     
-    if (accepted) {
+   if (accepted) {
         const gameId = `game_${Date.now()}_${socket.id.substring(0, 5)}_${challengerId.substring(0, 5)}`;
         
-        // Get full stats for both players
+        // Get full stats and inventory for both players
         const challengerStats = await Stats.findOne({ userId: challenger.userId });
+        const challengerInventory = await Inventory.findOne({ userId: challenger.userId });
         const accepterStats = await Stats.findOne({ userId: socket.user._id });
-        
-        // Send challenger's data to accepter (with full stats)
-        const gameDataForAccepter = {
-            gameId,
-            opponent: {
-                id: challengerId,
-                userId: challenger.userId,
-                username: challenger.username,
-                avatar: challenger.avatar,
-                characterClass: challenger.characterClass || 'unselected',
-                stats: challengerStats ? {
-                    strength: challengerStats.strength,
-                    agility: challengerStats.agility,
-                    intuition: challengerStats.intuition,
-                    endurance: challengerStats.endurance
-                } : { strength: 10, agility: 10, intuition: 10, endurance: 10 }
-            }
-        };
-        
-        // Send accepter's data to challenger (with full stats)
+        const accepterInventory = await Inventory.findOne({ userId: socket.user._id });
+
+       // This payload is for the CHALLENGER. It must contain the ACCEPTER's info as the opponent.
         const gameDataForChallenger = {
             gameId,
             opponent: {
@@ -1414,11 +1397,32 @@ socket.on('getShopItems', () => {
                     agility: accepterStats.agility,
                     intuition: accepterStats.intuition,
                     endurance: accepterStats.endurance
-                } : { strength: 10, agility: 10, intuition: 10, endurance: 10 }
+                } : { strength: 10, agility: 10, intuition: 10, endurance: 10 },
+                equipment: accepterInventory ? accepterInventory.equipped : {}
+            }
+        };
+
+       // This payload is for the ACCEPTER. It must contain the CHALLENGER's info as the opponent.
+        const gameDataForAccepter = {
+            gameId,
+            opponent: {
+                id: challengerId,
+                userId: challenger.userId,
+                username: challenger.username,
+                avatar: challenger.avatar,
+                characterClass: challenger.characterClass || 'unselected',
+                stats: challengerStats ? {
+                    strength: challengerStats.strength,
+                    agility: challengerStats.agility,
+                    intuition: challengerStats.intuition,
+                    endurance: challengerStats.endurance
+                } : { strength: 10, agility: 10, intuition: 10, endurance: 10 },
+                equipment: challengerInventory ? challengerInventory.equipped : {}
             }
         };
         
-        io.to(challengerId).emit('challengeAccepted', gameDataForChallenger);
+         io.to(challengerId).emit('challengeAccepted', gameDataForChallenger); 
+        // Send the challenger's data TO the accepter
         socket.emit('challengeAccepted', gameDataForAccepter);
         
         console.log(`Game session created: ${gameId} between ${challenger.username} and ${socket.user.username}`);

@@ -1,4 +1,3 @@
-// Enhanced Character Profile JavaScript with Image Support
 // Connect to Socket.io server
 const socket = io({
     autoConnect: false // Prevent auto-connection, we'll connect after auth
@@ -157,9 +156,6 @@ function initialize() {
         
         // Load initial user data and apply character class
         loadUserData();
-        
-        // Initialize image fallback system
-        initializeImageFallbacks();
         
         console.log('✅ Character profile initialized successfully');
     } catch (error) {
@@ -329,39 +325,6 @@ function highlightCompatibleItems(targetSlotType) {
             item.classList.remove('compatible-item');
         }
     });
-}
-
-function initializeImageFallbacks() {
-    // Create enhanced Image constructor with fallback support
-    const originalImage = window.Image;
-    window.Image = function() {
-        const img = new originalImage();
-        const originalOnError = img.onerror;
-        
-        img.onerror = function() {
-            console.warn('Image failed to load, using placeholder:', this.src);
-            // Create a simple placeholder data URL
-            const canvas = document.createElement('canvas');
-            canvas.width = 64;
-            canvas.height = 64;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#333';
-            ctx.fillRect(0, 0, 64, 64);
-            ctx.fillStyle = '#666';
-            ctx.fillRect(8, 8, 48, 48);
-            ctx.fillStyle = '#999';
-            ctx.font = '12px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('ITEM', 32, 35);
-            
-            this.src = canvas.toDataURL();
-            if (originalOnError) originalOnError.call(this);
-        };
-        
-        return img;
-    };
-    
-    console.log('✅ Image fallback system initialized');
 }
 
 function logout() {
@@ -544,11 +507,12 @@ function increasePlayerStat(stat) {
     updateStatsUI();
 }
 
-// Enhanced equipment slot display function
+// --- CHANGED: This entire function is replaced with a more reliable version ---
+// This new version avoids the unreliable `new Image()` preloader pattern.
 function updateEquipmentSlotDisplay(slotType, equippedItem) {
-    const slotElement = document.querySelector(`.${slotType}-slot`);
+    const slotElement = document.querySelector(`#character-overview .${slotType}-slot`);
     if (!slotElement) {
-        console.warn(`Equipment slot not found: ${slotType}-slot`);
+        console.warn(`Equipment slot not found in #character-overview: .${slotType}-slot`);
         return;
     }
     
@@ -560,72 +524,43 @@ function updateEquipmentSlotDisplay(slotType, equippedItem) {
         return;
     }
     
+    // Reset classes first
+    slotElement.classList.remove('equipped', 'common', 'uncommon', 'rare', 'epic', 'legendary');
+
     if (equippedItem) {
-        // Show the actual item image with fallback
-        if (equippedItem.image) {
-            const img = new Image();
-            
-            img.onload = function() {
-                slotIcon.src = equippedItem.image;
-                slotIcon.alt = equippedItem.name;
-                itemNameElement.textContent = equippedItem.name;
-                
-                // Add equipped styling
-                slotElement.classList.add('equipped');
-                
-                // Add rarity class for styling
-                if (equippedItem.rarity) {
-                    slotElement.classList.remove('common', 'uncommon', 'rare', 'epic', 'legendary');
-                    slotElement.classList.add(equippedItem.rarity);
-                }
-                
-                // Add hover tooltip with item stats
-                const statText = equippedItem.damage ? `+${equippedItem.damage} Damage` : 
-                                equippedItem.defense ? `+${equippedItem.defense} Defense` : '';
-                slotElement.title = `${equippedItem.name}\n${equippedItem.description || ''}\n${statText}`;
-                
-                console.log(`✅ Updated ${slotType} slot with ${equippedItem.name}`);
-            };
-            
-            img.onerror = function() {
-                console.warn(`⚠️ Failed to load image for ${equippedItem.name}, using fallback`);
-                slotIcon.src = FALLBACK_IMAGES[slotType] || 'images/slot-default.svg';
-                slotIcon.alt = equippedItem.name;
-                itemNameElement.textContent = equippedItem.name;
-                
-                // Add equipped styling
-                slotElement.classList.add('equipped');
-                
-                if (equippedItem.rarity) {
-                    slotElement.classList.remove('common', 'uncommon', 'rare', 'epic', 'legendary');
-                    slotElement.classList.add(equippedItem.rarity);
-                }
-            };
-            
-            img.src = equippedItem.image;
-        } else {
-            // No image URL, use fallback immediately
-            slotIcon.src = FALLBACK_IMAGES[slotType] || 'images/slot-default.svg';
-            slotIcon.alt = equippedItem.name;
-            itemNameElement.textContent = equippedItem.name;
-            slotElement.classList.add('equipped');
-            
-            if (equippedItem.rarity) {
-                slotElement.classList.remove('common', 'uncommon', 'rare', 'epic', 'legendary');
-                slotElement.classList.add(equippedItem.rarity);
-            }
+        // Item is equipped, update UI
+        itemNameElement.textContent = equippedItem.name;
+        slotElement.classList.add('equipped');
+        if (equippedItem.rarity) {
+            slotElement.classList.add(equippedItem.rarity);
         }
+
+        const statText = equippedItem.damage ? `+${equippedItem.damage} Damage` : 
+                       equippedItem.defense ? `+${equippedItem.defense} Defense` : '';
+        slotElement.title = `${equippedItem.name}\n${equippedItem.description || ''}\n${statText}`;
+
+        // Set the image source directly and add a fallback
+        if (equippedItem.image) {
+            slotIcon.src = equippedItem.image;
+            slotIcon.onerror = () => {
+                console.warn(`Failed to load item image: ${equippedItem.image}, using fallback.`);
+                slotIcon.src = FALLBACK_IMAGES[slotType] || 'images/slot-default.svg';
+            };
+        } else {
+            slotIcon.src = FALLBACK_IMAGES[slotType] || 'images/slot-default.svg';
+        }
+        console.log(`✅ Updated ${slotType} slot with ${equippedItem.name}`);
+        
     } else {
-        // No item equipped, show placeholder
+        // No item equipped, reset to placeholder
         slotIcon.src = FALLBACK_IMAGES[slotType] || 'images/slot-default.svg';
+        slotIcon.onerror = null; // Clear previous error handler
         slotIcon.alt = `${slotType} slot`;
         itemNameElement.textContent = 'None';
-        
-        // Remove equipped styling
-        slotElement.classList.remove('equipped', 'common', 'uncommon', 'rare', 'epic', 'legendary');
         slotElement.title = `${slotType.charAt(0).toUpperCase() + slotType.slice(1)} Slot`;
     }
 }
+// --- END OF CHANGED FUNCTION ---
 
 function updateInventoryUI() {
     if (!playerInventory) return;
@@ -693,31 +628,12 @@ function updateEquipmentDisplay() {
     
     console.log('🔄 Updating equipment display with inventory:', playerInventory);
     
-    // Update all equipment slots
     const equipmentSlots = ['weapon', 'armor', 'shield', 'helmet', 'boots', 'gloves', 'amulet', 'ring'];
     
     equipmentSlots.forEach(slotType => {
         const equippedItem = playerInventory.equipped[slotType];
-        
-        // Update the slot visual display
         updateEquipmentSlotDisplay(slotType, equippedItem);
-        
-        // Update text elements for backward compatibility
-        const nameElement = document.getElementById(`${slotType}-name`);
-        if (nameElement) {
-            nameElement.textContent = equippedItem ? equippedItem.name : 'None';
-        }
     });
-    
-    // Update equipment quality classes
-    updateEquipmentQualityClass('weapon', playerInventory.equipped.weapon);
-    updateEquipmentQualityClass('armor', playerInventory.equipped.armor);
-    updateEquipmentQualityClass('shield', playerInventory.equipped.shield);
-    updateEquipmentQualityClass('helmet', playerInventory.equipped.helmet);
-    updateEquipmentQualityClass('boots', playerInventory.equipped.boots);
-    updateEquipmentQualityClass('gloves', playerInventory.equipped.gloves);
-    updateEquipmentQualityClass('amulet', playerInventory.equipped.amulet);
-    updateEquipmentQualityClass('ring', playerInventory.equipped.ring);
     
     // Update combat stats since equipment affects them
     updateStatsUI();
@@ -725,57 +641,8 @@ function updateEquipmentDisplay() {
     console.log('✅ Equipment display updated successfully');
 }
 
-function updateEquipmentQualityClass(type, item) {
-    let slotElement;
-    
-    switch (type) {
-        case 'weapon':
-            slotElement = document.querySelector('.weapon-slot');
-            break;
-        case 'armor':
-            slotElement = document.querySelector('.armor-slot');
-            break;
-        case 'shield':
-            slotElement = document.querySelector('.shield-slot');
-            break;
-        case 'helmet':
-            slotElement = document.querySelector('.helmet-slot');
-            break;
-        case 'boots':
-            slotElement = document.querySelector('.boots-slot');
-            break;
-        case 'gloves':
-            slotElement = document.querySelector('.gloves-slot');
-            break;
-        case 'amulet':
-            slotElement = document.querySelector('.amulet-slot');
-            break;
-        case 'ring':
-            slotElement = document.querySelector('.ring-slot');
-            break;
-    }
-    
-    if (!slotElement) return;
-    
-    // Reset classes
-    slotElement.classList.remove('equipped', 'common', 'uncommon', 'rare', 'epic', 'legendary');
-    
-    if (!item) return;
-    
-    // Add equipped class
-    slotElement.classList.add('equipped');
-    
-    // Determine quality class based on stats
-    let quality = 'common';
-    const statValue = type === 'weapon' ? (item.damage || 0) : (item.defense || 0);
-    
-    if (statValue >= 15) quality = 'legendary';
-    else if (statValue >= 10) quality = 'epic';
-    else if (statValue >= 8) quality = 'rare';
-    else if (statValue >= 5) quality = 'uncommon';
-    
-    slotElement.classList.add(quality);
-}
+// This function is no longer needed as the logic is now inside updateEquipmentSlotDisplay
+// function updateEquipmentQualityClass(type, item) { ... }
 
 function equipItem(itemId, itemType) {
     socket.emit('equipItem', { itemId, itemType });
@@ -789,7 +656,6 @@ function animateEquipItem(slotElement) {
 }
 
 function showLevelUpNotification(level, bonusPoints) {
-    // Create notification element
     const notification = document.createElement('div');
     notification.classList.add('level-up-notification');
     notification.innerHTML = `
@@ -797,11 +663,7 @@ function showLevelUpNotification(level, bonusPoints) {
         <p>You are now level ${level}!</p>
         <p>You received ${bonusPoints} bonus stat points!</p>
     `;
-    
-    // Add to body
     document.body.appendChild(notification);
-    
-    // Remove after animation
     setTimeout(() => {
         notification.classList.add('fade-out');
         setTimeout(() => {
@@ -810,22 +672,19 @@ function showLevelUpNotification(level, bonusPoints) {
     }, 3000);
 }
 
-// Helper function to show modal
 function showModal(modal) {
     modal.classList.remove('hidden');
 }
 
-// Helper function to hide modal
 function hideModal(modal) {
     modal.classList.add('hidden');
 }
 
-// Debug functions (useful for troubleshooting)
+// Debug functions
 function debugEquipmentDisplay() {
     console.log('🔍 === EQUIPMENT DISPLAY DEBUG ===');
     console.log('Player Inventory:', playerInventory);
     console.log('Equipment Slots Count:', document.querySelectorAll('.equipment-slot').length);
-    
     if (playerInventory && playerInventory.equipped) {
         Object.entries(playerInventory.equipped).forEach(([slot, item]) => {
             if (item) {
@@ -848,61 +707,45 @@ function forceUpdateEquipmentDisplay() {
     }
 }
 
-// Make debug functions globally available
 window.debugEquipmentDisplay = debugEquipmentDisplay;
 window.forceUpdateEquipmentDisplay = forceUpdateEquipmentDisplay;
 window.updateEquipmentSlotDisplay = updateEquipmentSlotDisplay;
 
-// Compatibility script to adapt the original script to our new layout
+// Compatibility script
 document.addEventListener('DOMContentLoaded', function() {
-    // Helper function to update the displayed values
     function updateDisplayedValues() {
-        // Get values from the original script
         const playerLevel = document.getElementById('player-level').textContent;
         const playerWins = document.getElementById('player-wins').textContent;
         const winsForLevel = document.getElementById('wins-for-level').textContent;
-        
-        // Update the displayed values in our new layout
         const displayLevel = document.getElementById('display-level');
         const displayWins = document.getElementById('display-wins');
         const displayWinsNeeded = document.getElementById('display-wins-needed');
-        
         if (displayLevel) displayLevel.textContent = playerLevel;
         if (displayWins) displayWins.textContent = playerWins;
         if (displayWinsNeeded) displayWinsNeeded.textContent = winsForLevel;
     }
-    
-    // Update character name in header
     function updateHeaderName() {
         const characterName = document.getElementById('character-name').textContent;
         if (characterName && characterName !== 'Player Name') {
             document.getElementById('header-player-name').textContent = characterName;
         }
     }
-    
-    // Update character class styling
     function updateCharacterClass() {
         try {
             const userStr = localStorage.getItem('user');
             if (userStr) {
                 const userData = JSON.parse(userStr);
                 if (userData.characterClass) {
-                    // Add character class to the overview div for styling
                     const overview = document.getElementById('character-overview');
-                    
-                    // Clear existing classes and add the character class
                     const classes = ['shadowsteel', 'ironbound', 'flameheart', 'venomfang'];
                     classes.forEach(cls => overview.classList.remove(cls));
                     overview.classList.add(userData.characterClass);
-                    
-                    // Set class name and subclass in badge
                     const classMap = {
                         'shadowsteel': 'Shadow Warrior',
                         'ironbound': 'Metal Berserker',
                         'flameheart': 'Fire Warrior',
                         'venomfang': 'Poison Assassin'
                     };
-                    
                     document.getElementById('character-class').textContent = 
                         userData.characterClass.charAt(0).toUpperCase() + userData.characterClass.slice(1);
                     document.getElementById('character-subclass').textContent = 
@@ -913,37 +756,22 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error updating character class:', e);
         }
     }
-    
-    // Create a MutationObserver to watch for changes to the player-level element
-    const levelObserver = new MutationObserver(function(mutations) {
-        updateDisplayedValues();
-    });
-    
-    // Create a MutationObserver to watch for changes to the character-name element
-    const nameObserver = new MutationObserver(function(mutations) {
-        updateHeaderName();
-    });
-    
-    // Start observing
+    const levelObserver = new MutationObserver(updateDisplayedValues);
+    const nameObserver = new MutationObserver(updateHeaderName);
     const playerLevelEl = document.getElementById('player-level');
     if (playerLevelEl) {
         levelObserver.observe(playerLevelEl, { childList: true });
     }
-    
     const characterNameEl = document.getElementById('character-name');
     if (characterNameEl) {
         nameObserver.observe(characterNameEl, { childList: true });
     }
-    
-    // Run these functions once on load
-    setTimeout(function() {
+    setTimeout(() => {
         updateDisplayedValues();
         updateHeaderName();
         updateCharacterClass();
     }, 500);
-    
-    // Periodically update values in case the observers miss something
-    setInterval(function() {
+    setInterval(() => {
         updateDisplayedValues();
         updateHeaderName();
     }, 2000);

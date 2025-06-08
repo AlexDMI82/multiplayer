@@ -295,267 +295,138 @@ h3 {
     text-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
 }
 
-/* Equipment Grid */
-.equipment-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(5, auto);
-    gap: 10px;
-    width: 100%;
-}
-
-.character-avatar-container {
-    grid-column: 2;
-    grid-row: 2 / span 2;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.character-avatar {
-    width: 120px;
-    height: 120px;
-    object-fit: cover;
-    border: 2px solid #666;
-    border-radius: 8px;
-    background-color: #000;
-}
-
-/* Equipment Slots */
-.equipment-slot {
-    background-color: #333;
-    border: 1px solid #555;
-    border-radius: 4px;
-    width: 60px;
-    height: 60px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+/* Game Character Display - New Layout */
+.game-character-display {
     position: relative;
-    transition: all 0.2s ease;
-    overflow: hidden; /* Hide any overflowing text */
+    width: 100%;
+    height: 350px;
+    margin-bottom: 15px;
+    background-color: #111;
+    border-radius: 8px;
+    border: 2px solid #333;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-.equipment-slot:hover {
-    border-color: #888;
-    background-color: #444;
-    cursor: pointer;
-    transform: translateY(-2px);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+.game-character-display .character-avatar-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-.slot-icon {
-    width: 32px;
-    height: 32px;
-    opacity: 0.6;
+.game-character-display .character-avatar {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 0 10px rgba(77, 121, 255, 0.4));
+}
+
+.game-character-display .equipment-slot {
+    position: absolute;
+    background-color: rgba(40, 40, 40, 0.8);
+    border: 2px solid rgba(100, 100, 120, 0.8);
+    border-radius: 8px;
+    width: 55px;
+    height: 55px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     transition: all 0.3s ease;
-    filter: grayscale(40%);
+    cursor: pointer;
+    overflow: hidden;
 }
 
-.equipment-slot:hover .slot-icon {
-    opacity: 1;
-    filter: grayscale(0);
+.game-character-display .equipment-slot:hover {
+    background-color: rgba(60, 60, 80, 0.9);
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(100, 150, 255, 0.7);
 }
 
-.equipment-name {
+.game-character-display .slot-icon {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+    opacity: 0.8;
+}
+
+.game-character-display .equipment-name {
     position: absolute;
-    bottom: -50px; /* Hide off-screen by default */
-    left: 0;
-    width: 100%;
+    bottom: 2px;
+    left: 2px;
+    right: 2px;
+    font-size: 8px;
+    color: #ddd;
     text-align: center;
-    font-size: 0.8rem;
-    color: #fff;
-    background-color: rgba(0, 0, 0, 0.8);
-    padding: 3px 0;
-    transition: bottom 0.3s ease;
-    z-index: 2;
-    pointer-events: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 2px;
+    padding: 1px;
+    line-height: 1.1;
 }
 
-.equipment-slot:hover .equipment-name {
-    bottom: 0;
-}
+.game-character-display .helmet-slot { top: 10px; left: 10px; }
+.game-character-display .armor-slot { top: 70px; left: 10px; }
+.game-character-display .shield-slot { top: 130px; left: 10px; }
+.game-character-display .boots-slot { top: 190px; left: 10px; }
+.game-character-display .weapon-slot { top: 10px; right: 10px; }
+.game-character-display .amulet-slot { top: 70px; right: 10px; }
+.game-character-display .gloves-slot { top: 130px; right: 10px; }
+.game-character-display .ring-slot { top: 190px; right: 10px; }
 
-/* Make equipped items more visible */
-.equipment-slot.equipped {
-    border-width: 2px;
-    background-color: #3a3a3a;
-}
-
-.equipment-slot.equipped .slot-icon {
-    opacity: 1;
-    filter: grayscale(0) brightness(1.2);
-}
-
-/* Equipment slot quality indicators with better visibility */
-.equipment-slot.equipped::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border-radius: 3px;
-    pointer-events: none;
-    z-index: 1;
-    box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.3);
-}
-
-.equipment-slot.common::after {
-    border: 2px solid #aaaaaa;
-}
-
-.equipment-slot.uncommon::after {
-    border: 2px solid #1eff00;
-}
-
-.equipment-slot.rare::after {
-    border: 2px solid #0070dd;
-}
-
-.equipment-slot.epic::after {
-    border: 2px solid #a335ee;
-}
-
-.equipment-slot.legendary::after {
-    border: 2px solid #ff8000;
-}
-
-/* Equipment slot quality backgrounds for better visibility */
-.equipment-slot.equipped.common {
-    background-color: rgba(170, 170, 170, 0.2);
-}
-
-.equipment-slot.equipped.uncommon {
-    background-color: rgba(30, 255, 0, 0.1);
-}
-
-.equipment-slot.equipped.rare {
-    background-color: rgba(0, 112, 221, 0.1);
-}
-
-.equipment-slot.equipped.epic {
-    background-color: rgba(163, 53, 238, 0.1);
-}
-
-.equipment-slot.equipped.legendary {
-    background-color: rgba(255, 128, 0, 0.1);
-}
-
-/* Equipped item image (when using actual item images) */
-.equipped-item {
-    position: absolute;
-    max-width: 85%;
-    max-height: 85%;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 2;
-}
-
-/* Animated effects for newly equipped items */
-@keyframes equip-glow {
-    0% { box-shadow: 0 0 0px transparent; }
-    50% { box-shadow: 0 0 15px rgba(255, 255, 255, 0.8); }
-    100% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
-}
-
-.equipment-slot.just-equipped {
-    animation: equip-glow 1s ease-out;
-}
-
-.equipment-slot.just-equipped .slot-icon {
-    filter: brightness(1.5);
-}
-
-/* Stats display at bottom of character panel */
-.character-stats {
+/* CHANGED: Added styles for in-game stats block */
+.in-game-stats {
     width: 100%;
-    margin-top: 15px;
-    padding-top: 10px;
+    margin-top: auto; /* Push to the bottom */
+    padding: 10px;
+    background-color: #222;
+    border-radius: 8px;
     border-top: 1px solid #444;
 }
 
-.stats-header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 5px;
-}
-
-.stats-header h3 {
+.in-game-stats .stats-header {
+    color: #fff;
     font-size: 1rem;
-    margin: 0;
-    color: #ccc;
+    margin: 0 0 10px 0;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #444;
+    text-align: center;
 }
 
-.available-points {
-    font-weight: bold;
-    color: #4CAF50;
-}
-
-.stat-row {
+.in-game-stats .stat-row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 5px;
-}
-
-.stat-name {
-    font-size: 0.9rem;
-    color: #aaa;
-    position: relative;
-    cursor: help;
-}
-
-.stat-value {
-    font-weight: bold;
-    color: #fff;
-}
-
-.stat-increase {
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 3px;
-    width: 25px;
-    height: 25px;
-    font-size: 18px;
-    line-height: 0;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.stat-increase:hover {
-    background-color: #45a049;
-}
-
-.stat-increase:disabled {
-    background-color: #555;
-    cursor: not-allowed;
-}
-
-.stat-tooltip {
-    visibility: hidden;
-    position: absolute;
-    left: -10px;
-    bottom: 25px;
-    background-color: rgba(0, 0, 0, 0.9);
-    color: #fff;
-    padding: 5px 10px;
+    margin-bottom: 8px;
+    padding: 5px;
+    background-color: #2a2a2a;
     border-radius: 4px;
-    font-size: 0.8rem;
-    width: 200px;
-    z-index: 100;
-    opacity: 0;
-    transition: opacity 0.3s;
-    pointer-events: none;
-    border: 1px solid #555;
 }
 
-.stat-name:hover .stat-tooltip {
-    visibility: visible;
-    opacity: 1;
+.in-game-stats .stat-name {
+    color: #aaa;
+    font-size: 0.9rem;
 }
+
+.in-game-stats .stat-value {
+    color: #fff;
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.in-game-stats .stat-lock-indicator {
+    display: inline-block;
+    color: #ff9800;
+    font-size: 0.8em;
+    font-style: italic;
+    margin-left: 5px;
+}
+/* END OF CHANGED STYLES */
 
 /* Combat Area */
 .combat-area-container {
@@ -1298,3 +1169,146 @@ h3 {
     font-weight: 500;
 }
 
+
+
+/* Add these styles to styles.css for proper equipment display in battle screen */
+
+/* Enhanced equipment slot styling for battle screen */
+.game-character-display .equipment-slot.equipped {
+    border-color: rgba(100, 255, 100, 0.9);
+    background-color: rgba(50, 70, 50, 0.95);
+    box-shadow: 0 0 15px rgba(100, 255, 100, 0.6);
+    animation: equipPulse 3s ease-in-out infinite;
+}
+
+@keyframes equipPulse {
+    0%, 100% { 
+        box-shadow: 0 0 15px rgba(100, 255, 100, 0.6);
+    }
+    50% { 
+        box-shadow: 0 0 25px rgba(100, 255, 100, 0.8);
+    }
+}
+
+.game-character-display .equipment-slot.equipped .slot-icon {
+    width: 45px;
+    height: 45px;
+    opacity: 1;
+}
+
+.game-character-display .equipment-slot.equipped .equipment-name {
+    color: #90EE90;
+    font-weight: bold;
+    background-color: rgba(0, 80, 0, 0.8);
+}
+
+/* Item rarity colors for battle screen equipment slots */
+.game-character-display .equipment-slot.common {
+    border-color: #9d9d9d;
+}
+
+.game-character-display .equipment-slot.common.equipped {
+    border-color: #bdbdbd;
+    box-shadow: 0 0 10px rgba(157, 157, 157, 0.5);
+}
+
+.game-character-display .equipment-slot.uncommon {
+    border-color: #1eff00;
+}
+
+.game-character-display .equipment-slot.uncommon.equipped {
+    border-color: #1eff00;
+    box-shadow: 0 0 10px rgba(30, 255, 0, 0.6);
+}
+
+.game-character-display .equipment-slot.rare {
+    border-color: #0070dd;
+}
+
+.game-character-display .equipment-slot.rare.equipped {
+    border-color: #0070dd;
+    box-shadow: 0 0 10px rgba(0, 112, 221, 0.6);
+}
+
+.game-character-display .equipment-slot.epic {
+    border-color: #a335ee;
+}
+
+.game-character-display .equipment-slot.epic.equipped {
+    border-color: #a335ee;
+    box-shadow: 0 0 10px rgba(163, 53, 238, 0.6);
+}
+
+.game-character-display .equipment-slot.legendary {
+    border-color: #ff8000;
+    animation: legendary-glow 2s ease-in-out infinite alternate;
+}
+
+.game-character-display .equipment-slot.legendary.equipped {
+    border-color: #ff8000;
+    box-shadow: 0 0 15px rgba(255, 128, 0, 0.8);
+}
+
+@keyframes legendary-glow {
+    0% { box-shadow: 0 0 10px rgba(255, 128, 0, 0.6); }
+    100% { box-shadow: 0 0 25px rgba(255, 128, 0, 1); }
+}
+
+/* Character-specific equipment glow in battle screen */
+.player1-panel .game-character-display .equipment-slot.equipped,
+.player2-panel .game-character-display .equipment-slot.equipped {
+    /* Base equipped styling will be overridden by rarity classes above */
+}
+
+/* Animation for newly equipped items in battle */
+.game-character-display .equipment-slot.just-equipped {
+    animation: equip-flash 1s ease;
+}
+
+@keyframes equip-flash {
+    0% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
+    25% { box-shadow: 0 0 30px rgba(100, 255, 100, 1); }
+    50% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.8); }
+    75% { box-shadow: 0 0 30px rgba(100, 255, 100, 1); }
+    100% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
+}
+
+/* Ensure equipment slot icons scale properly when equipped */
+.game-character-display .equipment-slot .slot-icon {
+    transition: all 0.3s ease;
+}
+
+/* Loading state for equipment in battle */
+.game-character-display .equipment-slot.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.game-character-display .equipment-slot.loading .slot-icon {
+    animation: loading-spin 1s linear infinite;
+}
+
+@keyframes loading-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Enhanced tooltip styling for battle equipment */
+.game-character-display .equipment-slot[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    top: -50px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: pre-line;
+    z-index: 1000;
+    pointer-events: none;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    max-width: 200px;
+    text-align: center;
+}

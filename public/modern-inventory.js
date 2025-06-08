@@ -1,6 +1,4 @@
-// modern-inventory.js - Safe integration with existing game
-// This replaces the old inventory without breaking anything
-
+// modern-inventory.js - Fullscreen version with complete functionality
 class ModernInventorySystem {
     constructor(socket) {
         this.socket = socket;
@@ -8,6 +6,7 @@ class ModernInventorySystem {
         this.currentFilter = 'all';
         this.inventoryData = null;
         this.playerStats = null;
+        this.playerData = null;
         this.isInitialized = false;
         
         this.init();
@@ -23,7 +22,7 @@ class ModernInventorySystem {
     }
 
     setup() {
-        console.log('🎒 Initializing Modern Inventory System...');
+        console.log('🎒 Initializing Fullscreen Modern Inventory System...');
         
         // Add styles first
         this.addStyles();
@@ -41,24 +40,26 @@ class ModernInventorySystem {
         this.replaceOldInventory();
         
         this.isInitialized = true;
-        console.log('✅ Modern Inventory System ready!');
+        console.log('✅ Fullscreen Modern Inventory System ready!');
     }
 
     addStyles() {
         // Only add styles if not already added
-        if (document.getElementById('modern-inventory-styles')) return;
+        if (document.getElementById('modern-inventory-styles')) {
+            document.getElementById('modern-inventory-styles').remove();
+        }
         
         const style = document.createElement('style');
         style.id = 'modern-inventory-styles';
         style.textContent = `
-            /* Modern Inventory Styles */
+            /* Fullscreen Modern Inventory Styles */
             .modern-inventory-modal {
                 position: fixed;
                 top: 0;
                 left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.95);
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0, 0, 0, 0.98);
                 display: flex;
                 justify-content: center;
                 align-items: center;
@@ -68,26 +69,24 @@ class ModernInventorySystem {
             }
 
             .modern-inventory-container {
-                background: linear-gradient(145deg, #1a1a2e, #16213e);
-                border: 3px solid #4a5568;
-                border-radius: 20px;
-                box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8), 
-                           inset 0 1px 0 rgba(255, 255, 255, 0.1);
-                width: 95%;
-                max-width: 1200px;
-                height: 85%;
-                max-height: 800px;
+                background-color: rgba(15, 15, 15, 0.95);
+                border-radius: 10px;
+                padding: 20px;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+                width: 98vw;
+                height: 95vh;
                 display: flex;
                 flex-direction: column;
                 overflow: hidden;
                 position: relative;
                 animation: modalSlideIn 0.3s ease-out;
+                border: 2px solid #4a5568;
             }
 
             @keyframes modalSlideIn {
                 from {
                     opacity: 0;
-                    transform: scale(0.9) translateY(-50px);
+                    transform: scale(0.95) translateY(-30px);
                 }
                 to {
                     opacity: 1;
@@ -96,34 +95,30 @@ class ModernInventorySystem {
             }
 
             .modern-inventory-header {
-                background: linear-gradient(90deg, #2d3748, #4a5568);
-                padding: 20px 30px;
-                border-bottom: 2px solid #1a202c;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+                margin-bottom: 20px;
+                padding-bottom: 15px;
+                border-bottom: 2px solid #444;
+                flex-shrink: 0;
             }
 
             .modern-inventory-title {
-                color: #f7fafc;
-                font-size: 28px;
-                font-weight: bold;
-                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+                color: #e0e0ff;
+                font-size: 2.5rem;
                 margin: 0;
-                display: flex;
-                align-items: center;
-                gap: 10px;
+                text-shadow: 0 0 10px rgba(100, 100, 255, 0.7);
             }
 
             .modern-player-gold-display {
                 display: flex;
                 align-items: center;
-                gap: 12px;
+                gap: 10px;
                 color: #ffd700;
                 font-size: 20px;
                 font-weight: bold;
-                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+                text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
             }
 
             .modern-gold-icon {
@@ -145,11 +140,11 @@ class ModernInventorySystem {
             }
 
             .modern-close-inventory {
-                background: linear-gradient(145deg, #e53e3e, #c53030);
+                background-color: #e53e3e;
                 border: none;
                 color: white;
-                padding: 12px 20px;
-                border-radius: 10px;
+                padding: 12px 18px;
+                border-radius: 8px;
                 cursor: pointer;
                 font-weight: bold;
                 font-size: 16px;
@@ -158,162 +153,218 @@ class ModernInventorySystem {
             }
 
             .modern-close-inventory:hover {
-                background: linear-gradient(145deg, #c53030, #9c2626);
+                background-color: #c53030;
                 transform: translateY(-2px);
                 box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
             }
 
             .modern-inventory-body {
-                display: flex;
+                display: grid;
+                grid-template-columns: 450px 1fr;
+                gap: 30px;
                 flex: 1;
                 overflow: hidden;
+                min-height: 0;
             }
 
-            /* Character Equipment Panel */
-            .modern-character-panel {
-                flex: 0 0 420px;
-                background: linear-gradient(145deg, #2d3748, #1a202c);
-                border-right: 3px solid #4a5568;
-                padding: 25px;
+            /* Character Overview Panel - Left Side */
+            .modern-character-overview {
                 display: flex;
                 flex-direction: column;
-                align-items: center;
-                position: relative;
+                background-color: #222;
+                border-radius: 8px;
+                padding: 20px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
                 overflow-y: auto;
             }
 
-            .modern-character-display {
+            .modern-character-frame {
                 position: relative;
-                width: 240px;
-                height: 320px;
-                margin: 25px 0;
-                background: radial-gradient(circle, rgba(74, 85, 104, 0.1), transparent);
-                border-radius: 50%;
+                width: 100%;
+                margin-bottom: 20px;
+                flex-shrink: 0;
             }
 
-            .modern-character-avatar {
-                width: 140px;
-                height: 140px;
-                border-radius: 50%;
-                border: 5px solid #4a5568;
-                box-shadow: 0 0 30px rgba(74, 85, 104, 0.7);
+            .modern-avatar-container {
+                position: relative;
+                width: 100%;
+                height: 450px;
+                background-color: #000;
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 0 15px rgba(255, 0, 0, 0.5), 0 0 30px rgba(0, 0, 255, 0.3);
+                border: 3px solid rgba(80, 80, 120, 0.7);
+            }
+
+            #modern-character-avatar {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+            }
+
+            .modern-character-class-badge {
                 position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                z-index: 3;
-                transition: all 0.3s ease;
-                object-fit: cover;
+                top: 0;
+                left: 0;
+                right: 0;
+                background-color: rgba(0, 0, 0, 0.8);
+                color: white;
+                padding: 8px;
+                text-align: center;
+                font-weight: bold;
+                text-transform: capitalize;
+                font-size: 1.1rem;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.2);
             }
 
-            .modern-character-avatar:hover {
-                border-color: #63b3ed;
-                box-shadow: 0 0 40px rgba(99, 179, 237, 0.8);
-                transform: translate(-50%, -50%) scale(1.05);
+            .modern-character-subclass {
+                font-size: 0.85em;
+                color: #a0a0cc;
+                margin-top: 3px;
             }
 
-            /* Equipment Slots */
+            /* Equipment slots overlay */
             .modern-equipment-slot {
                 position: absolute;
-                width: 70px;
-                height: 70px;
-                background: linear-gradient(145deg, #1a202c, #2d3748);
-                border: 3px solid #4a5568;
-                border-radius: 15px;
+                background-color: rgba(40, 40, 40, 0.9);
+                border: 2px solid rgba(100, 100, 120, 0.8);
+                border-radius: 8px;
+                width: 65px;
+                height: 65px;
                 display: flex;
+                flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                cursor: pointer;
                 transition: all 0.3s ease;
-                box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.4), 
-                           0 4px 8px rgba(0, 0, 0, 0.3);
-                overflow: visible;
+                cursor: pointer;
+                overflow: hidden;
             }
 
             .modern-equipment-slot:hover {
-                border-color: #63b3ed;
-                box-shadow: 0 0 20px rgba(99, 179, 237, 0.5), 
-                           inset 0 3px 6px rgba(0, 0, 0, 0.4);
-                transform: scale(1.1);
+                background-color: rgba(60, 60, 80, 0.9);
+                transform: scale(1.05);
+                box-shadow: 0 0 15px rgba(100, 150, 255, 0.7);
+                z-index: 10;
             }
 
+            /* Positioned slots */
+            .helmet-slot { top: 15px; left: 15px; }
+            .weapon-slot { top: 15px; right: 15px; }
+            .armor-slot { top: 85px; left: 15px; }
+            .amulet-slot { top: 85px; right: 15px; }
+            .shield-slot { top: 155px; left: 15px; }
+            .ring-slot { top: 155px; right: 15px; }
+            .boots-slot { top: 225px; left: 15px; }
+            .gloves-slot { top: 225px; right: 15px; }
+
+            .modern-slot-icon {
+                width: 40px;
+                height: 40px;
+                opacity: 0.8;
+                border-radius: 4px;
+                object-fit: contain;
+                transition: all 0.3s ease;
+            }
+
+            .modern-equipment-name {
+                position: absolute;
+                bottom: 2px;
+                left: 2px;
+                right: 2px;
+                font-size: 9px;
+                color: #ddd;
+                text-align: center;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                background-color: rgba(0, 0, 0, 0.7);
+                border-radius: 2px;
+                padding: 1px;
+                line-height: 1.1;
+            }
+
+            /* Equipped item styling */
             .modern-equipment-slot.equipped {
-                border-color: #48bb78;
-                box-shadow: 0 0 25px rgba(72, 187, 120, 0.6), 
-                           inset 0 3px 6px rgba(0, 0, 0, 0.4);
+                border-color: rgba(100, 255, 100, 0.9);
+                background-color: rgba(50, 70, 50, 0.95);
+                box-shadow: 0 0 15px rgba(100, 255, 100, 0.6);
                 animation: equipPulse 3s ease-in-out infinite;
             }
 
             @keyframes equipPulse {
                 0%, 100% { 
-                    box-shadow: 0 0 25px rgba(72, 187, 120, 0.6), 
-                               inset 0 3px 6px rgba(0, 0, 0, 0.4); 
+                    box-shadow: 0 0 15px rgba(100, 255, 100, 0.6);
                 }
                 50% { 
-                    box-shadow: 0 0 35px rgba(72, 187, 120, 0.8), 
-                               inset 0 3px 6px rgba(0, 0, 0, 0.4); 
+                    box-shadow: 0 0 25px rgba(100, 255, 100, 0.8);
                 }
             }
 
-            /* Slot Positioning - Arranged around character */
-            .helmet-slot { top: -10px; left: 50%; transform: translateX(-50%); }
-            .amulet-slot { top: 30px; right: -15px; }
-            .gloves-slot { top: 30px; left: -15px; }
-            .weapon-slot { top: 90px; left: -25px; }
-            .armor-slot { top: 130px; right: -25px; }
-            .shield-slot { top: 180px; left: -25px; }
-            .ring-slot { top: 220px; right: -15px; }
-            .boots-slot { bottom: -10px; left: 50%; transform: translateX(-50%); }
-
-            .modern-slot-icon {
-                width: 40px;
-                height: 40px;
-                opacity: 0.7;
-                transition: opacity 0.3s;
-                filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.5));
-            }
-
-            .modern-equipment-slot:hover .modern-slot-icon {
+            .modern-equipment-slot.equipped .modern-slot-icon {
+                width: 50px;
+                height: 50px;
                 opacity: 1;
             }
 
-            .modern-equipment-name {
-                position: absolute;
-                bottom: -30px;
-                left: 50%;
-                transform: translateX(-50%);
-                font-size: 11px;
-                color: #a0aec0;
-                text-align: center;
-                min-width: 90px;
-                word-wrap: break-word;
-                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
-                font-weight: 500;
-            }
-
-            .equipped .modern-equipment-name {
-                color: #68d391;
+            .modern-equipment-slot.equipped .modern-equipment-name {
+                color: #90EE90;
                 font-weight: bold;
+                background-color: rgba(0, 80, 0, 0.8);
             }
 
-            /* Character Stats Display */
+            /* Item rarity colors */
+            .modern-equipment-slot.common { border-color: #9d9d9d; }
+            .modern-equipment-slot.uncommon { border-color: #1eff00; }
+            .modern-equipment-slot.rare { border-color: #0070dd; }
+            .modern-equipment-slot.epic { border-color: #a335ee; }
+            .modern-equipment-slot.legendary { 
+                border-color: #ff8000;
+                animation: legendary-glow 2s ease-in-out infinite alternate;
+            }
+
+            @keyframes legendary-glow {
+                0% { box-shadow: 0 0 10px rgba(255, 128, 0, 0.6); }
+                100% { box-shadow: 0 0 25px rgba(255, 128, 0, 1); }
+            }
+
+            /* Character-specific styling */
+            .modern-character-overview.shadowsteel .modern-avatar-container {
+                box-shadow: 0 0 15px rgba(0, 0, 100, 0.8), 0 0 30px rgba(0, 0, 255, 0.5);
+                border-color: #4a69bd;
+            }
+            
+            .modern-character-overview.ironbound .modern-avatar-container {
+                box-shadow: 0 0 15px rgba(100, 100, 100, 0.8), 0 0 30px rgba(150, 150, 150, 0.5);
+                border-color: #7a7a7a;
+            }
+            
+            .modern-character-overview.flameheart .modern-avatar-container {
+                box-shadow: 0 0 15px rgba(200, 50, 0, 0.8), 0 0 30px rgba(255, 80, 0, 0.5);
+                border-color: #bd4a4a;
+            }
+            
+            .modern-character-overview.venomfang .modern-avatar-container {
+                box-shadow: 0 0 15px rgba(0, 100, 0, 0.8), 0 0 30px rgba(0, 150, 0, 0.5);
+                border-color: #4abd4a;
+            }
+
+            /* Character Stats Section */
             .modern-character-stats {
-                width: 100%;
-                background: linear-gradient(145deg, #1a202c, #2d3748);
-                border-radius: 15px;
+                background-color: rgba(30, 30, 30, 0.8);
+                border-radius: 8px;
                 padding: 20px;
-                margin-top: 25px;
-                border: 2px solid #4a5568;
-                box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+                margin-top: 20px;
+                border: 1px solid #444;
+                flex-shrink: 0;
             }
 
             .modern-stats-title {
-                color: #f7fafc;
+                color: #fff;
+                margin: 0 0 20px 0;
                 font-size: 18px;
-                font-weight: bold;
-                margin-bottom: 15px;
+                border-bottom: 1px solid #444;
+                padding-bottom: 10px;
                 text-align: center;
-                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
             }
 
             .modern-stat-row {
@@ -321,35 +372,34 @@ class ModernInventorySystem {
                 justify-content: space-between;
                 align-items: center;
                 margin-bottom: 12px;
-                color: #e2e8f0;
                 padding: 8px 12px;
-                background: rgba(26, 32, 44, 0.3);
-                border-radius: 8px;
+                border-bottom: 1px solid #333;
+                background-color: rgba(20, 20, 20, 0.6);
+                border-radius: 4px;
                 border-left: 3px solid #4a5568;
             }
 
-            .modern-stat-name {
+            .modern-stat-label {
+                color: #aaa;
                 font-size: 14px;
-                opacity: 0.9;
-                display: flex;
-                align-items: center;
-                gap: 8px;
             }
 
             .modern-stat-value {
+                color: #fff;
                 font-weight: bold;
-                color: #63b3ed;
                 font-size: 16px;
-                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
             }
 
-            /* Inventory Grid Panel */
+            /* Inventory Panel - Right Side */
             .modern-inventory-panel {
-                flex: 1;
-                padding: 25px;
-                background: linear-gradient(145deg, #1a202c, #2d3748);
                 display: flex;
                 flex-direction: column;
+                background-color: #222;
+                border-radius: 8px;
+                padding: 20px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+                overflow: hidden;
+                min-height: 0;
             }
 
             .modern-inventory-grid-header {
@@ -358,194 +408,137 @@ class ModernInventorySystem {
                 align-items: center;
                 margin-bottom: 20px;
                 padding-bottom: 15px;
-                border-bottom: 2px solid #4a5568;
+                border-bottom: 2px solid #444;
+                flex-shrink: 0;
             }
 
             .modern-inventory-grid-title {
-                color: #f7fafc;
+                color: #fff;
                 font-size: 22px;
-                font-weight: bold;
-                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+                margin: 0;
+                text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
             }
 
             .modern-inventory-filter {
                 display: flex;
-                gap: 12px;
+                gap: 8px;
             }
 
             .modern-filter-btn {
                 padding: 8px 16px;
-                background: linear-gradient(145deg, #4a5568, #2d3748);
-                border: 2px solid #718096;
-                color: #e2e8f0;
-                border-radius: 8px;
+                background-color: #333;
+                border: 1px solid #555;
+                color: #aaa;
+                border-radius: 6px;
                 cursor: pointer;
                 transition: all 0.3s;
                 font-size: 14px;
                 font-weight: 500;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
             }
 
             .modern-filter-btn:hover, .modern-filter-btn.active {
-                background: linear-gradient(145deg, #63b3ed, #3182ce);
-                border-color: #63b3ed;
+                background-color: #4a9eff;
+                border-color: #4a9eff;
                 color: white;
                 transform: translateY(-1px);
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
             }
 
             .modern-inventory-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+                grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
                 gap: 12px;
                 flex: 1;
                 overflow-y: auto;
                 padding: 15px;
-                background: rgba(26, 32, 44, 0.6);
-                border-radius: 15px;
-                border: 3px dashed #4a5568;
-                box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+                background-color: rgba(0, 0, 0, 0.4);
+                border-radius: 8px;
+                border: 2px dashed #555;
+                min-height: 400px;
+                max-height: calc(100vh - 400px);
             }
 
             .modern-inventory-slot {
-                width: 80px;
-                height: 80px;
-                background: linear-gradient(145deg, #2d3748, #1a202c);
-                border: 3px solid #4a5568;
-                border-radius: 12px;
+                width: 90px;
+                height: 90px;
+                background-color: rgba(40, 40, 40, 0.9);
+                border: 2px solid rgba(100, 100, 120, 0.8);
+                border-radius: 8px;
                 display: flex;
+                flex-direction: column;
                 align-items: center;
                 justify-content: center;
                 cursor: pointer;
                 transition: all 0.3s ease;
                 position: relative;
-                box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4);
+                padding: 4px;
             }
 
             .modern-inventory-slot:hover {
-                border-color: #63b3ed;
-                box-shadow: 0 0 20px rgba(99, 179, 237, 0.5), 
-                           inset 0 2px 6px rgba(0, 0, 0, 0.4);
+                border-color: #4a9eff;
                 transform: scale(1.05);
+                box-shadow: 0 0 15px rgba(74, 158, 255, 0.5);
             }
 
             .modern-inventory-slot.selected {
-                border-color: #ffd700 !important;
-                box-shadow: 0 0 25px rgba(255, 215, 0, 0.7), 
-                           inset 0 2px 6px rgba(0, 0, 0, 0.4) !important;
-                transform: scale(1.1) !important;
+                border-color: #ffd700;
+                box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+                transform: scale(1.08);
+                background-color: rgba(80, 60, 0, 0.3);
             }
 
             .modern-inventory-slot.empty {
-                opacity: 0.4;
+                opacity: 0.3;
                 border-style: dashed;
                 cursor: default;
             }
 
+            .modern-inventory-slot.empty:hover {
+                transform: none;
+                box-shadow: none;
+                border-color: rgba(100, 100, 120, 0.8);
+            }
+
             .modern-item-icon {
-                width: 50px;
-                height: 50px;
-                border-radius: 8px;
-                filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.5));
+                width: 60px;
+                height: 60px;
+                border-radius: 4px;
+                object-fit: contain;
+                margin-bottom: 4px;
+                filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.7));
             }
 
-            .modern-item-quality-border {
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                border-radius: 12px;
-                pointer-events: none;
+            .modern-item-name-small {
+                font-size: 10px;
+                color: #ddd;
+                text-align: center;
+                word-wrap: break-word;
+                max-width: 100%;
+                line-height: 1.1;
+                height: 20px;
+                overflow: hidden;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
             }
 
-            /* Item Rarity Colors - Enhanced */
-            .common { border-color: #9ca3af; }
-            .uncommon { border-color: #10b981; }
-            .rare { border-color: #3b82f6; }
-            .epic { border-color: #8b5cf6; }
-            .legendary { border-color: #f59e0b; }
-
-            .common .modern-item-quality-border { 
-                box-shadow: inset 0 0 15px rgba(156, 163, 175, 0.4); 
-            }
-            .uncommon .modern-item-quality-border { 
-                box-shadow: inset 0 0 15px rgba(16, 185, 129, 0.4);
-                animation: uncommonGlow 2s ease-in-out infinite alternate;
-            }
-            .rare .modern-item-quality-border { 
-                box-shadow: inset 0 0 15px rgba(59, 130, 246, 0.4);
-                animation: rareGlow 2s ease-in-out infinite alternate;
-            }
-            .epic .modern-item-quality-border { 
-                box-shadow: inset 0 0 15px rgba(139, 92, 246, 0.4);
-                animation: epicGlow 2s ease-in-out infinite alternate;
-            }
-            .legendary .modern-item-quality-border { 
-                box-shadow: inset 0 0 15px rgba(245, 158, 11, 0.4);
-                animation: legendaryGlow 2s ease-in-out infinite alternate;
+            /* Item rarity styling for inventory items */
+            .modern-inventory-slot.common { border-color: #9d9d9d; }
+            .modern-inventory-slot.uncommon { border-color: #1eff00; }
+            .modern-inventory-slot.rare { border-color: #0070dd; }
+            .modern-inventory-slot.epic { border-color: #a335ee; }
+            .modern-inventory-slot.legendary { 
+                border-color: #ff8000;
+                animation: legendary-glow 2s ease-in-out infinite alternate;
             }
 
-            @keyframes uncommonGlow {
-                from { box-shadow: inset 0 0 15px rgba(16, 185, 129, 0.4); }
-                to { box-shadow: inset 0 0 25px rgba(16, 185, 129, 0.6); }
-            }
-
-            @keyframes rareGlow {
-                from { box-shadow: inset 0 0 15px rgba(59, 130, 246, 0.4); }
-                to { box-shadow: inset 0 0 25px rgba(59, 130, 246, 0.6); }
-            }
-
-            @keyframes epicGlow {
-                from { box-shadow: inset 0 0 15px rgba(139, 92, 246, 0.4); }
-                to { box-shadow: inset 0 0 25px rgba(139, 92, 246, 0.6); }
-            }
-
-            @keyframes legendaryGlow {
-                from { box-shadow: inset 0 0 15px rgba(245, 158, 11, 0.4); }
-                to { box-shadow: inset 0 0 25px rgba(245, 158, 11, 0.6); }
-            }
-
-            /* Item Tooltip */
-            .modern-item-tooltip {
-                position: absolute;
-                background: linear-gradient(145deg, #1a202c, #2d3748);
-                border: 2px solid #4a5568;
-                border-radius: 10px;
-                padding: 15px;
-                color: #f7fafc;
-                font-size: 13px;
-                z-index: 10001;
-                min-width: 220px;
-                max-width: 300px;
-                box-shadow: 0 15px 30px rgba(0, 0, 0, 0.7);
-                pointer-events: none;
-                animation: tooltipFadeIn 0.2s ease-out;
-            }
-
-            @keyframes tooltipFadeIn {
-                from { opacity: 0; transform: translateY(10px); }
-                to { opacity: 1; transform: translateY(0); }
-            }
-
-            .modern-tooltip-title {
-                font-weight: bold;
-                margin-bottom: 8px;
-                font-size: 16px;
-                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
-            }
-
-            .modern-tooltip-stats {
-                color: #68d391;
-                margin-bottom: 6px;
-                font-weight: 500;
-            }
-
-            .modern-tooltip-description {
-                color: #a0aec0;
-                font-style: italic;
-                margin-top: 8px;
-                line-height: 1.4;
+            .modern-inventory-slot.common .modern-item-name-small { color: #9d9d9d; }
+            .modern-inventory-slot.uncommon .modern-item-name-small { color: #1eff00; }
+            .modern-inventory-slot.rare .modern-item-name-small { color: #0070dd; }
+            .modern-inventory-slot.epic .modern-item-name-small { color: #a335ee; }
+            .modern-inventory-slot.legendary .modern-item-name-small { 
+                color: #ff8000;
+                text-shadow: 0 0 5px rgba(255, 128, 0, 0.7);
             }
 
             /* Action Buttons */
@@ -554,98 +547,127 @@ class ModernInventorySystem {
                 gap: 15px;
                 justify-content: center;
                 padding: 20px;
-                border-top: 3px solid #4a5568;
-                background: linear-gradient(90deg, #2d3748, #4a5568);
-                box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+                margin-top: 20px;
+                border-top: 2px solid #444;
+                flex-shrink: 0;
             }
 
             .modern-action-btn {
                 padding: 12px 24px;
                 border: none;
-                border-radius: 10px;
+                border-radius: 8px;
                 cursor: pointer;
                 font-weight: bold;
                 font-size: 14px;
                 transition: all 0.3s;
-                min-width: 120px;
+                min-width: 140px;
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
             }
 
             .modern-equip-btn {
-                background: linear-gradient(145deg, #48bb78, #38a169);
+                background: linear-gradient(135deg, #4CAF50, #45a049);
                 color: white;
             }
 
             .modern-equip-btn:hover:not(:disabled) {
-                background: linear-gradient(145deg, #38a169, #2f855a);
+                background: linear-gradient(135deg, #45a049, #3d8b40);
                 transform: translateY(-2px);
                 box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
             }
 
             .modern-equip-btn:disabled {
-                background: linear-gradient(145deg, #4a5568, #2d3748);
-                color: #a0aec0;
+                background: linear-gradient(135deg, #666, #555);
+                color: #999;
                 cursor: not-allowed;
                 transform: none;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
             }
 
-            .modern-sort-btn {
-                background: linear-gradient(145deg, #667eea, #764ba2);
+            .modern-unequip-btn {
+                background: linear-gradient(135deg, #ff6b6b, #ff5252);
                 color: white;
             }
 
-            .modern-sort-btn:hover {
-                background: linear-gradient(145deg, #5a67d8, #6b46c1);
+            .modern-unequip-btn:hover:not(:disabled) {
+                background: linear-gradient(135deg, #ff5252, #f44336);
                 transform: translateY(-2px);
                 box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
             }
 
+            .modern-unequip-btn:disabled {
+                background: linear-gradient(135deg, #666, #555);
+                color: #999;
+                cursor: not-allowed;
+            }
+
+            .modern-sort-btn {
+                background: linear-gradient(135deg, #2196F3, #1976D2);
+                color: white;
+            }
+
+            .modern-sort-btn:hover {
+                background: linear-gradient(135deg, #1976D2, #1565C0);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+            }
+
+            /* Animation for newly equipped items */
+            .modern-equipment-slot.just-equipped {
+                animation: equip-flash 1s ease;
+            }
+
+            @keyframes equip-flash {
+                0% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
+                25% { box-shadow: 0 0 30px rgba(100, 255, 100, 1); }
+                50% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.8); }
+                75% { box-shadow: 0 0 30px rgba(100, 255, 100, 1); }
+                100% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
+            }
+
+            /* Unequip button for equipment slots */
+            .modern-equipment-slot.equipped::after {
+                content: "✕";
+                position: absolute;
+                top: -8px;
+                right: -8px;
+                width: 20px;
+                height: 20px;
+                background-color: #ff4444;
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                font-weight: bold;
+                opacity: 0;
+                transition: opacity 0.3s;
+                cursor: pointer;
+                z-index: 20;
+            }
+
+            .modern-equipment-slot.equipped:hover::after {
+                opacity: 1;
+            }
+
             /* Responsive Design */
-            @media (max-width: 768px) {
-                .modern-inventory-container {
-                    width: 100%;
-                    height: 100%;
-                    border-radius: 0;
-                }
-
+            @media (max-width: 1400px) {
                 .modern-inventory-body {
-                    flex-direction: column;
+                    grid-template-columns: 400px 1fr;
                 }
-
-                .modern-character-panel {
-                    flex: 0 0 350px;
-                    border-right: none;
-                    border-bottom: 3px solid #4a5568;
+                
+                .modern-avatar-container {
+                    height: 400px;
                 }
+            }
 
-                .modern-character-display {
-                    width: 180px;
-                    height: 240px;
+            @media (max-width: 1200px) {
+                .modern-inventory-body {
+                    grid-template-columns: 1fr;
+                    gap: 20px;
                 }
-
-                .modern-character-avatar {
-                    width: 100px;
-                    height: 100px;
-                }
-
-                .modern-equipment-slot {
-                    width: 55px;
-                    height: 55px;
-                }
-
-                .modern-slot-icon {
-                    width: 30px;
-                    height: 30px;
-                }
-
-                .modern-inventory-grid {
-                    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-                }
-
-                .modern-inventory-slot {
-                    width: 70px;
-                    height: 70px;
+                
+                .modern-character-overview {
+                    max-height: 50vh;
                 }
             }
 
@@ -654,23 +676,27 @@ class ModernInventorySystem {
                 display: none !important;
             }
 
-            /* Animation for new items */
-            @keyframes itemAdded {
-                0% {
-                    transform: scale(0.8);
-                    opacity: 0;
-                }
-                50% {
-                    transform: scale(1.1);
-                }
-                100% {
-                    transform: scale(1);
-                    opacity: 1;
-                }
+            /* Custom scrollbar */
+            .modern-inventory-grid::-webkit-scrollbar,
+            .modern-character-overview::-webkit-scrollbar {
+                width: 8px;
             }
 
-            .modern-item-added {
-                animation: itemAdded 0.4s ease-out;
+            .modern-inventory-grid::-webkit-scrollbar-track,
+            .modern-character-overview::-webkit-scrollbar-track {
+                background: rgba(0, 0, 0, 0.3);
+                border-radius: 4px;
+            }
+
+            .modern-inventory-grid::-webkit-scrollbar-thumb,
+            .modern-character-overview::-webkit-scrollbar-thumb {
+                background: #4a9eff;
+                border-radius: 4px;
+            }
+
+            .modern-inventory-grid::-webkit-scrollbar-thumb:hover,
+            .modern-character-overview::-webkit-scrollbar-thumb:hover {
+                background: #3a8eef;
             }
         `;
         
@@ -678,119 +704,131 @@ class ModernInventorySystem {
     }
 
     createModal() {
-        // Only create modal if it doesn't exist
-        if (document.getElementById('modern-inventory-modal')) return;
+        // Remove existing modal if it exists
+        const existingModal = document.getElementById('modern-inventory-modal');
+        if (existingModal) {
+            existingModal.remove();
+        }
         
         const modalHTML = `
             <div id="modern-inventory-modal" class="modern-inventory-modal hidden">
                 <div class="modern-inventory-container">
                     <!-- Header -->
                     <div class="modern-inventory-header">
-                        <h2 class="modern-inventory-title">⚔️ Character Inventory</h2>
+                        <h1 class="modern-inventory-title">Character Inventory</h1>
                         <div class="modern-player-gold-display">
                             <div class="modern-gold-icon">🪙</div>
                             <span id="modern-player-gold-amount">0</span>
                             <span>Gold</span>
                         </div>
-                        <button class="modern-close-inventory" id="modern-close-inventory">✕</button>
+                        <button class="modern-close-inventory" id="modern-close-inventory">✕ Close</button>
                     </div>
 
                     <!-- Main Content -->
                     <div class="modern-inventory-body">
-                        <!-- Character Equipment Panel -->
-                        <div class="modern-character-panel">
-                            <!-- Character Display with Equipment Slots -->
-                            <div class="modern-character-display">
-                                <!-- Character Avatar -->
-                                <img id="modern-inventory-character-avatar" class="modern-character-avatar" src="images/default-avatar.png" alt="Character">
-                                
-                                <!-- Equipment Slots Positioned Around Character -->
-                                <div class="modern-equipment-slot helmet-slot" data-slot="helmet" title="Helmet">
-                                    <img class="modern-slot-icon" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='white' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C8 2 6 4 6 8v4c0 2 1 3 2 4h8c1-1 2-2 2-4V8c0-4-2-6-6-6z'/%3E%3C/svg%3E" alt="Helmet">
-                                    <div class="modern-equipment-name" id="modern-equipped-helmet-name">None</div>
-                                </div>
-
-                                <div class="modern-equipment-slot amulet-slot" data-slot="amulet" title="Amulet">
-                                    <img class="modern-slot-icon" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='white' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3C/svg%3E" alt="Amulet">
-                                    <div class="modern-equipment-name" id="modern-equipped-amulet-name">None</div>
-                                </div>
-
-                                <div class="modern-equipment-slot gloves-slot" data-slot="gloves" title="Gloves">
-                                    <img class="modern-slot-icon" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='white' viewBox='0 0 24 24'%3E%3Cpath d='M8 2v6h8V2H8zm0 8v6c0 2 2 4 4 4s4-2 4-4v-6H8z'/%3E%3C/svg%3E" alt="Gloves">
-                                    <div class="modern-equipment-name" id="modern-equipped-gloves-name">None</div>
-                                </div>
-
-                                <div class="modern-equipment-slot weapon-slot" data-slot="weapon" title="Weapon">
-                                    <img class="modern-slot-icon" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='white' viewBox='0 0 24 24'%3E%3Cpath d='M6.92 5L5 6.92l2.83 2.83L6.92 5zm4.24 4.24L5 15.4l3.54 3.54 6.16-6.16-3.54-3.54z'/%3E%3C/svg%3E" alt="Weapon">
-                                    <div class="modern-equipment-name" id="modern-equipped-weapon-name">None</div>
-                                </div>
-
-                                <div class="modern-equipment-slot armor-slot" data-slot="armor" title="Armor">
-                                    <img class="modern-slot-icon" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='white' viewBox='0 0 24 24'%3E%3Cpath d='M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z'/%3E%3C/svg%3E" alt="Armor">
-                                    <div class="modern-equipment-name" id="modern-equipped-armor-name">None</div>
-                                </div>
-
-                                <div class="modern-equipment-slot shield-slot" data-slot="shield" title="Shield">
-                                    <img class="modern-slot-icon" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='white' viewBox='0 0 24 24'%3E%3Cpath d='M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z'/%3E%3C/svg%3E" alt="Shield">
-                                    <div class="modern-equipment-name" id="modern-equipped-shield-name">None</div>
-                                </div>
-
-                                <div class="modern-equipment-slot ring-slot" data-slot="ring" title="Ring">
-                                    <img class="modern-slot-icon" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='white' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Ccircle cx='12' cy='12' r='6'/%3E%3C/svg%3E" alt="Ring">
-                                    <div class="modern-equipment-name" id="modern-equipped-ring-name">None</div>
-                                </div>
-
-                                <div class="modern-equipment-slot boots-slot" data-slot="boots" title="Boots">
-                                    <img class="modern-slot-icon" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='white' viewBox='0 0 24 24'%3E%3Cpath d='M4 18h16v2H4v-2zm0-4h16v2H4v-2zm0-4h16v2H4v-2z'/%3E%3C/svg%3E" alt="Boots">
-                                    <div class="modern-equipment-name" id="modern-equipped-boots-name">None</div>
+                        <!-- Character Overview Panel - Left Side -->
+                        <div class="modern-character-overview" id="modern-character-overview">
+                            <div class="modern-character-frame">
+                                <div class="modern-avatar-container">
+                                    <img id="modern-character-avatar" src="" alt="Character Avatar">
+                                    <div class="modern-character-class-badge">
+                                        <div id="modern-character-class">Class Name</div>
+                                        <div id="modern-character-subclass" class="modern-character-subclass">Subclass</div>
+                                    </div>
+                                    
+                                    <!-- Equipment slots as overlay -->
+                                    <div class="modern-equipment-slot helmet-slot" data-slot="helmet" title="Helmet - Click to unequip">
+                                        <img src="images/slot-helmet.svg" class="modern-slot-icon">
+                                        <div class="modern-equipment-name" id="modern-helmet-name">None</div>
+                                    </div>
+                                    
+                                    <div class="modern-equipment-slot armor-slot" data-slot="armor" title="Armor - Click to unequip">
+                                        <img src="images/slot-armor.svg" class="modern-slot-icon">
+                                        <div class="modern-equipment-name" id="modern-armor-name">None</div>
+                                    </div>
+                                    
+                                    <div class="modern-equipment-slot shield-slot" data-slot="shield" title="Shield - Click to unequip">
+                                        <img src="images/slot-shield.svg" class="modern-slot-icon">
+                                        <div class="modern-equipment-name" id="modern-shield-name">None</div>
+                                    </div>
+                                    
+                                    <div class="modern-equipment-slot boots-slot" data-slot="boots" title="Boots - Click to unequip">
+                                        <img src="images/slot-boots.svg" class="modern-slot-icon">
+                                        <div class="modern-equipment-name" id="modern-boots-name">None</div>
+                                    </div>
+                                    
+                                    <div class="modern-equipment-slot weapon-slot" data-slot="weapon" title="Weapon - Click to unequip">
+                                        <img src="images/slot-sword.svg" class="modern-slot-icon">
+                                        <div class="modern-equipment-name" id="modern-weapon-name">None</div>
+                                    </div>
+                                    
+                                    <div class="modern-equipment-slot amulet-slot" data-slot="amulet" title="Amulet - Click to unequip">
+                                        <img src="images/slot-amulet.svg" class="modern-slot-icon">
+                                        <div class="modern-equipment-name" id="modern-amulet-name">None</div>
+                                    </div>
+                                    
+                                    <div class="modern-equipment-slot ring-slot" data-slot="ring" title="Ring - Click to unequip">
+                                        <img src="images/slot-ring.svg" class="modern-slot-icon">
+                                        <div class="modern-equipment-name" id="modern-ring-name">None</div>
+                                    </div>
+                                    
+                                    <div class="modern-equipment-slot gloves-slot" data-slot="gloves" title="Gloves - Click to unequip">
+                                        <img src="images/slot-gloves.svg" class="modern-slot-icon">
+                                        <div class="modern-equipment-name" id="modern-gloves-name">None</div>
+                                    </div>
                                 </div>
                             </div>
-
+                            
                             <!-- Character Stats -->
                             <div class="modern-character-stats">
-                                <div class="modern-stats-title">📊 Character Stats</div>
+                                <h2 class="modern-stats-title">📊 Character Stats</h2>
+                                
                                 <div class="modern-stat-row">
-                                    <span class="modern-stat-name">💪 Strength:</span>
+                                    <span class="modern-stat-label">💪 STRENGTH</span>
                                     <span class="modern-stat-value" id="modern-char-strength">10</span>
                                 </div>
+                                
                                 <div class="modern-stat-row">
-                                    <span class="modern-stat-name">🏃 Agility:</span>
+                                    <span class="modern-stat-label">🏃 AGILITY</span>
                                     <span class="modern-stat-value" id="modern-char-agility">10</span>
                                 </div>
+                                
                                 <div class="modern-stat-row">
-                                    <span class="modern-stat-name">🧠 Intuition:</span>
+                                    <span class="modern-stat-label">🧠 INTUITION</span>
                                     <span class="modern-stat-value" id="modern-char-intuition">10</span>
                                 </div>
+                                
                                 <div class="modern-stat-row">
-                                    <span class="modern-stat-name">❤️ Endurance:</span>
+                                    <span class="modern-stat-label">❤️ ENDURANCE</span>
                                     <span class="modern-stat-value" id="modern-char-endurance">10</span>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Inventory Grid Panel -->
+                        <!-- Inventory Panel - Right Side -->
                         <div class="modern-inventory-panel">
                             <div class="modern-inventory-grid-header">
-                                <h3 class="modern-inventory-grid-title">🎒 Inventory</h3>
+                                <h2 class="modern-inventory-grid-title">🎒 Inventory</h2>
                                 <div class="modern-inventory-filter">
                                     <button class="modern-filter-btn active" data-filter="all">All</button>
-                                    <button class="modern-filter-btn" data-filter="weapon">⚔️</button>
-                                    <button class="modern-filter-btn" data-filter="armor">🛡️</button>
-                                    <button class="modern-filter-btn" data-filter="helmet">⛑️</button>
-                                    <button class="modern-filter-btn" data-filter="accessory">💎</button>
+                                    <button class="modern-filter-btn" data-filter="weapon">⚔️ Weapons</button>
+                                    <button class="modern-filter-btn" data-filter="armor">🛡️ Armor</button>
+                                    <button class="modern-filter-btn" data-filter="helmet">⛑️ Helmets</button>
+                                    <button class="modern-filter-btn" data-filter="accessory">💎 Accessories</button>
                                 </div>
                             </div>
                             
                             <div class="modern-inventory-grid" id="modern-inventory-items-grid">
                                 <!-- Inventory items will be populated here -->
                             </div>
-                        </div>
-                    </div>
 
-                    <!-- Action Buttons -->
-                    <div class="modern-inventory-actions">
-                        <button class="modern-action-btn modern-equip-btn" id="modern-equip-selected-item" disabled>Equip Selected</button>
-                        <button class="modern-action-btn modern-sort-btn" id="modern-sort-inventory">Sort Items</button>
+                            <!-- Action Buttons -->
+                            <div class="modern-inventory-actions">
+                                <button class="modern-action-btn modern-equip-btn" id="modern-equip-selected-item" disabled>Equip Selected</button>
+                                <button class="modern-action-btn modern-unequip-btn" id="modern-unequip-selected-slot" disabled>Unequip Selected</button>
+                                <button class="modern-action-btn modern-sort-btn" id="modern-sort-inventory">Sort Items</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -843,10 +881,27 @@ class ModernInventorySystem {
 
         // Equipment slots
         document.querySelectorAll('.modern-equipment-slot').forEach(slot => {
-            slot.addEventListener('click', () => {
+            slot.addEventListener('click', (e) => {
                 const slotType = slot.dataset.slot;
+                
+                // Check if clicking on the unequip button (✕)
+                if (slot.classList.contains('equipped')) {
+                    const rect = slot.getBoundingClientRect();
+                    const clickX = e.clientX - rect.left;
+                    const clickY = e.clientY - rect.top;
+                    
+                    // Check if click is in the top-right area (unequip button)
+                    if (clickX > rect.width - 25 && clickY < 25) {
+                        this.unequipItem(slotType);
+                        return;
+                    }
+                }
+                
+                // Regular slot click - try to equip selected item or highlight compatible
                 if (this.selectedItem && this.canEquipItem(this.selectedItem, slotType)) {
                     this.equipItem(this.selectedItem.id, slotType);
+                } else {
+                    this.highlightCompatibleItems(slotType);
                 }
             });
         });
@@ -855,6 +910,13 @@ class ModernInventorySystem {
         document.getElementById('modern-equip-selected-item').addEventListener('click', () => {
             if (this.selectedItem) {
                 this.equipItem(this.selectedItem.id, this.selectedItem.type);
+            }
+        });
+
+        // Unequip selected button
+        document.getElementById('modern-unequip-selected-slot').addEventListener('click', () => {
+            if (this.selectedEquipmentSlot) {
+                this.unequipItem(this.selectedEquipmentSlot);
             }
         });
 
@@ -892,8 +954,9 @@ class ModernInventorySystem {
             if (this.inventoryData) {
                 this.inventoryData.equipped = data.equipped;
                 this.inventoryData.inventory = data.inventory;
+                this.inventoryData.gold = data.gold || this.inventoryData.gold;
                 this.updateInventoryDisplay();
-                this.showEquipAnimation();
+                this.showEquipAnimation(data.slotType);
             }
         });
 
@@ -916,28 +979,36 @@ class ModernInventorySystem {
                 this.updateInventoryDisplay();
             }
             
-            // Update character avatar
+            // Update character data
             if (data.user) {
-                this.updateCharacterAvatar(data.user);
+                this.playerData = data.user;
+                this.updateCharacterDisplay();
             }
         });
     }
 
     openInventory() {
-        console.log('🎒 Opening modern inventory...');
+        console.log('🎒 Opening fullscreen modern inventory...');
         
         // Request fresh inventory data
         this.socket.emit('getInventory');
         this.socket.emit('requestStats');
+        this.socket.emit('getProfile');
         
         // Show modal
         this.modal.classList.remove('hidden');
+        
+        // Prevent body scrolling
+        document.body.style.overflow = 'hidden';
     }
 
     closeInventory() {
-        console.log('🎒 Closing modern inventory...');
+        console.log('🎒 Closing fullscreen modern inventory...');
         this.modal.classList.add('hidden');
         this.clearSelection();
+        
+        // Restore body scrolling
+        document.body.style.overflow = '';
     }
 
     updateInventoryDisplay() {
@@ -946,7 +1017,7 @@ class ModernInventorySystem {
         console.log('🔄 Updating inventory display with:', this.inventoryData);
 
         // Update gold
-        document.getElementById('modern-player-gold-amount').textContent = this.inventoryData.gold;
+        document.getElementById('modern-player-gold-amount').textContent = this.inventoryData.gold || 0;
 
         // Update equipped items
         this.updateEquippedItems();
@@ -962,22 +1033,47 @@ class ModernInventorySystem {
         
         slots.forEach(slotType => {
             const slot = document.querySelector(`[data-slot="${slotType}"]`);
-            const nameElement = document.getElementById(`modern-equipped-${slotType}-name`);
+            const nameElement = document.getElementById(`modern-${slotType}-name`);
             
             if (!slot || !nameElement) return;
             
             if (this.inventoryData.equipped[slotType]) {
                 const item = this.inventoryData.equipped[slotType];
+                
+                // Update visual
                 slot.classList.add('equipped');
                 this.addRarityClass(slot, item.rarity);
                 nameElement.textContent = item.name;
                 
-                // Add tooltip
-                this.addTooltip(slot, item);
+                // Update icon with item image or fallback
+                const slotIcon = slot.querySelector('.modern-slot-icon');
+                if (slotIcon) {
+                    if (item.image) {
+                        slotIcon.src = item.image;
+                        slotIcon.onerror = () => {
+                            console.warn(`Failed to load item image: ${item.image}, using fallback`);
+                            slotIcon.src = this.getDefaultSlotIcon(slotType);
+                        };
+                    } else {
+                        slotIcon.src = this.getDefaultSlotIcon(slotType);
+                    }
+                }
+                
+                // Update tooltip
+                slot.title = `${item.name} - Click to unequip`;
+                
+                console.log(`✅ Updated ${slotType} slot with ${item.name}`);
             } else {
                 slot.classList.remove('equipped', 'common', 'uncommon', 'rare', 'epic', 'legendary');
                 nameElement.textContent = 'None';
-                this.removeTooltip(slot);
+                
+                // Reset to default slot icon
+                const slotIcon = slot.querySelector('.modern-slot-icon');
+                if (slotIcon) {
+                    slotIcon.src = this.getDefaultSlotIcon(slotType);
+                }
+                
+                slot.title = `${slotType.charAt(0).toUpperCase() + slotType.slice(1)} - Empty`;
             }
         });
     }
@@ -997,8 +1093,12 @@ class ModernInventorySystem {
             return item.type === this.currentFilter;
         });
 
-        // Create inventory slots
-        const totalSlots = 24;
+        console.log(`🔍 Filtered ${filteredItems.length} items for category: ${this.currentFilter}`);
+
+        // Create inventory slots - dynamic based on content
+        const minSlots = 24;
+        const totalSlots = Math.max(minSlots, Math.ceil(filteredItems.length / 6) * 6);
+        
         for (let i = 0; i < totalSlots; i++) {
             const slot = document.createElement('div');
             slot.className = 'modern-inventory-slot';
@@ -1007,20 +1107,39 @@ class ModernInventorySystem {
                 const item = filteredItems[i];
                 this.addRarityClass(slot, item.rarity);
                 
-                slot.innerHTML = `
-                    <img class="modern-item-icon" src="${this.getItemIcon(item)}" alt="${item.name}">
-                    <div class="modern-item-quality-border"></div>
-                `;
+                // Create item display
+                const itemIcon = document.createElement('img');
+                itemIcon.className = 'modern-item-icon';
+                itemIcon.alt = item.name;
+                
+                // Set item image with fallback
+                if (item.image) {
+                    itemIcon.src = item.image;
+                    itemIcon.onerror = () => {
+                        console.warn(`Failed to load item image: ${item.image}, using fallback`);
+                        itemIcon.src = this.getDefaultSlotIcon(item.type);
+                    };
+                } else {
+                    itemIcon.src = this.getDefaultSlotIcon(item.type);
+                }
+                
+                const itemName = document.createElement('div');
+                itemName.className = 'modern-item-name-small';
+                itemName.textContent = item.name;
+                
+                slot.appendChild(itemIcon);
+                slot.appendChild(itemName);
+                
+                // Store item data
+                slot.itemData = item;
                 
                 // Add click event
                 slot.addEventListener('click', () => this.selectItem(item, slot));
                 
                 // Add tooltip
-                this.addTooltip(slot, item);
+                slot.title = this.getItemTooltip(item);
                 
-                // Add animation for new items
-                slot.classList.add('modern-item-added');
-                setTimeout(() => slot.classList.remove('modern-item-added'), 400);
+                console.log(`📦 Added item to grid: ${item.name} (${item.type})`);
             } else {
                 slot.classList.add('empty');
             }
@@ -1038,37 +1157,59 @@ class ModernInventorySystem {
         document.getElementById('modern-char-endurance').textContent = this.playerStats.endurance || 10;
     }
 
-    updateCharacterAvatar(userData) {
-        const avatarElement = document.getElementById('modern-inventory-character-avatar');
-        if (!avatarElement || !userData) return;
+    updateCharacterDisplay() {
+        if (!this.playerData) return;
 
-        let avatarSrc;
-        
-        // Check if user has a character class with custom avatar
-        if (userData.characterClass && userData.characterClass !== 'unselected') {
-            avatarSrc = `/images/characters/${userData.characterClass}.png`;
-        } else {
-            // Use regular avatar
-            avatarSrc = userData.avatar;
-            if (avatarSrc && !avatarSrc.startsWith('images/')) {
-                avatarSrc = `images/${avatarSrc}`;
-            } else if (!avatarSrc) {
-                avatarSrc = 'images/default-avatar.png';
+        const avatarElement = document.getElementById('modern-character-avatar');
+        const classElement = document.getElementById('modern-character-class');
+        const subclassElement = document.getElementById('modern-character-subclass');
+        const overviewElement = document.getElementById('modern-character-overview');
+
+        // Set character avatar
+        if (this.playerData.characterClass && this.playerData.characterClass !== 'unselected') {
+            const characterImagePath = `images/characters/${this.playerData.characterClass}.png`;
+            avatarElement.src = characterImagePath;
+            avatarElement.onerror = () => {
+                console.warn('Character class image failed to load, using default avatar');
+                const avatarSrc = this.playerData.avatar?.startsWith('images/') ? 
+                    this.playerData.avatar : `images/${this.playerData.avatar || 'default-avatar.png'}`;
+                avatarElement.src = avatarSrc;
+            };
+            
+            // Add character class styling
+            overviewElement.className = 'modern-character-overview';
+            overviewElement.classList.add(this.playerData.characterClass);
+            
+            // Set class info
+            const classMap = {
+                'shadowsteel': { name: 'Shadowsteel', subclass: 'Shadow Warrior' },
+                'ironbound': { name: 'Ironbound', subclass: 'Metal Berserker' },
+                'flameheart': { name: 'Flameheart', subclass: 'Fire Warrior' },
+                'venomfang': { name: 'Venomfang', subclass: 'Poison Assassin' }
+            };
+            
+            const classInfo = classMap[this.playerData.characterClass];
+            if (classInfo) {
+                classElement.textContent = classInfo.name;
+                subclassElement.textContent = classInfo.subclass;
             }
-        }
-        
-        avatarElement.src = avatarSrc;
-        
-        // Add character class styling
-        const characterDisplay = document.querySelector('.modern-character-display');
-        if (userData.characterClass && userData.characterClass !== 'unselected') {
-            characterDisplay.classList.add(userData.characterClass);
+        } else {
+            // Fallback to regular avatar
+            const avatarSrc = this.playerData.avatar?.startsWith('images/') ? 
+                this.playerData.avatar : `images/${this.playerData.avatar || 'default-avatar.png'}`;
+            avatarElement.src = avatarSrc;
+            
+            classElement.textContent = 'No Class';
+            subclassElement.textContent = 'Unassigned';
         }
     }
 
     selectItem(item, slotElement) {
-        // Remove previous selection
+        // Remove previous selections
         document.querySelectorAll('.modern-inventory-slot').forEach(s => {
+            s.classList.remove('selected');
+        });
+        document.querySelectorAll('.modern-equipment-slot').forEach(s => {
             s.classList.remove('selected');
         });
         
@@ -1076,24 +1217,94 @@ class ModernInventorySystem {
         slotElement.classList.add('selected');
         
         this.selectedItem = item;
+        this.selectedEquipmentSlot = null;
         
         // Enable equip button
         const equipBtn = document.getElementById('modern-equip-selected-item');
         equipBtn.disabled = false;
         equipBtn.textContent = `Equip ${item.name}`;
         
+        // Disable unequip button
+        const unequipBtn = document.getElementById('modern-unequip-selected-slot');
+        unequipBtn.disabled = true;
+        unequipBtn.textContent = 'Unequip Selected';
+        
         console.log('🎯 Selected item:', item);
+    }
+
+    selectEquipmentSlot(slotType) {
+        // Remove previous selections
+        document.querySelectorAll('.modern-inventory-slot').forEach(s => {
+            s.classList.remove('selected');
+        });
+        document.querySelectorAll('.modern-equipment-slot').forEach(s => {
+            s.classList.remove('selected');
+        });
+        
+        // Add selection to equipment slot
+        const slotElement = document.querySelector(`[data-slot="${slotType}"]`);
+        if (slotElement) {
+            slotElement.classList.add('selected');
+        }
+        
+        this.selectedItem = null;
+        this.selectedEquipmentSlot = slotType;
+        
+        // Disable equip button
+        const equipBtn = document.getElementById('modern-equip-selected-item');
+        equipBtn.disabled = true;
+        equipBtn.textContent = 'Equip Selected';
+        
+        // Enable unequip button if slot has item
+        const unequipBtn = document.getElementById('modern-unequip-selected-slot');
+        if (this.inventoryData.equipped[slotType]) {
+            unequipBtn.disabled = false;
+            unequipBtn.textContent = `Unequip ${this.inventoryData.equipped[slotType].name}`;
+        } else {
+            unequipBtn.disabled = true;
+            unequipBtn.textContent = 'Unequip Selected';
+        }
+        
+        console.log('🎯 Selected equipment slot:', slotType);
     }
 
     clearSelection() {
         this.selectedItem = null;
+        this.selectedEquipmentSlot = null;
+        
         document.querySelectorAll('.modern-inventory-slot').forEach(s => {
+            s.classList.remove('selected');
+        });
+        document.querySelectorAll('.modern-equipment-slot').forEach(s => {
             s.classList.remove('selected');
         });
         
         const equipBtn = document.getElementById('modern-equip-selected-item');
         equipBtn.disabled = true;
         equipBtn.textContent = 'Equip Selected';
+        
+        const unequipBtn = document.getElementById('modern-unequip-selected-slot');
+        unequipBtn.disabled = true;
+        unequipBtn.textContent = 'Unequip Selected';
+    }
+
+    highlightCompatibleItems(slotType) {
+        // Remove existing highlights
+        document.querySelectorAll('.modern-inventory-slot').forEach(slot => {
+            slot.classList.remove('highlighted');
+        });
+        
+        // Highlight compatible items
+        document.querySelectorAll('.modern-inventory-slot').forEach(slot => {
+            if (slot.itemData && this.canEquipItem(slot.itemData, slotType)) {
+                slot.style.boxShadow = '0 0 15px rgba(100, 255, 100, 0.8)';
+                setTimeout(() => {
+                    slot.style.boxShadow = '';
+                }, 2000);
+            }
+        });
+        
+        console.log(`💡 Highlighted items compatible with ${slotType} slot`);
     }
 
     canEquipItem(item, slotType) {
@@ -1103,21 +1314,33 @@ class ModernInventorySystem {
     equipItem(itemId, itemType) {
         console.log('⚔️ Equipping item:', itemId, itemType);
         
-        // Send equip request to server using existing socket event
+        // Send equip request to server
         this.socket.emit('equipItem', { itemId, itemType });
         
         // Clear selection
         this.clearSelection();
     }
 
-    showEquipAnimation() {
-        // Add a brief flash animation to show item was equipped
-        const container = this.modal.querySelector('.modern-inventory-container');
-        container.style.boxShadow = '0 0 30px rgba(72, 187, 120, 0.5)';
+    unequipItem(slotType) {
+        console.log('🔄 Unequipping item from slot:', slotType);
         
-        setTimeout(() => {
-            container.style.boxShadow = '';
-        }, 300);
+        // Send unequip request to server
+        this.socket.emit('unequipItem', { slotType });
+        
+        // Clear selection
+        this.clearSelection();
+    }
+
+    showEquipAnimation(slotType) {
+        if (slotType) {
+            const slotElement = document.querySelector(`[data-slot="${slotType}"]`);
+            if (slotElement) {
+                slotElement.classList.add('just-equipped');
+                setTimeout(() => {
+                    slotElement.classList.remove('just-equipped');
+                }, 1000);
+            }
+        }
     }
 
     addRarityClass(element, rarity) {
@@ -1128,88 +1351,27 @@ class ModernInventorySystem {
         }
     }
 
-    getItemIcon(item) {
-        // Map item types to icons
+    getDefaultSlotIcon(itemType) {
         const iconMap = {
-            weapon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='white' viewBox='0 0 24 24'%3E%3Cpath d='M6.92 5L5 6.92l2.83 2.83L6.92 5zm4.24 4.24L5 15.4l3.54 3.54 6.16-6.16-3.54-3.54z'/%3E%3C/svg%3E",
-            armor: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='white' viewBox='0 0 24 24'%3E%3Cpath d='M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z'/%3E%3C/svg%3E",
-            helmet: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='white' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C8 2 6 4 6 8v4c0 2 1 3 2 4h8c1-1 2-2 2-4V8c0-4-2-6-6-6z'/%3E%3C/svg%3E",
-            shield: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='white' viewBox='0 0 24 24'%3E%3Cpath d='M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z'/%3E%3C/svg%3E",
-            ring: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='white' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Ccircle cx='12' cy='12' r='6'/%3E%3C/svg%3E",
-            amulet: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='white' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3C/svg%3E",
-            boots: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='white' viewBox='0 0 24 24'%3E%3Cpath d='M4 18h16v2H4v-2zm0-4h16v2H4v-2zm0-4h16v2H4v-2z'/%3E%3C/svg%3E",
-            gloves: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='white' viewBox='0 0 24 24'%3E%3Cpath d='M8 2v6h8V2H8zm0 8v6c0 2 2 4 4 4s4-2 4-4v-6H8z'/%3E%3C/svg%3E"
+            weapon: 'images/slot-sword.svg',
+            armor: 'images/slot-armor.svg',
+            helmet: 'images/slot-helmet.svg',
+            shield: 'images/slot-shield.svg',
+            ring: 'images/slot-ring.svg',
+            amulet: 'images/slot-amulet.svg',
+            boots: 'images/slot-boots.svg',
+            gloves: 'images/slot-gloves.svg'
         };
         
-        return iconMap[item.type] || iconMap.weapon;
+        return iconMap[itemType] || 'images/slot-default.svg';
     }
 
-    addTooltip(element, item) {
-        let tooltip = null;
-        
-        const showTooltip = (e) => {
-            if (tooltip) return;
-            
-            tooltip = document.createElement('div');
-            tooltip.className = 'modern-item-tooltip';
-            tooltip.innerHTML = `
-                <div class="modern-tooltip-title" style="color: ${this.getRarityColor(item.rarity)}">${item.name}</div>
-                <div class="modern-tooltip-stats">${item.damage ? `+${item.damage} Damage` : `+${item.defense || 0} Defense`}</div>
-                ${item.description ? `<div class="modern-tooltip-description">${item.description}</div>` : ''}
-            `;
-            
-            document.body.appendChild(tooltip);
-            
-            // Position tooltip
-            const rect = element.getBoundingClientRect();
-            const tooltipRect = tooltip.getBoundingClientRect();
-            
-            let left = rect.right + 15;
-            let top = rect.top;
-            
-            // Keep tooltip on screen
-            if (left + tooltipRect.width > window.innerWidth) {
-                left = rect.left - tooltipRect.width - 15;
-            }
-            if (top + tooltipRect.height > window.innerHeight) {
-                top = window.innerHeight - tooltipRect.height - 15;
-            }
-            
-            tooltip.style.left = left + 'px';
-            tooltip.style.top = top + 'px';
-        };
-        
-        const hideTooltip = () => {
-            if (tooltip) {
-                tooltip.remove();
-                tooltip = null;
-            }
-        };
-        
-        element.addEventListener('mouseenter', showTooltip);
-        element.addEventListener('mouseleave', hideTooltip);
-        
-        // Store reference for cleanup
-        element._modernTooltipHandlers = { showTooltip, hideTooltip };
-    }
-
-    removeTooltip(element) {
-        if (element._modernTooltipHandlers) {
-            element.removeEventListener('mouseenter', element._modernTooltipHandlers.showTooltip);
-            element.removeEventListener('mouseleave', element._modernTooltipHandlers.hideTooltip);
-            delete element._modernTooltipHandlers;
-        }
-    }
-
-    getRarityColor(rarity) {
-        const colors = {
-            common: '#9ca3af',
-            uncommon: '#10b981',
-            rare: '#3b82f6',
-            epic: '#8b5cf6',
-            legendary: '#f59e0b'
-        };
-        return colors[rarity] || colors.common;
+    getItemTooltip(item) {
+        let tooltip = `${item.name}\n`;
+        if (item.damage) tooltip += `+${item.damage} Damage\n`;
+        if (item.defense) tooltip += `+${item.defense} Defense\n`;
+        if (item.description) tooltip += `${item.description}`;
+        return tooltip.trim();
     }
 
     sortInventory() {
@@ -1225,12 +1387,7 @@ class ModernInventorySystem {
         });
         
         this.updateInventoryGrid();
-        
-        // Show sort animation
-        const grid = document.getElementById('modern-inventory-items-grid');
-        grid.style.animation = 'none';
-        grid.offsetHeight; // Trigger reflow
-        grid.style.animation = 'itemAdded 0.4s ease-out';
+        console.log('📋 Inventory sorted by rarity and name');
     }
 
     // Public method to check if inventory is open
@@ -1245,11 +1402,11 @@ class ModernInventorySystem {
     
     // Wait for socket to be available
     function initWhenReady() {
-        if (typeof socket !== 'undefined' && socket && socket.connected) {
+        if (typeof socket !== 'undefined' && socket) {
             // Initialize the modern inventory system
             if (!window.modernInventorySystem) {
                 window.modernInventorySystem = new ModernInventorySystem(socket);
-                console.log('✅ Modern Inventory System initialized with existing socket');
+                console.log('✅ Fullscreen Modern Inventory System initialized');
             }
         } else {
             // Check again in a bit
@@ -1268,7 +1425,7 @@ class ModernInventorySystem {
     window.initModernInventory = function(socketInstance) {
         if (!window.modernInventorySystem) {
             window.modernInventorySystem = new ModernInventorySystem(socketInstance);
-            console.log('✅ Modern Inventory System manually initialized');
+            console.log('✅ Fullscreen Modern Inventory System manually initialized');
         }
         return window.modernInventorySystem;
     };
