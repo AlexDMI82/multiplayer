@@ -141,20 +141,43 @@
             background-color: rgba(40, 40, 40, 0.8);
             border: 2px solid rgba(100, 100, 120, 0.8);
             border-radius: 8px;
-            width: 60px;
-            height: 60px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            width: 70px;
+            height: 70px;
             transition: all 0.2s ease;
             cursor: pointer;
+            position: absolute;
         }
         
         .equipment-slot:hover {
             background-color: rgba(60, 60, 80, 0.9);
             transform: scale(1.1);
             box-shadow: 0 0 10px rgba(100, 150, 255, 0.7);
+        }
+        
+        .slot-icon {
+            width: 100%;
+            height: 100%;
+            padding: 5px; 
+            opacity: 0.8;
+            object-fit: contain;
+        }
+        
+        .equipment-name {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 2;
+            font-size: 10px;
+            color: #ddd;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 2px;
+            border-bottom-left-radius: 6px;
+            border-bottom-right-radius: 6px;
         }
         
         /* Positioned slots */
@@ -169,50 +192,33 @@
         }
         
         .armor-slot {
-            top: 80px;
+            top: 85px; /* Adjusted spacing */
             left: 10px;
         }
         
         .amulet-slot {
-            top: 80px;
+            top: 85px; /* Adjusted spacing */
             right: 10px;
         }
         
         .shield-slot {
-            top: 150px;
+            top: 160px; /* Adjusted spacing */
             left: 10px;
         }
         
         .ring-slot {
-            top: 150px;
+            top: 160px; /* Adjusted spacing */
             right: 10px;
         }
         
         .boots-slot {
-            top: 220px;
+            top: 235px; /* Adjusted spacing */
             left: 10px;
         }
         
         .gloves-slot {
-            top: 220px;
+            top: 235px; /* Adjusted spacing */
             right: 10px;
-        }
-        
-        .slot-icon {
-            width: 30px;
-            height: 30px;
-            opacity: 0.8;
-        }
-        
-        .equipment-name {
-            font-size: 10px;
-            color: #ddd;
-            text-align: center;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 90%;
-            margin-top: 3px;
         }
     </style>
 </head>
@@ -303,13 +309,14 @@
                 </div>
                 
                 <!-- Character Stats Panel -->
-                <div class="character-stats-panel">
+                    <div class="character-stats-panel">
                     <div class="combat-stats">
-                        <div class="stats-header-section">
-                            <h2>Combat Stats</h2>
-                            <div class="level-display">
-                                <!-- <div class="level-number">LVL:<span id="display-level">1</span></div> -->
-                                <div class="wins-count">Wins: <span id="display-wins">0</span>/<span id="display-wins-needed">10</span></div>
+                        <!-- --- CHANGED: Added Level and XP display --- -->
+                        <div class="level-info-container">
+                            <h3>Level <span id="profile-level-number">1</span></h3>
+                            <div class="xp-bar">
+                                <div class="xp-fill" id="profile-xp-fill"></div>
+                                <div class="xp-text" id="profile-xp-text">0 / 1000 XP</div>
                             </div>
                         </div>
                         
@@ -453,98 +460,7 @@
     <script src="/auth.js"></script>
     <script src="character-profile.js"></script>
     
-    <!-- Compatibility script to adapt the original script to our new layout -->
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Helper function to update the displayed values
-        function updateDisplayedValues() {
-            // Get values from the original script
-            const playerLevel = document.getElementById('player-level').textContent;
-            const playerWins = document.getElementById('player-wins').textContent;
-            const winsForLevel = document.getElementById('wins-for-level').textContent;
-            
-            // Update the displayed values in our new layout
-            document.getElementById('display-level').textContent = playerLevel;
-            document.getElementById('display-wins').textContent = playerWins;
-            document.getElementById('display-wins-needed').textContent = winsForLevel;
-        }
-        
-        // Update character name in header
-        function updateHeaderName() {
-            const characterName = document.getElementById('character-name').textContent;
-            if (characterName && characterName !== 'Player Name') {
-                document.getElementById('header-player-name').textContent = characterName;
-            }
-        }
-        
-        // Update character class styling
-        function updateCharacterClass() {
-            try {
-                const userStr = localStorage.getItem('user');
-                if (userStr) {
-                    const userData = JSON.parse(userStr);
-                    if (userData.characterClass) {
-                        // Add character class to the overview div for styling
-                        const overview = document.getElementById('character-overview');
-                        
-                        // Clear existing classes and add the character class
-                        const classes = ['shadowsteel', 'ironbound', 'flameheart', 'venomfang'];
-                        classes.forEach(cls => overview.classList.remove(cls));
-                        overview.classList.add(userData.characterClass);
-                        
-                        // Set class name and subclass in badge
-                        const classMap = {
-                            'shadowsteel': 'Shadow Warrior',
-                            'ironbound': 'Metal Berserker',
-                            'flameheart': 'Fire Warrior',
-                            'venomfang': 'Poison Assassin'
-                        };
-                        
-                        document.getElementById('character-class').textContent = 
-                            userData.characterClass.charAt(0).toUpperCase() + userData.characterClass.slice(1);
-                        document.getElementById('character-subclass').textContent = 
-                            classMap[userData.characterClass] || 'Warrior';
-                    }
-                }
-            } catch (e) {
-                console.error('Error updating character class:', e);
-            }
-        }
-        
-        // Create a MutationObserver to watch for changes to the player-level element
-        const levelObserver = new MutationObserver(function(mutations) {
-            updateDisplayedValues();
-        });
-        
-        // Create a MutationObserver to watch for changes to the character-name element
-        const nameObserver = new MutationObserver(function(mutations) {
-            updateHeaderName();
-        });
-        
-        // Start observing
-        const playerLevelEl = document.getElementById('player-level');
-        if (playerLevelEl) {
-            levelObserver.observe(playerLevelEl, { childList: true });
-        }
-        
-        const characterNameEl = document.getElementById('character-name');
-        if (characterNameEl) {
-            nameObserver.observe(characterNameEl, { childList: true });
-        }
-        
-        // Run these functions once on load
-        setTimeout(function() {
-            updateDisplayedValues();
-            updateHeaderName();
-            updateCharacterClass();
-        }, 500);
-        
-        // Periodically update values in case the observers miss something
-        setInterval(function() {
-            updateDisplayedValues();
-            updateHeaderName();
-        }, 2000);
-    });
-    </script>
+    <!-- CHANGED: Removed the problematic compatibility script that was causing errors -->
+    
 </body>
 </html>

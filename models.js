@@ -1,4 +1,3 @@
-
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
@@ -139,7 +138,7 @@ const inventorySchema = new mongoose.Schema({
   inventory: [Object]
 });
 
-// NEW: Player Level Schema
+// --- CHANGED: Updated Player Level Schema ---
 const playerLevelSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -152,11 +151,12 @@ const playerLevelSchema = new mongoose.Schema({
     default: 1,
     min: 1
   },
-  wins: {
+  totalXP: { // Added totalXP
     type: Number,
     default: 0,
     min: 0
   },
+  // Removed 'wins' as it's tracked in Stats model
   lastUpdated: {
     type: Date,
     default: Date.now
@@ -191,4 +191,3 @@ const PlayerLevel = mongoose.model('PlayerLevel', playerLevelSchema);
 
 // Export all models including the new PlayerLevel model
 module.exports = { User, Stats, Inventory, PlayerLevel };
-

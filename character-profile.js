@@ -132,7 +132,6 @@ let isLoadingData = false;
 document.addEventListener('DOMContentLoaded', initialize);
 
 function initialize() {
-    // Check if user is logged in
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
     
@@ -145,19 +144,17 @@ function initialize() {
         const userData = JSON.parse(userStr);
         playerData = userData;
         
-        // Set up socket connection
         setupSocketConnection(token);
-        
-        // Set up event listeners
         setupEventListeners();
-        
-        // Set up equipment slot handlers
-        setupEquipmentSlotHandlers();
-        
-        // Load initial user data and apply character class
         loadUserData();
         
-        console.log('✅ Character profile initialized successfully');
+        // --- CHANGED: Start an auto-refresh interval as a fallback ---
+        // This ensures data is refreshed even if an event is missed.
+        setInterval(() => {
+            console.log('Auto-refreshing profile data...');
+            requestPlayerData();
+        }, 5000); // Refresh every 5 seconds
+
     } catch (error) {
         console.error('Error initializing profile page:', error);
         window.location.href = '/login.html';
@@ -174,6 +171,7 @@ function setupSocketConnection(token) {
         console.log('Connected to server');
         // Authenticate with token
         socket.emit('authenticate', token);
+        requestPlayerData(); // Initial data fetch on connect
     });
     
     socket.on('authenticated', (data) => {
@@ -187,8 +185,13 @@ function setupSocketConnection(token) {
         window.location.href = '/login.html';
     });
     
-    socket.on('profileData', (data) => {
-        console.log('Received profile data:', data);
+       socket.on('profileData', (data) => {
+        console.log('Received initial profile data:', data);
+        updateProfileUI(data);
+    });
+
+   socket.on('profileDataUpdate', (data) => {
+        console.log('Received real-time profile UPDATE:', data);
         updateProfileUI(data);
     });
     
@@ -404,30 +407,58 @@ function loadUserData() {
 }
 
 function updateProfileUI(data) {
-    // Update player level and progress
-    const level = data.level || 1;
-    const wins = data.wins || 0;
-    const winsForNextLevel = level * WINS_PER_LEVEL;
-    const progress = Math.min(100, (wins % WINS_PER_LEVEL) / WINS_PER_LEVEL * 100);
+    // Helper functions for XP calculation
+    const BASE_XP_TO_LEVEL = 1000;
+    const XP_INCREASE_PER_LEVEL = 200;
+
+    function getTotalXPForLevel(level) {
+        if (level <= 1) return 0;
+        let totalXP = 0;
+        for (let i = 2; i <= level; i++) {
+            totalXP += BASE_XP_TO_LEVEL + (i - 2) * XP_INCREASE_PER_LEVEL;
+        }
+        return totalXP;
+    }
+
+    function getXPForNextLevelUp(currentLevel) {
+        return BASE_XP_TO_LEVEL + (currentLevel - 1) * XP_INCREASE_PER_LEVEL;
+    }
+
+    // Update player level and progress using the playerLevel object from the server
+    if (data.playerLevel) {
+        const level = data.playerLevel.level || 1;
+        const totalXP = data.playerLevel.totalXP || 0;
+        
+        document.getElementById('profile-level-number').textContent = level;
+
+        const xpForCurrentLevel = getTotalXPForLevel(level);
+        const xpForNextLevelUp = getXPForNextLevelUp(level);
+        const currentLevelXP = totalXP - xpForCurrentLevel;
+        const xpPercentage = xpForNextLevelUp > 0 ? (currentLevelXP / xpForNextLevelUp) * 100 : 100;
+
+        document.getElementById('profile-xp-fill').style.width = `${Math.min(100, xpPercentage)}%`;
+        document.getElementById('profile-xp-text').textContent = `${currentLevelXP} / ${xpForNextLevelUp} XP`;
+    }
     
-    playerLevelElement.textContent = level;
-    playerWinsElement.textContent = wins;
-    winsForLevelElement.textContent = WINS_PER_LEVEL;
-    levelProgressFillElement.style.width = `${progress}%`;
-    
-    // Update character profile user data if needed
+    // Fallback for old win-based system if totalXP is not present
+    else if(data.stats && data.stats.totalWins !== undefined) {
+        const wins = data.stats.totalWins || 0;
+        const winsForNextLevel = 10;
+        const progress = Math.min(100, (wins % winsForNextLevel) / winsForNextLevel * 100);
+        document.getElementById('profile-level-number').textContent = data.level || 1;
+        document.getElementById('profile-xp-fill').style.width = `${progress}%`;
+        document.getElementById('profile-xp-text').textContent = `${wins % winsForNextLevel} / ${winsForNextLevel} Wins`;
+    }
+
+    // Update other parts of the UI
     if (data.user) {
         playerData = data.user;
         loadUserData();
     }
-    
-    // If we have stats data, update it
     if (data.stats) {
         playerStats = data.stats;
         updateStatsUI();
     }
-    
-    // If we have inventory data, update it
     if (data.inventory) {
         playerInventory = data.inventory;
         updateInventoryUI();

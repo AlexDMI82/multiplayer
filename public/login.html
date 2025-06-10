@@ -33,160 +33,55 @@
         </div>
     </div>
     
+    <!-- --- FIXED: Replaced duplicate scripts with a single, correct one --- -->
     <script> 
-
-document.addEventListener('DOMContentLoaded', function() {
-    const loginForm = document.getElementById('login-form');
-    const errorMessage = document.getElementById('error-message');
-    
-    // Check if user is already logged in
-    const token = localStorage.getItem('token');
-    if (token) {
-        // Redirect to lobby
-        window.location.href = '/';
-    }
-    
-    // Form submission
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        // Get form data
-        const username = document.getElementById('username').value.trim();
-        const password = document.getElementById('password').value;
-        
-        // Create request body
-        const userData = {
-            username,
-            password
-        };
-        
-        try {
-            // Show loading state
-            const submitBtn = loginForm.querySelector('button[type="submit"]');
-            const originalText = submitBtn.textContent;
-            submitBtn.textContent = 'Signing in...';
-            submitBtn.disabled = true;
-            
-            // Send login request
-            const response = await fetch('/api/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(userData)
-            });
-            
-            const data = await response.json();
-            
-            if (!response.ok) {
-                showError(data.message || 'Login failed');
-                submitBtn.textContent = originalText;
-                submitBtn.disabled = false;
-                return;
-            }
-            
-            // Important: Store token properly
-            localStorage.setItem('token', data.token);
-            
-            // Make sure avatar path includes directory
-            if (data.user.avatar && !data.user.avatar.startsWith('images/')) {
-                data.user.avatar = `images/${data.user.avatar}`;
-            }
-            
-            // Store user data
-            localStorage.setItem('user', JSON.stringify(data.user));
-            
-            // Add a small delay to ensure localStorage is written
-            setTimeout(() => {
-                // Redirect to lobby
-                window.location.href = '/';
-            }, 100);
-            
-        } catch (error) {
-            showError('Error connecting to server');
-            console.error('Login error:', error);
-            submitBtn.textContent = originalText;
-            submitBtn.disabled = false;
-        }
-    });
-    
-    // Helper function to show error message
-    function showError(message) {
-        errorMessage.textContent = message;
-        errorMessage.classList.remove('hidden');
-        
-        // Hide after 5 seconds
-        setTimeout(() => {
-            errorMessage.classList.add('hidden');
-        }, 5000);
-    }
-});
+        document.addEventListener('DOMContentLoaded', function() {
             const loginForm = document.getElementById('login-form');
             const errorMessage = document.getElementById('error-message');
             
-            // Check if user is already logged in
-            const token = localStorage.getItem('token');
-            if (token) {
-                // Redirect to lobby
+            // Check if user is already logged in and redirect
+            if (localStorage.getItem('token')) {
                 window.location.href = '/';
             }
             
-            // Form submission
             loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
-                // Get form data
                 const username = document.getElementById('username').value.trim();
                 const password = document.getElementById('password').value;
-                
-                // Create request body
-                const userData = {
-                    username,
-                    password
-                };
-                
+                const submitBtn = loginForm.querySelector('button[type="submit"]');
+
+                submitBtn.textContent = 'Signing in...';
+                submitBtn.disabled = true;
+                errorMessage.classList.add('hidden');
+
                 try {
-                    // Send login request
                     const response = await fetch('/api/login', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(userData)
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password })
                     });
                     
                     const data = await response.json();
                     
                     if (!response.ok) {
-                        showError(data.message || 'Login failed');
-                        return;
+                        throw new Error(data.message || 'Login failed');
                     }
                     
-                    // Store token in localStorage
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('user', JSON.stringify(data.user));
                     
-                    // Redirect to lobby
                     window.location.href = '/';
+                    
                 } catch (error) {
-                    showError('Error connecting to server');
+                    errorMessage.textContent = error.message;
+                    errorMessage.classList.remove('hidden');
+                    submitBtn.textContent = 'Sign In';
+                    submitBtn.disabled = false;
                     console.error('Login error:', error);
                 }
             });
-            
-            // Helper function to show error message
-            function showError(message) {
-                errorMessage.textContent = message;
-                errorMessage.classList.remove('hidden');
-                
-                // Hide after 5 seconds
-                setTimeout(() => {
-                    errorMessage.classList.add('hidden');
-                }, 5000);
-            };
-        
+        });
     </script>
-
-    <script src="/auth.js"></script>
 </body>
 </html>

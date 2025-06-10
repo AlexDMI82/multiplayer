@@ -395,12 +395,26 @@ function updateEquipmentSlot(slotType, item) {
     const nameElement = document.getElementById(`shop-${slotType}-name`);
     
     if (slotElement && nameElement) {
+        // Find the icon image inside the slot
+        const iconElement = slotElement.querySelector('.slot-icon');
+
         if (item) {
             slotElement.classList.add('has-item');
             nameElement.textContent = item.name;
+            // Set the icon's source to the item image
+            if (iconElement) {
+                iconElement.src = item.image;
+                // Add a fallback in case the image fails to load
+                iconElement.onerror = () => { iconElement.src = `images/slot-${slotType}.svg`; };
+            }
         } else {
             slotElement.classList.remove('has-item');
             nameElement.textContent = 'None';
+            // Reset to the default slot icon
+            if (iconElement) {
+                iconElement.src = `images/slot-${slotType}.svg`;
+                iconElement.onerror = null; // Remove previous error handler
+            }
         }
     }
 }

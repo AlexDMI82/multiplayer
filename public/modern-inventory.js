@@ -1,4 +1,3 @@
-// modern-inventory.js - Fullscreen version with complete functionality
 class ModernInventorySystem {
     constructor(socket) {
         this.socket = socket;
@@ -1112,11 +1111,12 @@ class ModernInventorySystem {
                 itemIcon.className = 'modern-item-icon';
                 itemIcon.alt = item.name;
                 
+                // --- CHANGED: Use item.image and provide a fallback ---
                 // Set item image with fallback
                 if (item.image) {
                     itemIcon.src = item.image;
                     itemIcon.onerror = () => {
-                        console.warn(`Failed to load item image: ${item.image}, using fallback`);
+                        console.warn(`Failed to load inventory item image: ${item.image}, using fallback.`);
                         itemIcon.src = this.getDefaultSlotIcon(item.type);
                     };
                 } else {
@@ -1430,3 +1430,4 @@ class ModernInventorySystem {
         return window.modernInventorySystem;
     };
 })();
+
