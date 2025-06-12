@@ -1212,11 +1212,18 @@ function updateGameState(state) {
     if (state.waitingForPlayers) {
         gameMessage.textContent = 'Waiting for opponent...';
         combatControls.style.display = 'none';
-    } else if (state.currentRound && !waitingForOpponent) {
+    } else if (state.currentRound && state.currentRound > 0 && !waitingForOpponent) {
         gameMessage.textContent = 'Select an attack and block area (auto-submits when both selected)';
         combatControls.style.display = 'flex';
+        combatControls.style.opacity = '1';
     } else if (waitingForOpponent) {
         gameMessage.textContent = 'Waiting for opponent\'s move...';
+        // Keep controls visible but disabled-looking
+        combatControls.style.display = 'flex';
+        combatControls.style.opacity = '0.5';
+    } else {
+        // Default case - hide controls if we're not sure
+        combatControls.style.display = 'none';
     }
 }
 // Add fallback images constant at the top of game.js (if not already present)
@@ -1418,15 +1425,22 @@ function updateGameState(state) {
         }
     }
     
-    if (state.waitingForPlayers) {
-        gameMessage.textContent = 'Waiting for opponent...';
-        combatControls.style.display = 'none';
-    } else if (state.currentRound && !waitingForOpponent) {
-        gameMessage.textContent = 'Select an attack and block area (auto-submits when both selected)';
-        combatControls.style.display = 'flex';
-    } else if (waitingForOpponent) {
-        gameMessage.textContent = 'Waiting for opponent\'s move...';
-    }
+if (state.waitingForPlayers) {
+    gameMessage.textContent = 'Waiting for opponent...';
+    combatControls.style.display = 'none';
+} else if (state.currentRound && state.currentRound > 0 && !waitingForOpponent) {
+    gameMessage.textContent = 'Select an attack and block area (auto-submits when both selected)';
+    combatControls.style.display = 'flex';
+    combatControls.style.opacity = '1';
+} else if (waitingForOpponent) {
+    gameMessage.textContent = 'Waiting for opponent\'s move...';
+    // Keep controls visible but disabled-looking
+    combatControls.style.display = 'flex';
+    combatControls.style.opacity = '0.5';
+} else {
+    // Default case - hide controls if we're not sure
+    combatControls.style.display = 'none';
+}
 }
 
 
@@ -1751,7 +1765,11 @@ socket.on('roundStarted', (data) => {
     console.log('Round started:', data);
     roundInProgress = false;
     waitingForOpponent = false;
+    
+    // FIXED: Explicitly show and enable combat controls
+    combatControls.style.display = 'flex';
     combatControls.style.opacity = '1';
+    
     resetCombatSelections();
     startTurnTimer(data.turnTime);
     addLogEntry(`Round ${data.round} started!`, 'info');
@@ -1923,6 +1941,36 @@ socket.on('statPointAwarded', (data) => {
     setTimeout(() => {
         notification.remove();
     }, 3000);
+});
+
+
+
+
+socket.on('challengeFailed', (data) => {
+  console.error('Challenge failed:', data);
+  alert(`Challenge failed: ${data.message}`);
+});
+
+socket.on('challengeError', (data) => {
+  console.error('Challenge error:', data);
+  alert(`Challenge error: ${data.message}`);
+});
+
+socket.on('challengeExpired', (data) => {
+  console.log('Challenge expired:', data);
+  const outgoingChallenge = document.getElementById(`outgoing-${data.challengeId}`);
+  if (outgoingChallenge) outgoingChallenge.remove();
+  const incomingChallenge = document.getElementById(`challenge-${data.challengeId}`);
+  if (incomingChallenge) incomingChallenge.remove();
+});
+
+socket.on('challengeCancelled', (data) => {
+  console.log('Challenge cancelled:', data);
+  const outgoingChallenge = document.getElementById(`outgoing-${data.challengeId}`);
+  if (outgoingChallenge) outgoingChallenge.remove();
+  const incomingChallenge = document.getElementById(`challenge-${data.challengeId}`);
+  if (incomingChallenge) incomingChallenge.remove();
+  if (data.reason) alert(`Challenge cancelled: ${data.reason}`);
 });
 
 // Make buyItem and equipItem global so they can be called from HTML onclick

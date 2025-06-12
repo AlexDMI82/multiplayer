@@ -1,5 +1,4 @@
-// FIXED: JWT authentication issues in server.js
-
+// server.js - Simplified working version
 const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
@@ -8,262 +7,192 @@ const path = require('path');
 const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
-const { User, Stats, Inventory, PlayerLevel } = require('./models');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken'); // FIXED: Changed from 'jsonwebtoken' to 'jwt' for consistency
+const jwt = require('jsonwebtoken');
+
+// Import models
+const { User, Stats, Inventory, PlayerLevel } = require('./models');
+
+// Import existing systems
 const levelingSystem = require('./server/leveling-system');
+const BotManager = require('./server/botManager');
+const CombatSystem = require('./combat-system-server.js');
+
+// Global state
 const activeChallenges = new Map();
 const userSockets = new Map();
+const connectedPlayers = new Map();
+const activeGames = new Map();
 
-// Create the ShopHandlers class inline
-class ShopHandlers {
-    constructor(io) {
-        this.io = io;
-        this.SHOP_DATA = {
-            weapons: [
-                {
-                    id: 'sword_001',
-                    name: 'Dark Sword',
-                    type: 'weapon',
-                    price: 100,
-                    damage: 5,
-                    rarity: 'common',
-                    image: '/images/swords/DarkSword.jpg',
-                    description: 'A basic iron sword, reliable and sturdy.'
-                },
-                {
-                    id: 'sword_002',
-                    name: 'Flaming Sword',
-                    type: 'weapon',
-                    price: 500,
-                    damage: 12,
-                    rarity: 'rare',
-                    image: '/images/swords/FlamingSword.jpg',
-                    description: 'A sword imbued with the essence of fire, burns enemies on hit.'
-                },
-            ],
-            armor: [
-                {
-                    id: 'armor_001',
-                    name: 'Leather Vest',
-                    type: 'armor',
-                    price: 150,
-                    defense: 5,
-                    rarity: 'common',
-                    image: '/images/armor/leather.png',
-                    description: 'Basic leather protection for adventurers.'
-                },
-                {
-                    id: 'armor_002',
-                    name: 'Iron Chestplate',
-                    type: 'armor',
-                    price: 400,
-                    defense: 10,
-                    rarity: 'uncommon',
-                    image: '/images/armor/iron.png',
-                    description: 'Solid iron protection for the torso.'
-                },
-            ],
-            shields: [
-                 {
-                    id: 'shield_001',
-                    name: 'Dark Shield',
-                    type: 'shield',
-                    price: 100,
-                    defense: 3,
-                    rarity: 'common',
-                    image: '/images/shields/darkShield.jpg',
-                    description: 'A basic dark shield providing minimal protection.'
-                },
-                {
-                    id: 'shield_002',
-                    name: 'Flame Shield',
-                    type: 'shield',
-                    price: 300,
-                    defense: 7,
-                    rarity: 'uncommon',
-                    image: '/images/shields/flameShield.jpg',
-                    description: 'A shield imbued with fire magic, burns attackers on contact.'
-                },
-            ],
-             helmets: [
-                {
-                    id: 'helmet_001',
-                    name: 'Dark Helm',
-                    type: 'helmet',
-                    price: 100,
-                    defense: 2,
-                    rarity: 'common',
-                    image: '/images/helm/darHelm.jpg',
-                    description: 'A basic dark helmet providing minimal head protection.'
-                },
-                {
-                    id: 'helmet_002',
-                    name: 'Fire Helm',
-                    type: 'helmet',
-                    price: 300,
-                    defense: 5,
-                    rarity: 'uncommon',
-                    image: '/images/helm/fireHelm.jpg',
-                    description: 'A helmet forged with fire magic, radiates warmth and protection.'
-                },
-            ],
-        };
-    }
+// Initialize systems
+const combatSystem = new CombatSystem();
+const botManager = new BotManager(io, combatSystem);
 
-    findItemById(itemId) {
-        for (const category of Object.values(this.SHOP_DATA)) {
-            const item = category.find(item => item.id === itemId);
-            if (item) return item;
-        }
-        return null;
-    }
-
-    registerHandlers(socket) {
-        console.log(`🏪 Registering shop handlers for ${socket.user.username}`);
-
-        socket.on('getShopItems', () => {
-            console.log(`📦 Sending shop items to ${socket.user.username}`);
-            socket.emit('shopItems', this.SHOP_DATA);
-        });
-
-        socket.on('buyItem', async (data) => {
-            try {
-                console.log(`💰 Purchase request from ${socket.user.username}:`, data);
-                
-                const { itemId, itemType } = data;
-                const item = this.findItemById(itemId);
-                if (!item) {
-                    console.log(`❌ Item not found: ${itemId}`);
-                    socket.emit('purchaseFailed', { 
-                        reason: 'Item not found',
-                        message: `Item with ID ${itemId} not found in shop` 
-                    });
-                    return;
-                }
-
-                let inventory = await Inventory.findOne({ userId: socket.user._id });
-                if (!inventory) {
-                    console.log(`Creating new inventory for ${socket.user.username}`);
-                    inventory = await Inventory.create({ 
-                        userId: socket.user._id,
-                        gold: 1000,
-                        equipped: {},
-                        inventory: []
-                    });
-                }
-
-                if (inventory.gold < item.price) {
-                    console.log(`❌ Insufficient funds for ${socket.user.username}. Has: ${inventory.gold}, Needs: ${item.price}`);
-                    socket.emit('purchaseFailed', { 
-                        reason: 'Insufficient funds',
-                        message: `You need ${item.price} gold, but only have ${inventory.gold}` 
-                    });
-                    return;
-                }
-
-                const inventoryItem = {
-                    id: item.id,
-                    name: item.name,
-                    type: item.type,
-                    image: item.image,
-                    description: item.description,
-                    rarity: item.rarity,
-                    price: item.price
-                };
-
-                if (item.damage) inventoryItem.damage = item.damage;
-                if (item.defense) inventoryItem.defense = item.defense;
-
-                const newGold = inventory.gold - item.price;
-                
-                await Inventory.findOneAndUpdate(
-                    { userId: socket.user._id },
-                    {
-                        $push: { inventory: inventoryItem },
-                        $set: { gold: newGold }
-                    },
-                    { new: true }
-                );
-
-                console.log(`✅ Purchase successful for ${socket.user.username}: ${item.name} for ${item.price} gold. New gold: ${newGold}`);
-
-                socket.emit('purchaseComplete', {
-                    item: inventoryItem,
-                    newGold: newGold,
-                    itemName: item.name,
-                    message: `Successfully purchased ${item.name}!`
-                });
-
-                const updatedInventory = await Inventory.findOne({ userId: socket.user._id });
-                socket.emit('inventory', updatedInventory);
-
-            } catch (error) {
-                console.error('Error processing purchase:', error);
-                socket.emit('purchaseFailed', { 
-                    reason: 'Server error',
-                    message: 'An error occurred while processing your purchase' 
-                });
-            }
-        });
-
-        socket.on('equipItem', async (data) => {
-            try {
-                console.log(`⚔️ Equip request from ${socket.user.username}:`, data);
-                
-                const { itemId, itemType } = data;
-
-                const inventory = await Inventory.findOne({ userId: socket.user._id });
-                if (!inventory) {
-                    socket.emit('equipFailed', { message: 'Inventory not found' });
-                    return;
-                }
-
-                const itemIndex = inventory.inventory.findIndex(item => item.id === itemId);
-                if (itemIndex === -1) {
-                    socket.emit('equipFailed', { message: 'Item not found in inventory' });
-                    return;
-                }
-
-                const item = inventory.inventory[itemIndex];
-
-                if (inventory.equipped[itemType]) {
-                    inventory.inventory.push(inventory.equipped[itemType]);
-                }
-
-                inventory.equipped[itemType] = item;
-                inventory.inventory.splice(itemIndex, 1);
-
-                await inventory.save();
-
-                console.log(`✅ Item equipped successfully for ${socket.user.username}: ${item.name}`);
-
-                socket.emit('equipmentUpdated', {
-                    equipped: inventory.equipped,
-                    inventory: inventory.inventory,
-                    gold: inventory.gold
-                });
-
-            } catch (error) {
-                console.error('Error equipping item:', error);
-                socket.emit('equipFailed', { message: 'Failed to equip item' });
-            }
-        });
-    }
-}
-
-const shopHandlers = new ShopHandlers(io);
-const BotManager = require('./server/botManager');
-
-app.use(express.json());
-
+// Configuration
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 
+// Utility functions
 const generateToken = (userId) => {
-  return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: '7d' }); // FIXED: Now using 'jwt'
+  return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: '7d' });
 };
 
-// FIXED: Authentication middleware with proper error handling
+function getCharacterBonuses(characterClass) {
+  const bonuses = {
+    'shadowsteel': { agility: 7, strength: 3, intuition: 0, endurance: 0, specialAbility: 'evade' },
+    'ironbound': { agility: 0, strength: 5, intuition: 0, endurance: 5, specialAbility: 'ignoreBlock' },
+    'flameheart': { agility: 0, strength: 3, intuition: 7, endurance: 0, specialAbility: 'criticalHit' },
+    'venomfang': { agility: 5, strength: 5, intuition: 0, endurance: 0, specialAbility: 'poison' },
+    'unselected': { agility: 0, strength: 0, intuition: 0, endurance: 0, specialAbility: null }
+  };
+  return bonuses[characterClass] || bonuses['unselected'];
+}
+
+// FIXED: Game utility functions that actually work
+function startRound(gameId) {
+  const game = activeGames.get(gameId);
+  if (!game) {
+    console.error(`❌ Cannot start round: Game ${gameId} not found`);
+    return;
+  }
+
+  game.currentRound = (game.currentRound || 0) + 1;
+  game.moves = {};
+  
+  console.log(`🎯 STARTING ROUND ${game.currentRound} for game ${gameId}`);
+  
+  io.to(gameId).emit('roundStarted', {
+    round: game.currentRound,
+    turnTime: game.turnTime || 30,
+    gameState: { ...game, players: game.players }
+  });
+
+  game.turnTimer = setTimeout(() => {
+    handleTurnTimeout(gameId);
+  }, (game.turnTime || 30) * 1000);
+}
+
+function handleTurnTimeout(gameId) {
+  const game = activeGames.get(gameId);
+  if (!game) return;
+
+  console.log(`⏰ Turn timeout for game ${gameId}`);
+  const playerIds = Object.keys(game.players);
+  
+  playerIds.forEach(playerId => {
+    if (!game.moves[playerId]) {
+      game.moves[playerId] = {
+        attackArea: null,
+        blockArea: null,
+        auto: true,
+        timestamp: Date.now()
+      };
+    }
+  });
+
+  setTimeout(() => processRound(gameId), 1000);
+}
+
+function processRound(gameId) {
+  const game = activeGames.get(gameId);
+  if (!game) return;
+
+  console.log(`⚔️ Processing round ${game.currentRound} for game ${gameId}`);
+
+  try {
+    const result = combatSystem.processRound(game.players, game.moves);
+    
+    io.to(gameId).emit('roundResult', {
+      round: game.currentRound,
+      moves: game.moves,
+      damageDealt: result.damageDealt,
+      combatLog: result.combatLog,
+      gameState: { ...game, players: game.players }
+    });
+
+    if (result.gameOver) {
+      console.log(`🏁 Game ${gameId} ended. Winner: ${result.winner}`);
+      setTimeout(() => endGame(gameId, result.winner), 3000);
+    } else {
+      setTimeout(() => startRound(gameId), 5000);
+    }
+  } catch (error) {
+    console.error('Error processing round:', error);
+    io.to(gameId).emit('gameError', { message: 'Error processing round' });
+  }
+}
+
+async function endGame(gameId, winnerId) {
+  const game = activeGames.get(gameId);
+  if (!game) return;
+  
+  console.log(`🏁 Ending game ${gameId}, winner: ${winnerId}`);
+  
+  if (game.turnTimer) {
+    clearTimeout(game.turnTimer);
+    game.turnTimer = null;
+  }
+  
+  const loserId = Object.keys(game.players).find(id => id !== winnerId);
+
+  if (winnerId && game.players[winnerId] && !winnerId.startsWith('bot_')) {
+    const winner = game.players[winnerId];
+    if (levelingSystem && typeof levelingSystem.processGameResult === 'function') {
+      await levelingSystem.processGameResult(winner.userId, 'win');
+    }
+  }
+  
+  if (loserId && game.players[loserId] && !loserId.startsWith('bot_')) {
+    const loser = game.players[loserId];
+    if (levelingSystem && typeof levelingSystem.processGameResult === 'function') {
+      await levelingSystem.processGameResult(loser.userId, 'loss');
+    }
+  }
+  
+  io.to(gameId).emit('gameOver', {
+    winner: winnerId,
+    loser: loserId,
+    reason: 'defeat'
+  });
+  
+  activeGames.delete(gameId);
+}
+
+async function ensureInventoryExists(userId) {
+  try {
+    let inventory = await Inventory.findOne({ userId });
+    
+    if (!inventory) {
+      inventory = await Inventory.create({
+        userId: userId,
+        gold: 1000,
+        equipped: {
+          weapon: null, armor: null, shield: null, helmet: null,
+          boots: null, gloves: null, amulet: null, ring: null
+        },
+        inventory: []
+      });
+    }
+    return inventory;
+  } catch (error) {
+    console.error(`❌ Error ensuring inventory exists for user ${userId}:`, error);
+    throw error;
+  }
+}
+
+// Middleware
+app.use(express.json());
+app.use(express.static('public'));
+app.use(express.static(__dirname)); 
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your_session_secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: process.env.NODE_ENV === 'production', maxAge: 7 * 24 * 60 * 60 * 1000 }
+}));
+
+// Authentication middleware (copy your existing authenticate function here)
 const authenticate = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '') || req.cookies.token;
@@ -275,7 +204,7 @@ const authenticate = async (req, res, next) => {
       return res.status(401).json({ message: 'Authentication required' });
     }
     
-    const decoded = jwt.verify(token, JWT_SECRET); // FIXED: Now using 'jwt'
+    const decoded = jwt.verify(token, JWT_SECRET);
     const user = await User.findById(decoded.id).select('-password');
     
     if (!user) {
@@ -302,103 +231,7 @@ const authenticate = async (req, res, next) => {
   }
 };
 
-const WINS_PER_LEVEL = 10;
-const POINTS_PER_LEVEL = 5;
-
-app.use(express.static('public'));
-app.use(express.static(__dirname)); 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'your_session_secret',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { secure: process.env.NODE_ENV === 'production', maxAge: 7 * 24 * 60 * 60 * 1000 }
-}));
-
-function getCharacterBonuses(characterClass) {
-  switch(characterClass) {
-    case 'shadowsteel': return { agility: 7, strength: 3, intuition: 0, endurance: 0, specialAbility: 'evade' };
-    case 'ironbound': return { agility: 0, strength: 5, intuition: 0, endurance: 5, specialAbility: 'ignoreBlock' };
-    case 'flameheart': return { agility: 0, strength: 3, intuition: 7, endurance: 0, specialAbility: 'criticalHit' };
-    case 'venomfang': return { agility: 5, strength: 5, intuition: 0, endurance: 0, specialAbility: 'poison' };
-    default: return { agility: 0, strength: 0, intuition: 0, endurance: 0, specialAbility: null };
-  }
-}
-
-const connectedPlayers = new Map();
-const activeGames = new Map();
-const CombatSystem = require('./combat-system-server.js');
-const combatSystem = new CombatSystem();
-const botManager = new BotManager(io, combatSystem);
-global.connectedPlayers = connectedPlayers;
-
-async function ensureInventoryExists(userId) {
-    try {
-        let inventory = await Inventory.findOne({ userId });
-        
-        if (!inventory) {
-            console.log(`📦 Creating new inventory for user ${userId}`);
-            inventory = await Inventory.create({
-                userId: userId,
-                gold: 1000,
-                equipped: {
-                    weapon: null,
-                    armor: null,
-                    shield: null,
-                    helmet: null,
-                    boots: null,
-                    gloves: null,
-                    amulet: null,
-                    ring: null
-                },
-                inventory: []
-            });
-            console.log(`✅ New inventory created with 1000 gold`);
-        } else {
-            let needsSave = false;
-            
-            if (typeof inventory.gold !== 'number') {
-                inventory.gold = 1000;
-                needsSave = true;
-                console.log(`🔧 Fixed gold for user ${userId}: set to 1000`);
-            }
-            
-            if (!inventory.equipped || typeof inventory.equipped !== 'object') {
-                inventory.equipped = {
-                    weapon: null, armor: null, shield: null, helmet: null,
-                    boots: null, gloves: null, amulet: null, ring: null
-                };
-                needsSave = true;
-            }
-            
-            if (!Array.isArray(inventory.inventory)) {
-                inventory.inventory = [];
-                needsSave = true;
-            }
-            
-            if (needsSave) {
-                await inventory.save();
-                console.log(`✅ Inventory structure fixed for user ${userId}`);
-            }
-        }
-        
-        return inventory;
-    } catch (error) {
-        console.error(`❌ Error ensuring inventory exists for user ${userId}:`, error);
-        throw error;
-    }
-}
-
-mongoose.connect('mongodb+srv://braucamkopa:Y1ytE02fH8ErX3qi@cluster0.eedzhyr.mongodb.net/multiplayer-game?retryWrites=true&w=majority&appName=Cluster0')
-.then(async () => {
-  console.log('Connected to MongoDB');
-  await botManager.initializeBots();
-})
-.catch(err => console.error('MongoDB connection error:', err));
-
-// Routes
+// Routes (copy your existing routes here - register, login, etc.)
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/register.html', (req, res) => res.sendFile(path.join(__dirname, 'register.html')));
 app.get('/login.html', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
@@ -408,7 +241,7 @@ app.get('/shop.html', authenticate, (req, res) => res.sendFile(path.join(__dirna
 app.get('/profile', authenticate, (req, res) => res.sendFile(path.join(__dirname, 'profile.html')));
 app.get('/character-select.html', authenticate, (req, res) => res.sendFile(path.join(__dirname, 'character-select.html')));
 
-// FIXED: Registration endpoint with proper error handling
+// API Routes
 app.post('/api/register', async (req, res) => {
   const mongoSession = await mongoose.startSession();
   mongoSession.startTransaction();
@@ -479,7 +312,6 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// FIXED: Login endpoint with proper error handling
 app.post('/api/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -525,7 +357,6 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Character selection API endpoint 
 app.post('/api/select-character', authenticate, async (req, res) => {
   try {
     console.log('Character selection request received:', req.body);
@@ -624,7 +455,6 @@ app.get('/api/profile', authenticate, async (req, res) => {
   }
 });
 
-// Update user profile
 app.put('/api/profile', authenticate, async (req, res) => {
   try {
     const { username, email, avatar: rawAvatar } = req.body;
@@ -666,7 +496,6 @@ app.put('/api/profile', authenticate, async (req, res) => {
   }
 });
 
-// Change password
 app.put('/api/change-password', authenticate, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -691,64 +520,46 @@ app.put('/api/change-password', authenticate, async (req, res) => {
   }
 });
 
-// FIXED: Socket.IO Authentication Middleware
+// Socket.IO Authentication
 io.use(async (socket, next) => {
   try {
     const token = socket.handshake.auth.token;
     if (!token) {
-      console.log('Socket Auth: No token provided for socket ID:', socket.id);
       return next(new Error('Authentication error: No token provided'));
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET); // FIXED: Now using 'jwt'
+    const decoded = jwt.verify(token, JWT_SECRET);
     const user = await User.findById(decoded.id).select('-password'); 
 
     if (!user) {
-      console.log('Socket Auth: User not found for token, socket ID:', socket.id);
       return next(new Error('Authentication error: User not found'));
     }
 
     socket.user = user;
     next();
   } catch (error) {
-    console.error(`Socket authentication error for socket ID ${socket.id}:`, error.message);
-    if (error.name === 'JsonWebTokenError') {
-      return next(new Error('Authentication error: Invalid token'));
-    }
-    if (error.name === 'TokenExpiredError') {
-      return next(new Error('Authentication error: Token expired'));
-    }
     return next(new Error('Authentication error: Could not authenticate'));
   }
 });
 
-// FIXED: Socket connection handler
+global.connectedPlayers = connectedPlayers;
+
+// FIXED: Socket connection with working game flow
 io.on('connection', async (socket) => {
   const user = socket.user;
   const userId = user._id.toString();
   console.log(`Player connected: ${user.username} (Socket ID: ${socket.id})`);
 
-  // Track all active sockets for a user
+  // Track user sockets
   if (!userSockets.has(userId)) {
     userSockets.set(userId, new Set());
   }
   userSockets.get(userId).add(socket.id);
-  console.log(`User ${user.username} now has ${userSockets.get(userId).size} active connections.`);
-  
-  // FIXED: Check if levelingSystem exists before calling it
-  try {
-    if (levelingSystem && typeof levelingSystem.migratePlayerData === 'function') {
-      await levelingSystem.migratePlayerData(userId);
-    }
-  } catch (error) {
-    console.error('Error migrating player data:', error);
-  }
 
+  // Get player data
   const stats = await Stats.findOne({ userId });
   let inventory = await ensureInventoryExists(user._id);
   const playerLevel = await PlayerLevel.findOne({ userId });
-
-  shopHandlers.registerHandlers(socket);
 
   const playerData = {
     socketId: socket.id,
@@ -765,7 +576,7 @@ io.on('connection', async (socket) => {
   connectedPlayers.set(socket.id, playerData);
   io.emit('updatePlayerList', botManager.getAllPlayersIncludingBots());
 
-  // Send profile data to the newly connected client
+  // Send initial profile data
   socket.emit('profileData', {
     user: { 
       id: user._id, 
@@ -778,11 +589,267 @@ io.on('connection', async (socket) => {
     inventory: inventory,
     playerLevel: playerLevel
   });
-  
+
+  // CHALLENGE HANDLERS
+  socket.on('challengePlayer', async (opponentId) => {
+    try {
+      const opponent = connectedPlayers.get(opponentId);
+      if (!opponent) {
+        socket.emit('challengeFailed', { message: 'Player not found or offline' });
+        return;
+      }
+      
+      const challengeId = `challenge_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      const challengeData = {
+        id: challengeId,
+        challengerId: socket.id,
+        challengerUserId: socket.user._id.toString(),
+        opponentId: opponentId,
+        timestamp: Date.now(),
+        challenger: {
+          socketId: socket.id,
+          userId: socket.user._id.toString(),
+          username: socket.user.username,
+          avatar: socket.user.avatar,
+          characterClass: socket.user.characterClass || 'unselected'
+        }
+      };
+      
+      activeChallenges.set(challengeId, challengeData);
+      
+      io.to(opponentId).emit('challengeReceived', challengeData);
+      socket.emit('challengeSent', {
+        id: challengeId,
+        opponentName: opponent.username,
+        timestamp: Date.now()
+      });
+      
+      setTimeout(() => {
+        if (activeChallenges.has(challengeId)) {
+          activeChallenges.delete(challengeId);
+          io.to(socket.id).emit('challengeExpired', { challengeId });
+          io.to(opponentId).emit('challengeExpired', { challengeId });
+        }
+      }, 60000);
+      
+    } catch (error) {
+      console.error('Error processing challenge:', error);
+      socket.emit('challengeFailed', { message: 'Failed to send challenge' });
+    }
+  });
+
+  socket.on('respondToChallenge', async (data) => {
+    try {
+      const { challengeId, accepted, challengerId } = data;
+      
+      const challenge = activeChallenges.get(challengeId);
+      if (!challenge) {
+        socket.emit('challengeError', { message: 'Challenge not found or expired' });
+        return;
+      }
+      
+      activeChallenges.delete(challengeId);
+      
+      if (accepted) {
+        const gameId = `game_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        const challenger = connectedPlayers.get(challengerId);
+        if (!challenger) {
+          socket.emit('challengeError', { message: 'Challenger no longer available' });
+          return;
+        }
+        
+        const gameData = {
+          gameId: gameId,
+          opponent: {
+            id: challengerId,
+            userId: challenger.userId,
+            username: challenger.username,
+            avatar: challenger.avatar,
+            characterClass: challenger.characterClass || 'unselected'
+          }
+        };
+        
+        const challengerGameData = {
+          gameId: gameId,
+          opponent: {
+            id: socket.id,
+            userId: socket.user._id.toString(),
+            username: socket.user.username,
+            avatar: socket.user.avatar,
+            characterClass: socket.user.characterClass || 'unselected'
+          }
+        };
+        
+        socket.emit('challengeAccepted', gameData);
+        io.to(challengerId).emit('challengeAccepted', challengerGameData);
+        
+      } else {
+        io.to(challengerId).emit('challengeRejected', {
+          challengeId: challengeId,
+          message: `${socket.user.username} declined your challenge`
+        });
+      }
+      
+    } catch (error) {
+      console.error('Error responding to challenge:', error);
+      socket.emit('challengeError', { message: 'Failed to respond to challenge' });
+    }
+  });
+
+  // --- START OF REPLACEMENT ---
+  socket.on('joinGame', async (gameId) => {
+    try {
+        console.log(`🎮 ${socket.user.username} joining game: ${gameId}`);
+        
+        // --- FIX: Atomic creation of the game object to prevent race conditions ---
+        if (!activeGames.has(gameId)) {
+            // Synchronously create a placeholder for the game to reserve the ID
+            activeGames.set(gameId, {
+                id: gameId,
+                players: {},
+                currentRound: 0,
+                turnTimer: null,
+                turnTime: 30,
+                moves: {},
+                waitingForPlayers: true,
+                createdAt: Date.now()
+            });
+        }
+        
+        const game = activeGames.get(gameId);
+        
+        // Join the socket to the game room so they receive broadcasts
+        socket.join(gameId);
+
+        // Add the player to the game object if they are not already in it
+        if (!game.players[socket.id]) {
+            // Fetch all necessary data for this player asynchronously
+            const stats = await Stats.findOne({ userId: socket.user._id });
+            const inventory = await Inventory.findOne({ userId: socket.user._id });
+            const playerLevel = await PlayerLevel.findOne({ userId: socket.user._id });
+            const characterBonuses = getCharacterBonuses(socket.user.characterClass || 'unselected');
+
+            // Construct the complete player data object
+            const baseHealth = 100; // Assuming a base health
+            const enduranceHP = ((stats?.endurance || 10) - 10) * 10;
+            const maxHealth = baseHealth + enduranceHP;
+
+            game.players[socket.id] = {
+                socketId: socket.id,
+                userId: socket.user._id.toString(),
+                username: socket.user.username,
+                avatar: socket.user.avatar,
+                characterClass: socket.user.characterClass || 'unselected',
+                health: maxHealth,
+                maxHealth: maxHealth,
+                stats: {
+                    strength: (stats?.strength || 10),
+                    agility: (stats?.agility || 10),
+                    intuition: (stats?.intuition || 10),
+                    endurance: (stats?.endurance || 10)
+                },
+                damageBonus: ((stats?.strength || 10) - 10) * 2,
+                criticalChance: (stats?.intuition || 10) - 10,
+                evasionChance: (stats?.agility || 10) - 10,
+                enemyEvasionReduction: ((stats?.intuition || 10) - 10) * 0.5,
+                specialAbility: characterBonuses.specialAbility,
+                equipment: inventory?.equipped || {},
+                level: playerLevel || { level: 1, totalXP: 0 },
+                ready: true, // Player is now ready
+                move: null
+            };
+        } else {
+             // If player object exists (e.g., on reconnect), just mark as ready
+             game.players[socket.id].ready = true;
+        }
+
+        const playerCount = Object.keys(game.players).length;
+        const readyCount = Object.values(game.players).filter(p => p.ready).length;
+
+        console.log(`Game ${gameId}: ${playerCount} players, ${readyCount} ready`);
+
+        // If game is ready to start
+        if (playerCount >= 2 && readyCount >= 2) {
+            game.waitingForPlayers = false;
+            game.currentRound = 0;
+            
+            console.log(`🎮 STARTING GAME ${gameId} with players:`, Object.values(game.players).map(p => p.username));
+            
+            io.to(gameId).emit('gameStarted', {
+                gameState: { ...game, players: game.players }
+            });
+            
+            setTimeout(() => {
+                console.log(`🚀 CALLING startRound for ${gameId}`);
+                startRound(gameId);
+            }, 2000);
+        } else {
+            // If still waiting for players, just send the current state to the player who joined
+            socket.emit('gameStarted', {
+                gameState: { ...game, players: game.players }
+            });
+        }
+
+    } catch (error) {
+        console.error('Error joining game:', error);
+        socket.emit('gameError', { message: 'Failed to join game' });
+    }
+  });
+  // --- END OF REPLACEMENT ---
+
+  socket.on('makeMove', async (data) => {
+    try {
+      const { gameId, attackArea, blockArea } = data;
+      console.log(`🎯 Move from ${socket.user.username}: attack=${attackArea}, block=${blockArea}`);
+      
+      const game = activeGames.get(gameId);
+      if (!game || !game.players[socket.id] || game.moves[socket.id]) {
+        socket.emit('invalidMove', { message: 'Invalid move' });
+        return;
+      }
+
+      game.moves[socket.id] = {
+        attackArea: attackArea,
+        blockArea: blockArea,
+        timestamp: Date.now(),
+        auto: false
+      };
+
+      socket.emit('moveReceived', { success: true });
+      socket.to(gameId).emit('opponentMadeMove', {
+        playerId: socket.id,
+        playerName: socket.user.username
+      });
+
+      const playerIds = Object.keys(game.players);
+      const moveIds = Object.keys(game.moves);
+
+      if (moveIds.length >= playerIds.length) {
+        if (game.turnTimer) {
+          clearTimeout(game.turnTimer);
+          game.turnTimer = null;
+        }
+        
+        io.to(gameId).emit('allMovesMade', { message: 'Processing round...' });
+        setTimeout(() => processRound(gameId), 1000);
+      }
+
+    } catch (error) {
+      console.error('Error processing move:', error);
+      socket.emit('invalidMove', { message: 'Failed to process move' });
+    }
+  });
+
+  socket.on('getPlayerList', () => {
+    socket.emit('updatePlayerList', botManager.getAllPlayersIncludingBots());
+  });
+
   socket.on('disconnect', () => {
     const disconnectedPlayer = connectedPlayers.get(socket.id);
     if (disconnectedPlayer) {
-      console.log(`Player disconnected: ${disconnectedPlayer.username} (Socket ID: ${socket.id})`);
+      console.log(`Player disconnected: ${disconnectedPlayer.username}`);
       connectedPlayers.delete(socket.id);
       
       const userId = disconnectedPlayer.userId;
@@ -792,128 +859,35 @@ io.on('connection', async (socket) => {
             userSockets.delete(userId);
         }
       }
+
+      // Clean up challenges
       activeChallenges.forEach((challenge, key) => {
-        if (challenge.challenger === socket.id || challenge.opponent === socket.id) {
+        if (challenge.challengerId === socket.id || challenge.opponentId === socket.id) {
           activeChallenges.delete(key);
+          const otherPlayerId = challenge.challengerId === socket.id ? challenge.opponentId : challenge.challengerId;
+          io.to(otherPlayerId).emit('challengeCancelled', { 
+            challengeId: key,
+            reason: 'Player disconnected'
+          });
         }
       });
-      io.emit('updatePlayerList', botManager.getAllPlayersIncludingBots());
-    }
-  });
-  
-  socket.on('getProfile', async () => {
-    try {
-      const stats = await Stats.findOne({ userId: socket.user._id });
-      const inventory = await ensureInventoryExists(socket.user._id);
-      const playerLevel = await PlayerLevel.findOne({ userId: socket.user._id });
-      
-      socket.emit('profileData', {
-        user: { 
-          id: socket.user._id, 
-          username: socket.user.username, 
-          email: socket.user.email, 
-          avatar: socket.user.avatar, 
-          characterClass: socket.user.characterClass 
-        },
-        stats: stats,
-        inventory: inventory,
-        playerLevel: playerLevel
-      });
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    }
-  });
 
-  // Add other socket event handlers here...
-  socket.on('authenticate', async (token) => {
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET); // FIXED: Now using 'jwt'
-      if (decoded.id === socket.user._id.toString()) {
-        socket.emit('authenticated', { success: true });
-      } else {
-        socket.emit('authError', { message: 'Invalid token' });
-      }
-    } catch (error) {
-      socket.emit('authError', { message: 'Authentication failed' });
+      io.emit('updatePlayerList', botManager.getAllPlayersIncludingBots());
     }
   });
 });
 
-// FIXED: Helper function to send profile updates
-async function sendProfileUpdate(userId) {
-    try {
-        const user = await User.findById(userId);
-        const stats = await Stats.findOne({ userId });
-        const inventory = await Inventory.findOne({ userId });
-        const playerLevel = await PlayerLevel.findOne({ userId });
+// Database connection
+mongoose.connect('mongodb+srv://braucamkopa:Y1ytE02fH8ErX3qi@cluster0.eedzhyr.mongodb.net/multiplayer-game?retryWrites=true&w=majority&appName=Cluster0')
+.then(async () => {
+  console.log('Connected to MongoDB');
+  await botManager.initializeBots();
+})
+.catch(err => console.error('MongoDB connection error:', err));
 
-        if (!user || !stats || !inventory || !playerLevel) {
-            console.error(`Could not find all data for user ${userId}`);
-            return;
-        }
-
-        const fullProfileData = {
-            user: { 
-              id: user._id, 
-              username: user.username, 
-              email: user.email, 
-              avatar: user.avatar, 
-              characterClass: user.characterClass 
-            },
-            stats,
-            inventory,
-            playerLevel
-        };
-        
-        const sockets = userSockets.get(userId.toString());
-        if (sockets && sockets.size > 0) {
-            sockets.forEach(socketId => {
-                io.to(socketId).emit('profileDataUpdate', fullProfileData);
-            });
-            console.log(`Sent profile update to ${user.username} on ${sockets.size} connections.`);
-        }
-    } catch(error) {
-        console.error(`Error sending profile update to user ${userId}:`, error);
-    }
-}
-
-// FIXED: End game function
-async function endGame(gameId, winnerId) {
-  const game = activeGames.get(gameId);
-  if (!game) return;
-  
-  clearTimeout(game.turnTimer);
-  
-  const loserId = Object.keys(game.players).find(id => id !== winnerId);
-
-  if (winnerId && game.players[winnerId] && !winnerId.startsWith('bot_')) {
-    const winner = game.players[winnerId];
-    if (levelingSystem && typeof levelingSystem.processGameResult === 'function') {
-      await levelingSystem.processGameResult(winner.userId, 'win');
-    }
-    await sendProfileUpdate(winner.userId);
-  }
-  
-  if (loserId && game.players[loserId] && !loserId.startsWith('bot_')) {
-    const loser = game.players[loserId];
-    if (levelingSystem && typeof levelingSystem.processGameResult === 'function') {
-      await levelingSystem.processGameResult(loser.userId, 'loss');
-    }
-    await sendProfileUpdate(loser.userId);
-  }
-  
-  io.to(gameId).emit('gameOver', {
-    winner: winnerId,
-    loser: loserId,
-    reason: 'defeat'
-  });
-  
-  botManager.cleanupBotGame(gameId);
-  activeGames.delete(gameId);
-}
-
+// Start server
 const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
-  console.log(`🏪 Shop system initialized with working buy/sell functionality`);
+  console.log(`🎮 FIXED: Game system with working round progression`);
 });
