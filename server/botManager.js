@@ -2,9 +2,11 @@ const Bot = require('../models/bot');
 const { Stats, PlayerLevel, Inventory } = require('../models');
 
 class BotManager {
-  constructor(io, combatSystem) {
+  // --- FIXED: Accept gameUtils in the constructor ---
+  constructor(io, combatSystem, gameUtils) {
     this.io = io;
     this.combatSystem = combatSystem;
+    this.gameUtils = gameUtils; // Store gameUtils instance
     this.activeBots = new Map(); // socketId -> bot data
     this.botGames = new Map(); // gameId -> bot game data
     this.botMoveTimers = new Map(); // gameId -> timeout
@@ -63,7 +65,7 @@ class BotManager {
       playerLevel = await PlayerLevel.create({
         userId: bot._id,
         level: bot.level,
-        wins: bot.wins
+        totalXP: bot.level * 1000 // Approximate XP for the level
       });
     }
 
@@ -77,6 +79,7 @@ class BotManager {
       stats: stats,
       inventory: inventory,
       level: bot.level,
+      playerLevel: playerLevel,
       isBot: true,
       personality: bot.personality,
       difficulty: bot.difficulty
@@ -100,7 +103,6 @@ class BotManager {
     const players = [];
     
     // Add real players from the main server's connectedPlayers map
-    // You'll need to pass this from the main server
     if (global.connectedPlayers) {
       players.push(...Array.from(global.connectedPlayers.values()));
     }
@@ -112,36 +114,41 @@ class BotManager {
   }
 
   // Handle challenge to bot
-async handleBotChallenge(challengerId, botSocketId, challengeData) {
-  const bot = this.activeBots.get(botSocketId);
-  if (!bot) return;
+  async handleBotChallenge(challengerId, botSocketId, challengeData) {
+    const bot = this.activeBots.get(botSocketId);
+    if (!bot) {
+      console.error(`❌ Bot not found: ${botSocketId}`);
+      return;
+    }
 
-  // Reduce bot thinking time for faster response
-  const baseThinkTime = 500; // 0.5 seconds minimum
-  const randomDelay = Math.random() * 1000; // 0-1 second additional
-  const thinkTime = baseThinkTime + randomDelay;
-  
-  console.log(`Bot ${bot.username} will accept challenge in ${thinkTime}ms`);
-  
-  setTimeout(() => {
+    // Reduce bot thinking time for faster response
+    const baseThinkTime = 500; // 0.5 seconds minimum
+    const randomDelay = Math.random() * 1000; // 0-1 second additional
+    const thinkTime = baseThinkTime + randomDelay;
     
-    // NEW: Bot always accepts the challenge
-    console.log(`Bot ${bot.username} accepted challenge from player`);
-    this.acceptBotChallenge(challengerId, botSocketId, challengeData);
+    console.log(`🤖 Bot ${bot.username} will accept challenge in ${thinkTime}ms`);
     
-  }, thinkTime);
-}
+    setTimeout(() => {
+      // Bot always accepts the challenge
+      console.log(`🤖 Bot ${bot.username} accepted challenge from player`);
+      this.acceptBotChallenge(challengerId, botSocketId, challengeData);
+    }, thinkTime);
+  }
 
   // Bot accepts challenge
   async acceptBotChallenge(challengerId, botSocketId, challengeData) {
     const bot = this.activeBots.get(botSocketId);
+    if (!bot) {
+      console.error(`❌ Bot not found for challenge: ${botSocketId}`);
+      return;
+    }
+
     const gameId = `game_${Date.now()}_${challengerId.substring(0, 5)}_${botSocketId.substring(0, 5)}`;
     
     // Get bot stats and inventory
     const botStats = await Stats.findOne({ userId: bot.userId });
-    // --- CHANGE START ---
     const botInventory = await Inventory.findOne({ userId: bot.userId });
-    // --- CHANGE END ---
+    const botPlayerLevel = await PlayerLevel.findOne({ userId: bot.userId });
 
     // Send game start data to challenger
     this.io.to(challengerId).emit('challengeAccepted', {
@@ -158,9 +165,8 @@ async handleBotChallenge(challengerId, botSocketId, challengeData) {
           intuition: botStats.intuition,
           endurance: botStats.endurance
         } : { strength: 10, agility: 10, intuition: 10, endurance: 10 },
-        // --- CHANGE START ---
-        equipment: botInventory ? botInventory.equipped : {} // ADDED THIS LINE
-        // --- CHANGE END ---
+        equipment: botInventory ? botInventory.equipped : {},
+        level: botPlayerLevel ? botPlayerLevel.level : bot.level
       }
     });
     
@@ -170,21 +176,31 @@ async handleBotChallenge(challengerId, botSocketId, challengeData) {
       opponentSocketId: challengerId,
       bot: bot
     });
+
+    console.log(`✅ Bot challenge accepted. Game ID: ${gameId}`);
   }
 
   // Handle bot joining game
   async handleBotJoinGame(gameId, game) {
     const botGame = this.botGames.get(gameId);
-    if (!botGame) return;
+    if (!botGame) {
+      console.log(`No bot game data found for ${gameId}`);
+      return;
+    }
     
     const bot = botGame.bot;
     const stats = await Stats.findOne({ userId: bot.userId });
     const inventory = await Inventory.findOne({ userId: bot.userId });
+    const playerLevel = await PlayerLevel.findOne({ userId: bot.userId });
     
     // Calculate bot health
     const baseHealth = 200;
     const endurance = stats ? stats.endurance : 10;
-    const totalMaxHealth = baseHealth + (endurance * 10);
+    const enduranceBonus = (endurance - 10) * 10;
+    const totalMaxHealth = baseHealth + enduranceBonus;
+    
+    // Get character bonuses
+    const characterBonuses = this.getCharacterBonuses(bot.characterClass);
     
     // Add bot to game as player
     game.players[botGame.botSocketId] = {
@@ -195,80 +211,90 @@ async handleBotChallenge(challengerId, botSocketId, challengeData) {
       characterClass: bot.characterClass,
       health: totalMaxHealth,
       maxHealth: totalMaxHealth,
-      energy: 100,
-      maxEnergy: 100,
       stats: stats ? {
         strength: stats.strength,
         agility: stats.agility,
         intuition: stats.intuition,
         endurance: stats.endurance
       } : { strength: 10, agility: 10, intuition: 10, endurance: 10 },
-      specialAbility: stats ? stats.specialAbility : null,
+      specialAbility: characterBonuses.specialAbility,
       equipment: inventory ? inventory.equipped : {},
-      damageBonus: stats ? stats.strength * 2 : 20,
-      evasionChance: stats ? stats.agility : 10,
-      criticalChance: stats ? stats.intuition : 10,
-      enemyEvasionReduction: stats ? Math.floor(stats.intuition / 2) : 5,
+      damageBonus: stats ? (stats.strength - 10) * 2 : 0,
+      evasionChance: stats ? stats.agility - 10 : 0,
+      criticalChance: stats ? stats.intuition - 10 : 0,
+      enemyEvasionReduction: stats ? (stats.intuition - 10) * 0.5 : 0,
+      level: playerLevel || { level: bot.level, totalXP: bot.level * 1000 },
+      ready: true,
       isBot: true
     };
+
+    console.log(`🤖 Bot ${bot.username} joined game ${gameId}`);
   }
 
-  // Generate bot move
+  // --- FIXED: generateBotMove now calls gameUtils.processRound ---
   generateBotMove(gameId, game, roundNumber) {
     const botGame = this.botGames.get(gameId);
-    if (!botGame) return;
+    if (!botGame) {
+      console.log(`No bot game found for ${gameId}`);
+      return;
+    }
     
     const bot = botGame.bot;
     const botSocketId = botGame.botSocketId;
     const opponentSocketId = botGame.opponentSocketId;
     
-    // Clear any existing timer
     if (this.botMoveTimers.has(gameId)) {
       clearTimeout(this.botMoveTimers.get(gameId));
     }
     
-        // Calculate move delay based on personality
     let baseMoveDelay;
     switch (bot.difficulty) {
-        case 'easy':
-        baseMoveDelay = 1000; // 1-3 seconds
-        break;
-        case 'medium':
-        baseMoveDelay = 800; // 0.8-2.3 seconds
-        break;
-        case 'hard':
-        baseMoveDelay = 600; // 0.6-1.6 seconds
-        break;
-        case 'expert':
-        baseMoveDelay = 400; // 0.4-1.4 seconds
-        break;
-        default:
-        baseMoveDelay = 1000;
+        case 'easy': baseMoveDelay = 1000; break;
+        case 'medium': baseMoveDelay = 800; break;
+        case 'hard': baseMoveDelay = 600; break;
+        case 'expert': baseMoveDelay = 400; break;
+        default: baseMoveDelay = 1000;
     }
 
-      const moveDelay = baseMoveDelay + Math.random() * 1000;
-      console.log(`Bot ${bot.username} (${bot.difficulty}) will make move in ${moveDelay}ms`);
+    const moveDelay = baseMoveDelay + Math.random() * 1000;
+    console.log(`🤖 Bot ${bot.username} (${bot.difficulty}) will make move in ${moveDelay}ms`);
         
     const timer = setTimeout(() => {
-      // Generate move based on bot personality and difficulty
       const move = this.calculateBotMove(bot, game, botSocketId, opponentSocketId);
       
-      // Store the move
-      if (game.currentRound) {
-        game.currentRound.moves[botSocketId] = {
-          attackArea: move.attackArea,
-          blockArea: move.blockArea,
-          timestamp: Date.now()
-        };
+      console.log(`🤖 Bot ${bot.username} making move: attack=${move.attackArea}, block=${move.blockArea}`);
+      
+      game.moves[botSocketId] = {
+        attackArea: move.attackArea,
+        blockArea: move.blockArea,
+        timestamp: Date.now(),
+        auto: false
+      };
+      
+      this.io.to(opponentSocketId).emit('opponentMadeMove', {
+        playerId: botSocketId,
+        playerName: bot.username
+      });
+      
+      const playerIds = Object.keys(game.players);
+      const moveIds = Object.keys(game.moves);
+      
+      if (moveIds.length >= playerIds.length) {
+        console.log(`🎯 All moves received for game ${gameId} (including bot), processing round`);
         
-        // Notify opponent
-        this.io.to(opponentSocketId).emit('opponentMadeMove');
-        
-        // Check if all moves are made
-        if (Object.keys(game.currentRound.moves).length === Object.keys(game.players).length) {
-          this.io.to(gameId).emit('allMovesMade');
-          // The main game logic will handle processing the round
+        if (game.turnTimer) {
+          clearTimeout(game.turnTimer);
+          game.turnTimer = null;
         }
+        
+        this.io.to(gameId).emit('allMovesMade', { message: 'Processing round...' });
+        
+        // --- CRITICAL FIX ---
+        // Call the processRound function from gameUtils to continue the game
+        setTimeout(() => {
+            this.gameUtils.processRound(gameId);
+        }, 1000);
+        // --- END FIX ---
       }
       
       this.botMoveTimers.delete(gameId);
@@ -368,7 +394,6 @@ async handleBotChallenge(challengerId, botSocketId, challengeData) {
     return nonBlockedAreas[Math.floor(Math.random() * nonBlockedAreas.length)];
   }
 
-
   // Get character bonuses (same as main game)
   getCharacterBonuses(characterClass) {
     switch(characterClass) {
@@ -387,6 +412,7 @@ async handleBotChallenge(challengerId, botSocketId, challengeData) {
 
   // Clean up bot game
   cleanupBotGame(gameId) {
+    console.log(`🧹 Cleaning up bot game: ${gameId}`);
     this.botGames.delete(gameId);
     if (this.botMoveTimers.has(gameId)) {
       clearTimeout(this.botMoveTimers.get(gameId));

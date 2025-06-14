@@ -1,4 +1,4 @@
-// handlers/challengeHandlers.js
+// handlers/challengeHandlers.js - Updated with Bot Support
 const { Stats, PlayerLevel } = require('../models');
 
 class ChallengeHandlers {
@@ -12,65 +12,8 @@ class ChallengeHandlers {
   registerHandlers(socket) {
     console.log(`🎯 Registering challenge handlers for ${socket.user.username}`);
 
-    socket.on('challengePlayer', async (opponentId) => {
-      try {
-        console.log(`🎯 Challenge request: ${socket.user.username} challenging ${opponentId}`);
-        
-        const opponent = this.connectedPlayers.get(opponentId);
-        if (!opponent) {
-          socket.emit('challengeFailed', { message: 'Player not found or offline' });
-          return;
-        }
-        
-        // Check if either player is already in a game
-        if (this.activeGames.has(socket.id) || this.activeGames.has(opponentId)) {
-          socket.emit('challengeFailed', { message: 'One of the players is already in a game' });
-          return;
-        }
-        
-        const challengeId = `challenge_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
-        const challengeData = {
-          id: challengeId,
-          challengerId: socket.id,
-          challengerUserId: socket.user._id.toString(),
-          opponentId: opponentId,
-          timestamp: Date.now(),
-          challenger: {
-            socketId: socket.id,
-            userId: socket.user._id.toString(),
-            username: socket.user.username,
-            avatar: socket.user.avatar,
-            characterClass: socket.user.characterClass || 'unselected'
-          }
-        };
-        
-        this.activeChallenges.set(challengeId, challengeData);
-        
-        this.io.to(opponentId).emit('challengeReceived', challengeData);
-        
-        socket.emit('challengeSent', {
-          id: challengeId,
-          opponentName: opponent.username,
-          timestamp: Date.now()
-        });
-        
-        console.log(`✅ Challenge sent: ${challengeId}`);
-        
-        // Auto-expire challenge after 60 seconds
-        setTimeout(() => {
-          if (this.activeChallenges.has(challengeId)) {
-            this.activeChallenges.delete(challengeId);
-            this.io.to(socket.id).emit('challengeExpired', { challengeId });
-            this.io.to(opponentId).emit('challengeExpired', { challengeId });
-          }
-        }, 60000);
-        
-      } catch (error) {
-        console.error('Error processing challenge:', error);
-        socket.emit('challengeFailed', { message: 'Failed to send challenge' });
-      }
-    });
+    // Note: challengePlayer is handled in the main server.js for bot integration
+    // This is just for regular player challenges
 
     socket.on('respondToChallenge', async (data) => {
       try {
@@ -180,6 +123,67 @@ class ChallengeHandlers {
         }
       });
     });
+  }
+
+  // Helper method for regular player challenges (called from server.js)
+  handlePlayerChallenge(socket, opponentId) {
+    try {
+      console.log(`🎯 Challenge request: ${socket.user.username} challenging ${opponentId}`);
+      
+      const opponent = this.connectedPlayers.get(opponentId);
+      if (!opponent) {
+        socket.emit('challengeFailed', { message: 'Player not found or offline' });
+        return;
+      }
+      
+      // Check if either player is already in a game
+      if (this.activeGames.has(socket.id) || this.activeGames.has(opponentId)) {
+        socket.emit('challengeFailed', { message: 'One of the players is already in a game' });
+        return;
+      }
+      
+      const challengeId = `challenge_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      const challengeData = {
+        id: challengeId,
+        challengerId: socket.id,
+        challengerUserId: socket.user._id.toString(),
+        opponentId: opponentId,
+        timestamp: Date.now(),
+        challenger: {
+          socketId: socket.id,
+          userId: socket.user._id.toString(),
+          username: socket.user.username,
+          avatar: socket.user.avatar,
+          characterClass: socket.user.characterClass || 'unselected'
+        }
+      };
+      
+      this.activeChallenges.set(challengeId, challengeData);
+      
+      this.io.to(opponentId).emit('challengeReceived', challengeData);
+      
+      socket.emit('challengeSent', {
+        id: challengeId,
+        opponentName: opponent.username,
+        timestamp: Date.now()
+      });
+      
+      console.log(`✅ Challenge sent: ${challengeId}`);
+      
+      // Auto-expire challenge after 60 seconds
+      setTimeout(() => {
+        if (this.activeChallenges.has(challengeId)) {
+          this.activeChallenges.delete(challengeId);
+          this.io.to(socket.id).emit('challengeExpired', { challengeId });
+          this.io.to(opponentId).emit('challengeExpired', { challengeId });
+        }
+      }, 60000);
+      
+    } catch (error) {
+      console.error('Error processing challenge:', error);
+      socket.emit('challengeFailed', { message: 'Failed to send challenge' });
+    }
   }
 }
 

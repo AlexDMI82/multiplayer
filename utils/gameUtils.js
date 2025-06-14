@@ -26,24 +26,31 @@ class GameUtils {
     return result;
   }
 
+  // --- FIXED: Added maxHealth calculation ---
   async createPlayerGameData(socket, stats, inventory, playerLevel) {
     const characterBonuses = this.getCharacterBonuses(socket.user.characterClass || 'unselected');
     
+    // Calculate max health based on endurance
+    const baseHealth = 100; // Base health for all players
+    const currentEndurance = (stats?.endurance || 10) + characterBonuses.endurance;
+    const enduranceBonus = (currentEndurance - 10) * 10; // +10 HP per point of endurance over 10
+    const maxHealth = baseHealth + enduranceBonus;
+
     return {
       socketId: socket.id,
       userId: socket.user._id.toString(),
       username: socket.user.username,
       avatar: socket.user.avatar,
       characterClass: socket.user.characterClass || 'unselected',
-      health: 100,
-      maxHealth: 100,
+      health: maxHealth,     // Start with full health
+      maxHealth: maxHealth,  // Set the calculated max health
       
       // Apply character bonuses to base stats
       stats: {
         strength: (stats?.strength || 10) + characterBonuses.strength,
         agility: (stats?.agility || 10) + characterBonuses.agility,
         intuition: (stats?.intuition || 10) + characterBonuses.intuition,
-        endurance: (stats?.endurance || 10) + characterBonuses.endurance
+        endurance: currentEndurance,
       },
       
       // Combat calculation properties
@@ -62,6 +69,7 @@ class GameUtils {
     };
   }
 
+  // ... (rest of the file remains the same)
   startRound(gameId) {
     const game = this.activeGames.get(gameId);
     if (!game) {

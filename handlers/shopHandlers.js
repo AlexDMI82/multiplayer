@@ -1,102 +1,17 @@
 // handlers/shopHandlers.js
 const { Inventory } = require('../models');
+// --- FIXED: Import the complete shop data ---
+const shopItems = require('../server/data/shopItems');
 
 class ShopHandlers {
   constructor(io) {
     this.io = io;
-    this.SHOP_DATA = {
-      weapons: [
-        {
-          id: 'sword_001',
-          name: 'Dark Sword',
-          type: 'weapon',
-          price: 100,
-          damage: 5,
-          rarity: 'common',
-          image: '/images/swords/DarkSword.jpg',
-          description: 'A basic iron sword, reliable and sturdy.'
-        },
-        {
-          id: 'sword_002',
-          name: 'Flaming Sword',
-          type: 'weapon',
-          price: 500,
-          damage: 12,
-          rarity: 'rare',
-          image: '/images/swords/FlamingSword.jpg',
-          description: 'A sword imbued with the essence of fire, burns enemies on hit.'
-        },
-      ],
-      armor: [
-        {
-          id: 'armor_001',
-          name: 'Leather Vest',
-          type: 'armor',
-          price: 150,
-          defense: 5,
-          rarity: 'common',
-          image: '/images/armor/leather.png',
-          description: 'Basic leather protection for adventurers.'
-        },
-        {
-          id: 'armor_002',
-          name: 'Iron Chestplate',
-          type: 'armor',
-          price: 400,
-          defense: 10,
-          rarity: 'uncommon',
-          image: '/images/armor/iron.png',
-          description: 'Solid iron protection for the torso.'
-        },
-      ],
-      shields: [
-        {
-          id: 'shield_001',
-          name: 'Dark Shield',
-          type: 'shield',
-          price: 100,
-          defense: 3,
-          rarity: 'common',
-          image: '/images/shields/darkShield.jpg',
-          description: 'A basic dark shield providing minimal protection.'
-        },
-        {
-          id: 'shield_002',
-          name: 'Flame Shield',
-          type: 'shield',
-          price: 300,
-          defense: 7,
-          rarity: 'uncommon',
-          image: '/images/shields/flameShield.jpg',
-          description: 'A shield imbued with fire magic, burns attackers on contact.'
-        },
-      ],
-      helmets: [
-        {
-          id: 'helmet_001',
-          name: 'Dark Helm',
-          type: 'helmet',
-          price: 100,
-          defense: 2,
-          rarity: 'common',
-          image: '/images/helm/darHelm.jpg',
-          description: 'A basic dark helmet providing minimal head protection.'
-        },
-        {
-          id: 'helmet_002',
-          name: 'Fire Helm',
-          type: 'helmet',
-          price: 300,
-          defense: 5,
-          rarity: 'uncommon',
-          image: '/images/helm/fireHelm.jpg',
-          description: 'A helmet forged with fire magic, radiates warmth and protection.'
-        },
-      ],
-    };
+    // --- FIXED: Use the imported shop data instead of a hardcoded list ---
+    this.SHOP_DATA = shopItems;
   }
 
   findItemById(itemId) {
+    // This logic can be simplified now
     for (const category of Object.values(this.SHOP_DATA)) {
       const item = category.find(item => item.id === itemId);
       if (item) return item;
@@ -108,7 +23,8 @@ class ShopHandlers {
     console.log(`🏪 Registering shop handlers for ${socket.user.username}`);
 
     socket.on('getShopItems', () => {
-      console.log(`📦 Sending shop items to ${socket.user.username}`);
+      console.log(`📦 Sending complete shop items to ${socket.user.username}`);
+      // This will now send the full, correct list from the imported file.
       socket.emit('shopItems', this.SHOP_DATA);
     });
 

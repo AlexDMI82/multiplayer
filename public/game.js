@@ -1343,8 +1343,11 @@ function updateGameState(state) {
     const player1Data = state.players[myPlayerId];
     const player2Data = state.players[opponentId] || Object.values(state.players).find(p => p.socketId !== myPlayerId);
 
+    // --- DOM element references ---
+    const player1Name = document.getElementById('player1-name');
     const player1Health = document.getElementById('player1-health');
     const player1XpBar = document.getElementById('player1-energy');
+    const player2Name = document.getElementById('player2-name');
     const player2Health = document.getElementById('player2-health');
     const player2XpBar = document.getElementById('player2-energy');
     const gameMessage = document.getElementById('game-message');
@@ -1369,18 +1372,17 @@ function updateGameState(state) {
     
     // Update Player 1 panel
     if (player1Data) {
+        player1Name.textContent = player1Data.username; // Set name from game state
         player1Health.style.width = `${(player1Data.health / player1Data.maxHealth) * 100}%`;
         player1Health.parentElement.title = `Health: ${player1Data.health}/${player1Data.maxHealth}`;
         
-        // Update XP Bar for Player 1
-        // FIX: Access player1Data.level.level and player1Data.level.totalXP
         if (player1Data.level && player1XpBar) {
             const level = player1Data.level.level || 1;
             const totalXP = player1Data.level.totalXP || 0;
             const xpForCurrentLevel = getTotalXPForLevel(level);
             const xpForNextLevelUp = getXPForNextLevelUp(level);
             const currentLevelXP = totalXP - xpForCurrentLevel;
-            const xpPercentage = (currentLevelXP / xpForNextLevelUp) * 100;
+            const xpPercentage = xpForNextLevelUp > 0 ? (currentLevelXP / xpForNextLevelUp) * 100 : 0;
             
             player1XpBar.style.width = `${Math.min(100, xpPercentage)}%`;
             player1XpBar.parentElement.title = `XP: ${currentLevelXP} / ${xpForNextLevelUp}`;
@@ -1398,18 +1400,17 @@ function updateGameState(state) {
     
     // Update Player 2 panel
     if (player2Data) {
+        player2Name.textContent = player2Data.username; // Set name from game state
         player2Health.style.width = `${(player2Data.health / player2Data.maxHealth) * 100}%`;
         player2Health.parentElement.title = `Health: ${player2Data.health}/${player2Data.maxHealth}`;
 
-        // Update XP Bar for Player 2
-        // FIX: Access player2Data.level.level and player2Data.level.totalXP
         if (player2Data.level && player2XpBar) {
             const level = player2Data.level.level || 1;
             const totalXP = player2Data.level.totalXP || 0;
             const xpForCurrentLevel = getTotalXPForLevel(level);
             const xpForNextLevelUp = getXPForNextLevelUp(level);
             const currentLevelXP = totalXP - xpForCurrentLevel;
-            const xpPercentage = (currentLevelXP / xpForNextLevelUp) * 100;
+            const xpPercentage = xpForNextLevelUp > 0 ? (currentLevelXP / xpForNextLevelUp) * 100 : 0;
             
             player2XpBar.style.width = `${Math.min(100, xpPercentage)}%`;
             player2XpBar.parentElement.title = `XP: ${currentLevelXP} / ${xpForNextLevelUp}`;
@@ -1425,22 +1426,20 @@ function updateGameState(state) {
         }
     }
     
-if (state.waitingForPlayers) {
-    gameMessage.textContent = 'Waiting for opponent...';
-    combatControls.style.display = 'none';
-} else if (state.currentRound && state.currentRound > 0 && !waitingForOpponent) {
-    gameMessage.textContent = 'Select an attack and block area (auto-submits when both selected)';
-    combatControls.style.display = 'flex';
-    combatControls.style.opacity = '1';
-} else if (waitingForOpponent) {
-    gameMessage.textContent = 'Waiting for opponent\'s move...';
-    // Keep controls visible but disabled-looking
-    combatControls.style.display = 'flex';
-    combatControls.style.opacity = '0.5';
-} else {
-    // Default case - hide controls if we're not sure
-    combatControls.style.display = 'none';
-}
+    if (state.waitingForPlayers) {
+        gameMessage.textContent = 'Waiting for opponent...';
+        combatControls.style.display = 'none';
+    } else if (state.currentRound && state.currentRound > 0 && !waitingForOpponent) {
+        gameMessage.textContent = 'Select an attack and block area (auto-submits when both selected)';
+        combatControls.style.display = 'flex';
+        combatControls.style.opacity = '1';
+    } else if (waitingForOpponent) {
+        gameMessage.textContent = 'Waiting for opponent\'s move...';
+        combatControls.style.display = 'flex';
+        combatControls.style.opacity = '0.5';
+    } else {
+        combatControls.style.display = 'none';
+    }
 }
 
 

@@ -409,58 +409,14 @@
         </div>
     </div>
     
-    <!-- Inventory Modal (reused from main game) -->
-    <div id="inventory-modal" class="modal hidden">
-        <div class="modal-content inventory-modal-content">
-            <h2>Inventory</h2>
-            
-            <div class="equipped-items">
-                <h3>Equipped</h3>
-                <div class="equipment-slots">
-                    <div class="equipment-slot" data-slot="weapon">
-                        <div class="slot-label">Weapon</div>
-                        <div class="slot-item" id="equipped-weapon">None</div>
-                    </div>
-                    <div class="equipment-slot" data-slot="armor">
-                        <div class="slot-label">Armor</div>
-                        <div class="slot-item" id="equipped-armor">None</div>
-                    </div>
-                    <div class="equipment-slot" data-slot="shield">
-                        <div class="slot-label">Shield</div>
-                        <div class="slot-item" id="equipped-shield">None</div>
-                    </div>
-                    <div class="equipment-slot" data-slot="helmet">
-                        <div class="slot-label">Helmet</div>
-                        <div class="slot-item" id="equipped-helmet">None</div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="inventory-items">
-                <h3>Inventory</h3>
-                <div id="inventory-items-container">
-                    <!-- Inventory items will be populated here -->
-                </div>
-            </div>
-            
-            <div class="player-gold">
-                Gold: <span id="player-gold">0</span>
-            </div>
-            
-            <div class="modal-buttons">
-                <button id="close-inventory" class="button">Close</button>
-            </div>
-        </div>
-    </div>
 
     <!-- Socket.io client script -->
     <script src="/socket.io/socket.io.js"></script>
     
     <!-- Game scripts -->
     <script src="/auth.js"></script>
-    <script src="character-profile.js"></script>
-    
-    <!-- CHANGED: Removed the problematic compatibility script that was causing errors -->
+    <script src="modern-inventory.js"></script>
+    <script src="character-profile.js"></script>    
     
 </body>
 </html>

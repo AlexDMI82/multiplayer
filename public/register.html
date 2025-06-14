@@ -7,9 +7,18 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="auth.css">
 </head>
-<body>
-    <div id="auth-container" class="container">
-        <div class="auth-form">
+<body class="epic-background">
+    <!-- Animated particles -->
+    <div class="particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <div id="auth-container" class="container epic-auth-container">
+        <div class="auth-form epic-auth-form">
             <h1>Create Account</h1>
             <div id="error-message" class="error-message hidden"></div>
             <div id="success-message" class="success-message hidden"></div>
@@ -35,16 +44,7 @@
                     <input type="password" id="confirm-password" name="confirm-password" placeholder="Confirm your password" required minlength="6">
                 </div>
                 
-                <div class="form-group">
-                    <label>Select Avatar:</label>
-                    <div class="avatar-selection">
-                        <img src="images/avatar1.png" class="avatar-option selected" data-avatar="avatar1.png">
-                        <img src="images/avatar2.png" class="avatar-option" data-avatar="avatar2.png">
-                        <img src="images/avatar3.png" class="avatar-option" data-avatar="avatar3.png">
-                    </div>
-                </div>
-                
-                <button type="submit" id="submit-button" class="button">Create Account</button>
+                <button type="submit" id="submit-button" class="button epic-button">Join the Battle</button>
             </form>
             
             <div class="auth-links">
@@ -55,8 +55,7 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            let selectedAvatar = 'avatar1.png';
-            const avatarOptions = document.querySelectorAll('.avatar-option');
+            
             const registerForm = document.getElementById('register-form');
             const errorMessage = document.getElementById('error-message');
             const successMessage = document.getElementById('success-message');
@@ -76,25 +75,13 @@
             `;
             document.head.appendChild(style);
             
-            // Avatar selection
-            avatarOptions.forEach(option => {
-                option.addEventListener('click', () => {
-                    // Remove selected class from all options
-                    avatarOptions.forEach(opt => opt.classList.remove('selected'));
-                    // Add selected class to clicked option
-                    option.classList.add('selected');
-                    // Update selected avatar
-                    selectedAvatar = option.getAttribute('data-avatar');
-                });
-            });
-            
             // Form submission
             registerForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
                 // Disable submit button and show processing state
                 submitButton.disabled = true;
-                submitButton.textContent = 'Creating Account...';
+                submitButton.innerHTML = '<span class="spinner"></span>Creating Account...';
                 
                 // Hide any previous messages
                 errorMessage.classList.add('hidden');
@@ -110,7 +97,7 @@
                 if (password !== confirmPassword) {
                     showError('Passwords do not match');
                     submitButton.disabled = false;
-                    submitButton.textContent = 'Create Account';
+                    submitButton.textContent = 'Join the Battle';
                     return;
                 }
                 
@@ -118,8 +105,7 @@
                 const userData = {
                     username,
                     email,
-                    password,
-                    avatar: selectedAvatar
+                    password                   
                 };
                 
                 try {
@@ -140,7 +126,7 @@
                     if (!response.ok) {
                         showError(data.message || 'Registration failed');
                         submitButton.disabled = false;
-                        submitButton.textContent = 'Create Account';
+                        submitButton.innerHTML = 'Join the Battle';
                         return;
                     }
                     
@@ -160,7 +146,7 @@
                     console.error('Registration error:', error);
                     showError('Error connecting to server. Please try again.');
                     submitButton.disabled = false;
-                    submitButton.textContent = 'Create Account';
+                    submitButton.innerHTML = 'Join the Battle';
                 }
             });
             

@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
-// User Schema
+// User Schema - UPDATED for Google OAuth
 const userSchema = new mongoose.Schema({
   username: {
     type: String,
@@ -9,7 +9,7 @@ const userSchema = new mongoose.Schema({
     unique: true,
     trim: true,
     minlength: 3,
-    maxlength: 20
+    maxlength: 50  // CHANGED: Increased from 20 to 50 for Google display names
   },
   email: {
     type: String,
@@ -20,18 +20,29 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true,
+    required: function() {
+      return this.provider === 'local';  // CHANGED: Only required for local users
+    },
     minlength: 6
-  },
-  avatar: {
-    type: String,
-    default: 'avatar1.png'
   },
   characterClass: {
     type: String,
     enum: ['shadowsteel', 'ironbound', 'flameheart', 'venomfang', null],
     default: null
   },
+  
+  // NEW: Google OAuth fields
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true  // Allows null values to be non-unique
+  },
+  provider: {
+    type: String,
+    enum: ['local', 'google'],
+    default: 'local'
+  },
+  
   createdAt: {
     type: Date,
     default: Date.now

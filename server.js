@@ -1,4 +1,8 @@
-// server.js - Simplified working version
+
+// Add this as the FIRST line in server.js
+require('dotenv').config();
+
+// server.js - Fully Refactored with Critical Fixes
 const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
@@ -9,16 +13,24 @@ const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const passport = require('./config/passport');
 
 // Import models
 const { User, Stats, Inventory, PlayerLevel } = require('./models');
 
-// Import existing systems
+// Import systems and handlers
 const levelingSystem = require('./server/leveling-system');
 const BotManager = require('./server/botManager');
 const CombatSystem = require('./combat-system-server.js');
+const GameUtils = require('./utils/gameUtils');
 
-// Global state
+// Import handler classes
+const ProfileHandlers = require('./handlers/profileHandlers');
+const ShopHandlers = require('./handlers/shopHandlers');
+const GameHandlers = require('./handlers/gameHandlers');
+const ChallengeHandlers = require('./handlers/challengeHandlers');
+
+// Global state maps
 const activeChallenges = new Map();
 const userSockets = new Map();
 const connectedPlayers = new Map();
@@ -26,7 +38,9 @@ const activeGames = new Map();
 
 // Initialize systems
 const combatSystem = new CombatSystem();
-const botManager = new BotManager(io, combatSystem);
+// --- FIXED: Pass gameUtils to BotManager ---
+const gameUtils = new GameUtils(io, combatSystem, activeGames, levelingSystem, userSockets);
+const botManager = new BotManager(io, combatSystem, gameUtils);
 
 // Configuration
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
@@ -47,116 +61,6 @@ function getCharacterBonuses(characterClass) {
   return bonuses[characterClass] || bonuses['unselected'];
 }
 
-// FIXED: Game utility functions that actually work
-function startRound(gameId) {
-  const game = activeGames.get(gameId);
-  if (!game) {
-    console.error(`❌ Cannot start round: Game ${gameId} not found`);
-    return;
-  }
-
-  game.currentRound = (game.currentRound || 0) + 1;
-  game.moves = {};
-  
-  console.log(`🎯 STARTING ROUND ${game.currentRound} for game ${gameId}`);
-  
-  io.to(gameId).emit('roundStarted', {
-    round: game.currentRound,
-    turnTime: game.turnTime || 30,
-    gameState: { ...game, players: game.players }
-  });
-
-  game.turnTimer = setTimeout(() => {
-    handleTurnTimeout(gameId);
-  }, (game.turnTime || 30) * 1000);
-}
-
-function handleTurnTimeout(gameId) {
-  const game = activeGames.get(gameId);
-  if (!game) return;
-
-  console.log(`⏰ Turn timeout for game ${gameId}`);
-  const playerIds = Object.keys(game.players);
-  
-  playerIds.forEach(playerId => {
-    if (!game.moves[playerId]) {
-      game.moves[playerId] = {
-        attackArea: null,
-        blockArea: null,
-        auto: true,
-        timestamp: Date.now()
-      };
-    }
-  });
-
-  setTimeout(() => processRound(gameId), 1000);
-}
-
-function processRound(gameId) {
-  const game = activeGames.get(gameId);
-  if (!game) return;
-
-  console.log(`⚔️ Processing round ${game.currentRound} for game ${gameId}`);
-
-  try {
-    const result = combatSystem.processRound(game.players, game.moves);
-    
-    io.to(gameId).emit('roundResult', {
-      round: game.currentRound,
-      moves: game.moves,
-      damageDealt: result.damageDealt,
-      combatLog: result.combatLog,
-      gameState: { ...game, players: game.players }
-    });
-
-    if (result.gameOver) {
-      console.log(`🏁 Game ${gameId} ended. Winner: ${result.winner}`);
-      setTimeout(() => endGame(gameId, result.winner), 3000);
-    } else {
-      setTimeout(() => startRound(gameId), 5000);
-    }
-  } catch (error) {
-    console.error('Error processing round:', error);
-    io.to(gameId).emit('gameError', { message: 'Error processing round' });
-  }
-}
-
-async function endGame(gameId, winnerId) {
-  const game = activeGames.get(gameId);
-  if (!game) return;
-  
-  console.log(`🏁 Ending game ${gameId}, winner: ${winnerId}`);
-  
-  if (game.turnTimer) {
-    clearTimeout(game.turnTimer);
-    game.turnTimer = null;
-  }
-  
-  const loserId = Object.keys(game.players).find(id => id !== winnerId);
-
-  if (winnerId && game.players[winnerId] && !winnerId.startsWith('bot_')) {
-    const winner = game.players[winnerId];
-    if (levelingSystem && typeof levelingSystem.processGameResult === 'function') {
-      await levelingSystem.processGameResult(winner.userId, 'win');
-    }
-  }
-  
-  if (loserId && game.players[loserId] && !loserId.startsWith('bot_')) {
-    const loser = game.players[loserId];
-    if (levelingSystem && typeof levelingSystem.processGameResult === 'function') {
-      await levelingSystem.processGameResult(loser.userId, 'loss');
-    }
-  }
-  
-  io.to(gameId).emit('gameOver', {
-    winner: winnerId,
-    loser: loserId,
-    reason: 'defeat'
-  });
-  
-  activeGames.delete(gameId);
-}
-
 async function ensureInventoryExists(userId) {
   try {
     let inventory = await Inventory.findOne({ userId });
@@ -171,7 +75,33 @@ async function ensureInventoryExists(userId) {
         },
         inventory: []
       });
+    } else {
+      // Ensure inventory structure is complete
+      let needsSave = false;
+      
+      if (typeof inventory.gold !== 'number') {
+        inventory.gold = 1000;
+        needsSave = true;
+      }
+      
+      if (!inventory.equipped || typeof inventory.equipped !== 'object') {
+        inventory.equipped = {
+          weapon: null, armor: null, shield: null, helmet: null,
+          boots: null, gloves: null, amulet: null, ring: null
+        };
+        needsSave = true;
+      }
+      
+      if (!Array.isArray(inventory.inventory)) {
+        inventory.inventory = [];
+        needsSave = true;
+      }
+      
+      if (needsSave) {
+        await inventory.save();
+      }
     }
+    
     return inventory;
   } catch (error) {
     console.error(`❌ Error ensuring inventory exists for user ${userId}:`, error);
@@ -191,8 +121,10 @@ app.use(session({
   saveUninitialized: false,
   cookie: { secure: process.env.NODE_ENV === 'production', maxAge: 7 * 24 * 60 * 60 * 1000 }
 }));
+app.use(passport.initialize());
+app.use(passport.session());
 
-// Authentication middleware (copy your existing authenticate function here)
+// Authentication middleware
 const authenticate = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '') || req.cookies.token;
@@ -231,7 +163,7 @@ const authenticate = async (req, res, next) => {
   }
 };
 
-// Routes (copy your existing routes here - register, login, etc.)
+// Routes
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/register.html', (req, res) => res.sendFile(path.join(__dirname, 'register.html')));
 app.get('/login.html', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
@@ -241,22 +173,75 @@ app.get('/shop.html', authenticate, (req, res) => res.sendFile(path.join(__dirna
 app.get('/profile', authenticate, (req, res) => res.sendFile(path.join(__dirname, 'profile.html')));
 app.get('/character-select.html', authenticate, (req, res) => res.sendFile(path.join(__dirname, 'character-select.html')));
 
+
+// Google OAuth routes BEFORE your existing /api routes
+app.get('/auth/google',
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+app.get('/auth/google/callback',
+  passport.authenticate('google', { session: false }),
+  (req, res) => {
+    try {
+      console.log('✅ Google callback successful for user:', req.user.username);
+      console.log('📋 User character class:', req.user.characterClass);
+      
+      // Generate JWT token for the user
+      const token = generateToken(req.user._id);
+      console.log('🔑 Token generated successfully');
+      
+      // Set token as cookie
+      res.cookie('token', token, { 
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 7 * 24 * 60 * 60 * 1000 
+      });
+      console.log('🍪 Cookie set successfully');
+      
+      // Create HTML page that sets localStorage and redirects
+      const redirectHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head><title>Redirecting...</title></head>
+        <body>
+          <script>
+            localStorage.setItem('token', '${token}');
+            localStorage.setItem('user', JSON.stringify(${JSON.stringify({
+              id: req.user._id,
+              username: req.user.username,             
+              characterClass: req.user.characterClass
+            })}));
+            
+            // Redirect based on character selection
+            ${req.user.characterClass ? 
+              "window.location.href = '/';" : 
+              "window.location.href = '/character-select.html';"
+            }
+          </script>
+        </body>
+        </html>
+      `;
+      
+      res.send(redirectHTML);
+      
+    } catch (error) {
+      console.error('❌ Error in Google callback:', error);
+      res.redirect('/login.html?error=auth_failed');
+    }
+  }
+);
+
+
 // API Routes
 app.post('/api/register', async (req, res) => {
   const mongoSession = await mongoose.startSession();
   mongoSession.startTransaction();
   
   try {
-    const { username, email, password, avatar: rawAvatar } = req.body;
+    const { username, email, password} = req.body;   
+  
     
-    let finalAvatarPath = rawAvatar;
-    if (finalAvatarPath && typeof finalAvatarPath === 'string' && !finalAvatarPath.startsWith('images/')) {
-      finalAvatarPath = `images/${finalAvatarPath}`;
-    } else if (!finalAvatarPath) {
-      finalAvatarPath = 'images/default-avatar.png';
-    }
-    
-    console.log('Registration request received:', { username, email, avatar: finalAvatarPath });
+    console.log('Registration request received:', { username, email});
     
     const existingUser = await User.findOne({ $or: [{ username }, { email }] }).session(mongoSession);
     if (existingUser) {
@@ -270,7 +255,7 @@ app.post('/api/register', async (req, res) => {
     }
     
     console.log('Creating user...');
-    const user = new User({ username, email, password, avatar: finalAvatarPath });
+    const user = new User({ username, email, password});
     await user.save({ session: mongoSession });
     console.log('User created successfully:', user._id.toString());
     
@@ -298,8 +283,7 @@ app.post('/api/register', async (req, res) => {
       message: 'Registration successful',
       user: { 
         id: user._id, 
-        username: user.username, 
-        avatar: user.avatar,
+        username: user.username,       
         characterClass: user.characterClass || null
       },
       token
@@ -345,8 +329,7 @@ app.post('/api/login', async (req, res) => {
       message: 'Login successful',
       user: { 
         id: user._id, 
-        username: user.username, 
-        avatar: user.avatar,
+        username: user.username,       
         characterClass: user.characterClass || null
       },
       token
@@ -430,8 +413,7 @@ app.get('/api/profile', authenticate, async (req, res) => {
     const userId = req.user._id;
     let stats = await Stats.findOne({ userId });
     if (!stats) stats = await Stats.create({ userId });
-    let inventory = await Inventory.findOne({ userId });
-    if (!inventory) inventory = await Inventory.create({ userId, gold: 1000 });
+    let inventory = await ensureInventoryExists(userId);
     let playerLevel = await PlayerLevel.findOne({ userId });
     if (!playerLevel) playerLevel = await PlayerLevel.create({ userId, level: 1, totalXP: 0 });
     
@@ -439,8 +421,7 @@ app.get('/api/profile', authenticate, async (req, res) => {
       user: {
         id: req.user._id,
         username: req.user.username,
-        email: req.user.email,
-        avatar: req.user.avatar,
+        email: req.user.email,       
         characterClass: req.user.characterClass,
         createdAt: req.user.createdAt,
         lastLogin: req.user.lastLogin
@@ -457,19 +438,12 @@ app.get('/api/profile', authenticate, async (req, res) => {
 
 app.put('/api/profile', authenticate, async (req, res) => {
   try {
-    const { username, email, avatar: rawAvatar } = req.body;
+    const { username, email} = req.body;
     const userId = req.user._id;
 
     const updates = {};
     if (username) updates.username = username;
     if (email) updates.email = email;
-    if (rawAvatar) {
-      let finalAvatarPath = rawAvatar;
-      if (typeof finalAvatarPath === 'string' && !finalAvatarPath.startsWith('images/')) {
-        finalAvatarPath = `images/${finalAvatarPath}`;
-      }
-      updates.avatar = finalAvatarPath;
-    }
     updates.updatedAt = Date.now();
 
     const updatedUser = await User.findByIdAndUpdate(userId, updates, { new: true }).select('-password');
@@ -483,8 +457,7 @@ app.put('/api/profile', authenticate, async (req, res) => {
       user: {
         id: updatedUser._id,
         username: updatedUser.username,
-        email: updatedUser.email,
-        avatar: updatedUser.avatar
+        email: updatedUser.email       
       }
     });
   } catch (error) {
@@ -542,342 +515,326 @@ io.use(async (socket, next) => {
   }
 });
 
+// Make connectedPlayers globally available for bot manager
 global.connectedPlayers = connectedPlayers;
 
-// FIXED: Socket connection with working game flow
+// Socket.IO Connection Handler
 io.on('connection', async (socket) => {
   const user = socket.user;
   const userId = user._id.toString();
   console.log(`Player connected: ${user.username} (Socket ID: ${socket.id})`);
 
-  // Track user sockets
-  if (!userSockets.has(userId)) {
-    userSockets.set(userId, new Set());
-  }
-  userSockets.get(userId).add(socket.id);
-
-  // Get player data
-  const stats = await Stats.findOne({ userId });
-  let inventory = await ensureInventoryExists(user._id);
-  const playerLevel = await PlayerLevel.findOne({ userId });
-
-  const playerData = {
-    socketId: socket.id,
-    userId: user._id.toString(),
-    username: user.username,
-    avatar: user.avatar,
-    characterClass: user.characterClass || 'unselected',
-    stats: stats,
-    inventory: inventory,
-    level: playerLevel ? playerLevel.level : 1,
-    playerLevel: playerLevel
-  };
-
-  connectedPlayers.set(socket.id, playerData);
-  io.emit('updatePlayerList', botManager.getAllPlayersIncludingBots());
-
-  // Send initial profile data
-  socket.emit('profileData', {
-    user: { 
-      id: user._id, 
-      username: user.username, 
-      email: user.email, 
-      avatar: user.avatar, 
-      characterClass: user.characterClass 
-    },
-    stats: stats,
-    inventory: inventory,
-    playerLevel: playerLevel
-  });
-
-  // CHALLENGE HANDLERS
-  socket.on('challengePlayer', async (opponentId) => {
-    try {
-      const opponent = connectedPlayers.get(opponentId);
-      if (!opponent) {
-        socket.emit('challengeFailed', { message: 'Player not found or offline' });
-        return;
-      }
-      
-      const challengeId = `challenge_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      const challengeData = {
-        id: challengeId,
-        challengerId: socket.id,
-        challengerUserId: socket.user._id.toString(),
-        opponentId: opponentId,
-        timestamp: Date.now(),
-        challenger: {
-          socketId: socket.id,
-          userId: socket.user._id.toString(),
-          username: socket.user.username,
-          avatar: socket.user.avatar,
-          characterClass: socket.user.characterClass || 'unselected'
-        }
-      };
-      
-      activeChallenges.set(challengeId, challengeData);
-      
-      io.to(opponentId).emit('challengeReceived', challengeData);
-      socket.emit('challengeSent', {
-        id: challengeId,
-        opponentName: opponent.username,
-        timestamp: Date.now()
-      });
-      
-      setTimeout(() => {
-        if (activeChallenges.has(challengeId)) {
-          activeChallenges.delete(challengeId);
-          io.to(socket.id).emit('challengeExpired', { challengeId });
-          io.to(opponentId).emit('challengeExpired', { challengeId });
-        }
-      }, 60000);
-      
-    } catch (error) {
-      console.error('Error processing challenge:', error);
-      socket.emit('challengeFailed', { message: 'Failed to send challenge' });
+  try {
+    // Track user sockets
+    if (!userSockets.has(userId)) {
+      userSockets.set(userId, new Set());
     }
-  });
+    userSockets.get(userId).add(socket.id);
 
-  socket.on('respondToChallenge', async (data) => {
-    try {
-      const { challengeId, accepted, challengerId } = data;
-      
-      const challenge = activeChallenges.get(challengeId);
-      if (!challenge) {
-        socket.emit('challengeError', { message: 'Challenge not found or expired' });
-        return;
-      }
-      
-      activeChallenges.delete(challengeId);
-      
-      if (accepted) {
-        const gameId = `game_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Get player data
+    const stats = await Stats.findOne({ userId });
+    let inventory = await ensureInventoryExists(user._id);
+    const playerLevel = await PlayerLevel.findOne({ userId });
+
+    const playerData = {
+      socketId: socket.id,
+      userId: user._id.toString(),
+      username: user.username,      
+      characterClass: user.characterClass || 'unselected',
+      stats: stats,
+      inventory: inventory,
+      level: playerLevel ? playerLevel.level : 1,
+      playerLevel: playerLevel
+    };
+
+    connectedPlayers.set(socket.id, playerData);
+    
+    // Emit updated player list including bots
+    io.emit('updatePlayerList', botManager.getAllPlayersIncludingBots());
+
+    // Send initial profile data
+    socket.emit('profileData', {
+      user: { 
+        id: user._id, 
+        username: user.username, 
+        email: user.email,         
+        characterClass: user.characterClass 
+      },
+      stats: stats,
+      inventory: inventory,
+      playerLevel: playerLevel
+    });
+
+    // Initialize all handler classes
+    const profileHandlers = new ProfileHandlers(io, JWT_SECRET);
+    const shopHandlers = new ShopHandlers(io);
+    const gameHandlers = new GameHandlers(io, activeGames, connectedPlayers, gameUtils);
+    const challengeHandlers = new ChallengeHandlers(io, activeChallenges, connectedPlayers, activeGames);
+
+    // Register all handlers
+    profileHandlers.registerHandlers(socket);
+    shopHandlers.registerHandlers(socket);
+    gameHandlers.registerHandlers(socket);
+    challengeHandlers.registerHandlers(socket);
+
+    // Additional critical handlers not covered by handler classes
+    
+    // Update stat handler (was missing)
+    socket.on('updateStat', async (data) => {
+      try {
+        const { statType } = data;
+        const userId = socket.user._id;
         
-        const challenger = connectedPlayers.get(challengerId);
-        if (!challenger) {
-          socket.emit('challengeError', { message: 'Challenger no longer available' });
+        console.log(`📊 Stat update request from ${socket.user.username}: ${statType}`);
+        
+        const validStats = ['strength', 'agility', 'intuition', 'endurance'];
+        if (!validStats.includes(statType)) {
+          socket.emit('statsUpdateFailed', { message: 'Invalid stat type' });
           return;
         }
         
-        const gameData = {
-          gameId: gameId,
-          opponent: {
-            id: challengerId,
-            userId: challenger.userId,
-            username: challenger.username,
-            avatar: challenger.avatar,
-            characterClass: challenger.characterClass || 'unselected'
-          }
+        const stats = await Stats.findOne({ userId });
+        if (!stats) {
+          socket.emit('statsUpdateFailed', { message: 'Stats not found' });
+          return;
+        }
+        
+        if (stats.availablePoints <= 0) {
+          socket.emit('statsUpdateFailed', { message: 'No available points' });
+          return;
+        }
+        
+        const updateData = {
+          availablePoints: stats.availablePoints - 1,
+          lastUpdated: Date.now()
         };
+        updateData[statType] = stats[statType] + 1;
         
-        const challengerGameData = {
-          gameId: gameId,
-          opponent: {
-            id: socket.id,
-            userId: socket.user._id.toString(),
-            username: socket.user.username,
-            avatar: socket.user.avatar,
-            characterClass: socket.user.characterClass || 'unselected'
+        const updatedStats = await Stats.findOneAndUpdate(
+          { userId },
+          updateData,
+          { new: true }
+        );
+        
+        console.log(`✅ Updated ${statType} for ${socket.user.username}. New value: ${updatedStats[statType]}, Available points: ${updatedStats.availablePoints}`);
+        
+        socket.emit('statUpdated', {
+          statType: statType,
+          newValue: updatedStats[statType],
+          availablePoints: updatedStats.availablePoints,
+          stats: {
+            strength: updatedStats.strength,
+            agility: updatedStats.agility,
+            intuition: updatedStats.intuition,
+            endurance: updatedStats.endurance,
+            availablePoints: updatedStats.availablePoints
           }
-        };
-        
-        socket.emit('challengeAccepted', gameData);
-        io.to(challengerId).emit('challengeAccepted', challengerGameData);
-        
-      } else {
-        io.to(challengerId).emit('challengeRejected', {
-          challengeId: challengeId,
-          message: `${socket.user.username} declined your challenge`
         });
+        
+        socket.emit('statsUpdate', updatedStats);
+        
+      } catch (error) {
+        console.error('Error updating stat:', error);
+        socket.emit('statsUpdateFailed', { message: 'Failed to update stat' });
       }
-      
-    } catch (error) {
-      console.error('Error responding to challenge:', error);
-      socket.emit('challengeError', { message: 'Failed to respond to challenge' });
-    }
-  });
+    });
 
-  // --- START OF REPLACEMENT ---
-  socket.on('joinGame', async (gameId) => {
-    try {
-        console.log(`🎮 ${socket.user.username} joining game: ${gameId}`);
+    // Request stats handler
+    socket.on('requestStats', async () => {
+      try {
+        const userId = socket.user._id;
+        const stats = await Stats.findOne({ userId });
         
-        // --- FIX: Atomic creation of the game object to prevent race conditions ---
-        if (!activeGames.has(gameId)) {
-            // Synchronously create a placeholder for the game to reserve the ID
-            activeGames.set(gameId, {
-                id: gameId,
-                players: {},
-                currentRound: 0,
-                turnTimer: null,
-                turnTime: 30,
-                moves: {},
-                waitingForPlayers: true,
-                createdAt: Date.now()
-            });
-        }
-        
-        const game = activeGames.get(gameId);
-        
-        // Join the socket to the game room so they receive broadcasts
-        socket.join(gameId);
-
-        // Add the player to the game object if they are not already in it
-        if (!game.players[socket.id]) {
-            // Fetch all necessary data for this player asynchronously
-            const stats = await Stats.findOne({ userId: socket.user._id });
-            const inventory = await Inventory.findOne({ userId: socket.user._id });
-            const playerLevel = await PlayerLevel.findOne({ userId: socket.user._id });
-            const characterBonuses = getCharacterBonuses(socket.user.characterClass || 'unselected');
-
-            // Construct the complete player data object
-            const baseHealth = 100; // Assuming a base health
-            const enduranceHP = ((stats?.endurance || 10) - 10) * 10;
-            const maxHealth = baseHealth + enduranceHP;
-
-            game.players[socket.id] = {
-                socketId: socket.id,
-                userId: socket.user._id.toString(),
-                username: socket.user.username,
-                avatar: socket.user.avatar,
-                characterClass: socket.user.characterClass || 'unselected',
-                health: maxHealth,
-                maxHealth: maxHealth,
-                stats: {
-                    strength: (stats?.strength || 10),
-                    agility: (stats?.agility || 10),
-                    intuition: (stats?.intuition || 10),
-                    endurance: (stats?.endurance || 10)
-                },
-                damageBonus: ((stats?.strength || 10) - 10) * 2,
-                criticalChance: (stats?.intuition || 10) - 10,
-                evasionChance: (stats?.agility || 10) - 10,
-                enemyEvasionReduction: ((stats?.intuition || 10) - 10) * 0.5,
-                specialAbility: characterBonuses.specialAbility,
-                equipment: inventory?.equipped || {},
-                level: playerLevel || { level: 1, totalXP: 0 },
-                ready: true, // Player is now ready
-                move: null
-            };
+        if (stats) {
+          socket.emit('statsUpdate', stats);
         } else {
-             // If player object exists (e.g., on reconnect), just mark as ready
-             game.players[socket.id].ready = true;
+          console.error(`No stats found for user ${userId}`);
         }
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      }
+    });
 
-        const playerCount = Object.keys(game.players).length;
-        const readyCount = Object.values(game.players).filter(p => p.ready).length;
+    // Enhanced challenge player handler with bot support
+    socket.on('challengePlayer', async (opponentId) => {
+      try {
+        // Check if challenging a bot FIRST
+        if (opponentId.startsWith('bot_')) {
+          console.log(`🤖 Player ${socket.user.username} challenging bot ${opponentId}`);
+          
+          const challengeData = {
+            id: `challenge_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            challengerId: socket.id,
+            opponentId: opponentId
+          };
+          
+          // Handle bot challenge through bot manager
+          if (botManager && typeof botManager.handleBotChallenge === 'function') {
+            botManager.handleBotChallenge(socket.id, opponentId, challengeData);
+          } else {
+            console.error('❌ Bot manager not available or handleBotChallenge method missing');
+            socket.emit('challengeFailed', { message: 'Bot challenges not available' });
+          }
+          return;
+        }
+        
+        // Handle regular player challenges (delegate to challenge handlers)
+        challengeHandlers.handlePlayerChallenge(socket, opponentId);
+        
+      } catch (error) {
+        console.error('Error processing challenge:', error);
+        socket.emit('challengeFailed', { message: 'Failed to send challenge' });
+      }
+    });
 
-        console.log(`Game ${gameId}: ${playerCount} players, ${readyCount} ready`);
+    // --- FIXED: Enhanced join game handler with correct bot logic ---
+    socket.on('joinGame', async (gameId) => {
+      try {
+        console.log(`🎮 ${socket.user.username} is joining game: ${gameId}`);
+        
+        // 1. Let the human player join. This creates the game object.
+        await gameHandlers.handleJoinGame(socket, gameId);
+        
+        // 2. Check if this is a bot game
+        const botGameData = botManager.botGames.get(gameId);
+        if (botGameData) {
+          const game = activeGames.get(gameId);
+          if (!game) {
+              console.error(`❌ Game object not found for bot to join gameId: ${gameId}`);
+              socket.emit('gameError', { message: 'Failed to initialize bot game.' });
+              return;
+          }
+          
+          console.log(`🤖 Bot is now joining the created game: ${gameId}`);
+          // 3. Add the bot to the now-existing game
+          await botManager.handleBotJoinGame(gameId, game);
+          
+          // 4. After bot joins, re-check if the game should start.
+          // This logic is moved from gameHandlers to here to ensure it runs *after* the bot is added.
+          const playerCount = Object.keys(game.players).length;
+          const readyCount = Object.values(game.players).filter(p => p.ready).length;
 
-        // If game is ready to start
-        if (playerCount >= 2 && readyCount >= 2) {
+          if (playerCount >= 2 && readyCount >= 2) {
             game.waitingForPlayers = false;
             game.currentRound = 0;
             
-            console.log(`🎮 STARTING GAME ${gameId} with players:`, Object.values(game.players).map(p => p.username));
+            console.log(`🎮 Starting bot game ${gameId} with players:`, Object.values(game.players).map(p => p.username));
             
             io.to(gameId).emit('gameStarted', {
-                gameState: { ...game, players: game.players }
+              gameState: {
+                ...game,
+                players: game.players
+              }
             });
             
             setTimeout(() => {
-                console.log(`🚀 CALLING startRound for ${gameId}`);
-                startRound(gameId);
+              gameUtils.startRound(gameId);
             }, 2000);
-        } else {
-            // If still waiting for players, just send the current state to the player who joined
-            socket.emit('gameStarted', {
-                gameState: { ...game, players: game.players }
-            });
-        }
-
-    } catch (error) {
-        console.error('Error joining game:', error);
-        socket.emit('gameError', { message: 'Failed to join game' });
-    }
-  });
-  // --- END OF REPLACEMENT ---
-
-  socket.on('makeMove', async (data) => {
-    try {
-      const { gameId, attackArea, blockArea } = data;
-      console.log(`🎯 Move from ${socket.user.username}: attack=${attackArea}, block=${blockArea}`);
-      
-      const game = activeGames.get(gameId);
-      if (!game || !game.players[socket.id] || game.moves[socket.id]) {
-        socket.emit('invalidMove', { message: 'Invalid move' });
-        return;
-      }
-
-      game.moves[socket.id] = {
-        attackArea: attackArea,
-        blockArea: blockArea,
-        timestamp: Date.now(),
-        auto: false
-      };
-
-      socket.emit('moveReceived', { success: true });
-      socket.to(gameId).emit('opponentMadeMove', {
-        playerId: socket.id,
-        playerName: socket.user.username
-      });
-
-      const playerIds = Object.keys(game.players);
-      const moveIds = Object.keys(game.moves);
-
-      if (moveIds.length >= playerIds.length) {
-        if (game.turnTimer) {
-          clearTimeout(game.turnTimer);
-          game.turnTimer = null;
+          }
         }
         
-        io.to(gameId).emit('allMovesMade', { message: 'Processing round...' });
-        setTimeout(() => processRound(gameId), 1000);
+      } catch (error) {
+        console.error('Error joining game:', error);
+        socket.emit('gameError', { message: 'Failed to join game' });
       }
+    });
 
-    } catch (error) {
-      console.error('Error processing move:', error);
-      socket.emit('invalidMove', { message: 'Failed to process move' });
-    }
-  });
+    // Enhanced make move handler with bot support
+    socket.on('makeMove', async (data) => {
+      try {
+        const { gameId, attackArea, blockArea } = data;
+        console.log(`🎯 Move from ${socket.user.username}: attack=${attackArea}, block=${blockArea}`);
+        
+        // Handle the move through game handlers first
+        gameHandlers.handleMakeMove(socket, data);
+        
+        // Check if this game has a bot and trigger bot move
+        const game = activeGames.get(gameId);
+        const botGameData = botManager.botGames.get(gameId);
+        if (botGameData && game && !game.moves[botGameData.botSocketId]) {
+          console.log(`🤖 Triggering bot move for game ${gameId}`);
+          setTimeout(() => {
+            botManager.generateBotMove(gameId, game, game.currentRound);
+          }, 500); // Small delay for realism
+        }
+        
+      } catch (error) {
+        console.error('Error processing move:', error);
+        socket.emit('invalidMove', { message: 'Failed to process move' });
+      }
+    });
 
-  socket.on('getPlayerList', () => {
-    socket.emit('updatePlayerList', botManager.getAllPlayersIncludingBots());
-  });
+    // Get player list handler
+    socket.on('getPlayerList', () => {
+      socket.emit('updatePlayerList', botManager.getAllPlayersIncludingBots());
+    });
 
-  socket.on('disconnect', () => {
-    const disconnectedPlayer = connectedPlayers.get(socket.id);
-    if (disconnectedPlayer) {
-      console.log(`Player disconnected: ${disconnectedPlayer.username}`);
-      connectedPlayers.delete(socket.id);
-      
-      const userId = disconnectedPlayer.userId;
-      if (userSockets.has(userId)) {
-        userSockets.get(userId).delete(socket.id);
-        if (userSockets.get(userId).size === 0) {
+    // Error handling
+    socket.on('error', (error) => {
+      console.error('Socket error for user', socket.user.username, ':', error);
+    });
+
+    // Enhanced disconnect handler
+    socket.on('disconnect', (reason) => {
+      const disconnectedPlayer = connectedPlayers.get(socket.id);
+      if (disconnectedPlayer) {
+        console.log(`Player disconnected: ${disconnectedPlayer.username} (${reason})`);
+        
+        // Clean up active games
+        activeGames.forEach((game, gameId) => {
+          if (game.players[socket.id]) {
+            console.log(`Cleaning up game ${gameId} for disconnected player ${disconnectedPlayer.username}`);
+            
+            // Notify other players
+            socket.to(gameId).emit('opponentLeft', {
+              playerId: socket.id,
+              playerName: disconnectedPlayer.username,
+              reason: 'disconnected'
+            });
+            
+            // End game or remove player
+            if (!game.waitingForPlayers) {
+              const remainingPlayers = Object.keys(game.players).filter(id => id !== socket.id && !id.startsWith('bot_'));
+              if (remainingPlayers.length > 0) {
+                gameUtils.endGame(gameId, remainingPlayers[0]);
+              }
+            }
+          }
+        });
+        
+        connectedPlayers.delete(socket.id);
+        
+        const userId = disconnectedPlayer.userId;
+        if (userSockets.has(userId)) {
+          userSockets.get(userId).delete(socket.id);
+          if (userSockets.get(userId).size === 0) {
             userSockets.delete(userId);
+          }
         }
+
+        // Clean up challenges
+        activeChallenges.forEach((challenge, key) => {
+          if (challenge.challengerId === socket.id || challenge.opponentId === socket.id) {
+            activeChallenges.delete(key);
+            const otherPlayerId = challenge.challengerId === socket.id ? challenge.opponentId : challenge.challengerId;
+            io.to(otherPlayerId).emit('challengeCancelled', { 
+              challengeId: key,
+              reason: 'Player disconnected'
+            });
+          }
+        });
+
+        io.emit('updatePlayerList', botManager.getAllPlayersIncludingBots());
       }
+    });
 
-      // Clean up challenges
-      activeChallenges.forEach((challenge, key) => {
-        if (challenge.challengerId === socket.id || challenge.opponentId === socket.id) {
-          activeChallenges.delete(key);
-          const otherPlayerId = challenge.challengerId === socket.id ? challenge.opponentId : challenge.challengerId;
-          io.to(otherPlayerId).emit('challengeCancelled', { 
-            challengeId: key,
-            reason: 'Player disconnected'
-          });
-        }
-      });
-
-      io.emit('updatePlayerList', botManager.getAllPlayersIncludingBots());
-    }
-  });
+  } catch (error) {
+    console.error('Error in socket connection handler:', error);
+    socket.emit('connectionError', { message: 'Failed to initialize connection' });
+  }
 });
 
-// Database connection
+// Database connection and server startup
 mongoose.connect('mongodb+srv://braucamkopa:Y1ytE02fH8ErX3qi@cluster0.eedzhyr.mongodb.net/multiplayer-game?retryWrites=true&w=majority&appName=Cluster0')
 .then(async () => {
   console.log('Connected to MongoDB');
@@ -889,5 +846,8 @@ mongoose.connect('mongodb+srv://braucamkopa:Y1ytE02fH8ErX3qi@cluster0.eedzhyr.mo
 const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
-  console.log(`🎮 FIXED: Game system with working round progression`);
+  console.log(`🎮 FULLY REFACTORED: Complete server with all handlers and bot integration`);
+  console.log(`✅ Using organized handler files for clean architecture`);
+  console.log(`🤖 Bot system fully integrated and operational`);
+  console.log(`🔧 All critical missing handlers restored`);
 });
