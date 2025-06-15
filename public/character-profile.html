@@ -320,22 +320,34 @@
                             </div>
                         </div>
                         
-                        <div class="stat-item">
-                            <div class="stat-label">Attack</div>
-                            <div id="attack-value" class="stat-value">20</div>
+                             <!-- FIX START: Replace simple stat items with detailed breakdowns -->
+                        <div class="stat-breakdown-item">
+                            <div class="stat-breakdown-header">
+                                <span class="stat-label">Total Attack</span>
+                                <span id="total-attack-value" class="stat-value">0</span>
+                            </div>
+                            <ul id="attack-breakdown-list" class="stat-breakdown-list">
+                                <!-- Populated by JS -->
+                            </ul>
+                        </div>
+                        <div class="stat-breakdown-item">
+                            <div class="stat-breakdown-header">
+                                <span class="stat-label">Total Health</span>
+                                <span id="total-health-value" class="stat-value">0</span>
+                            </div>
+                            <ul id="health-breakdown-list" class="stat-breakdown-list">
+                                <!-- Populated by JS -->
+                            </ul>
                         </div>
                         <div class="stat-item">
                             <div class="stat-label">Evade Chance</div>
-                            <div id="evade-chance" class="stat-value">5%</div>
+                            <div id="evade-chance" class="stat-value">0%</div>
                         </div>
                         <div class="stat-item">
                             <div class="stat-label">Critical Chance</div>
-                            <div id="critical-chance" class="stat-value">5%</div>
+                            <div id="critical-chance" class="stat-value">0%</div>
                         </div>
-                        <div class="stat-item">
-                            <div class="stat-label">Health</div>
-                            <div id="health-value" class="stat-value">150 HP</div>
-                        </div>
+                        <!-- FIX END -->
                         
                         <h3 class="stats-subtitle">Record</h3>
                         <div class="stat-item">
@@ -355,13 +367,14 @@
                     <div class="base-stats">
                         <h2 class="stats-header">Character Stats</h2>
                         
-                        <div class="stat-row">
+                                             <div class="stat-row">
                             <div class="stat-name">
                                 STRENGTH
-                                <div class="stat-tooltip">Each point increases damage by 2</div>
+                                <div id="strength-tooltip" class="stat-tooltip"></div>
                             </div>
-                            <div class="stat-value">
-                                <span id="strength-value">10</span>
+                            <div class="stat-value-container">
+                                <span id="strength-value" class="stat-base-value">10</span>
+                                <span id="strength-bonus" class="stat-bonus-value"></span>
                                 <button class="stat-increase" data-stat="strength">+</button>
                             </div>
                         </div>
@@ -369,10 +382,11 @@
                         <div class="stat-row">
                             <div class="stat-name">
                                 AGILITY
-                                <div class="stat-tooltip">Each point increases evasion chance by 1%</div>
+                                <div id="agility-tooltip" class="stat-tooltip"></div>
                             </div>
-                            <div class="stat-value">
-                                <span id="agility-value">10</span>
+                            <div class="stat-value-container">
+                                <span id="agility-value" class="stat-base-value">10</span>
+                                <span id="agility-bonus" class="stat-bonus-value"></span>
                                 <button class="stat-increase" data-stat="agility">+</button>
                             </div>
                         </div>
@@ -380,10 +394,11 @@
                         <div class="stat-row">
                             <div class="stat-name">
                                 INTUITION
-                                <div class="stat-tooltip">Each point increases critical hit chance by 1% and decreases enemy evasion by 0.5%</div>
+                                <div id="intuition-tooltip" class="stat-tooltip"></div>
                             </div>
-                            <div class="stat-value">
-                                <span id="intuition-value">10</span>
+                            <div class="stat-value-container">
+                                <span id="intuition-value" class="stat-base-value">10</span>
+                                <span id="intuition-bonus" class="stat-bonus-value"></span>
                                 <button class="stat-increase" data-stat="intuition">+</button>
                             </div>
                         </div>
@@ -391,17 +406,20 @@
                         <div class="stat-row">
                             <div class="stat-name">
                                 ENDURANCE
-                                <div class="stat-tooltip">Each point increases max health by 10</div>
+                                <div id="endurance-tooltip" class="stat-tooltip"></div>
                             </div>
-                            <div class="stat-value">
-                                <span id="endurance-value">10</span>
+                            <div class="stat-value-container">
+                                <span id="endurance-value" class="stat-base-value">10</span>
+                                <span id="endurance-bonus" class="stat-bonus-value"></span>
                                 <button class="stat-increase" data-stat="endurance">+</button>
                             </div>
                         </div>
+
+
                         
                         <!-- Available points -->
                         <div class="available-points">
-                            Available Points: <span id="available-points">5</span>
+                            Available Points: <span id="available-points">0</span>
                         </div>
                     </div>
                 </div>

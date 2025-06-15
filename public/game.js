@@ -14,8 +14,19 @@ const avatarOptions = document.querySelectorAll('.avatar-option');
 const logoutBtn = document.getElementById('logout-btn');
 
 // DOM elements - Lobby
-const playerAvatar = document.getElementById('player-avatar');
-const playerName = document.getElementById('player-name');
+const lobbyAvatarElement = document.getElementById('lobby-character-avatar');
+const lobbyNameElement = document.getElementById('player-name');
+const lobbyClassElement = document.getElementById('player-class');
+const lobbyEquipmentSlots = {
+    weapon: document.getElementById('equipped-weapon-name'),
+    armor: document.getElementById('equipped-armor-name'),
+    shield: document.getElementById('equipped-shield-name'),
+    helmet: document.getElementById('equipped-helmet-name'),
+    boots: document.getElementById('equipped-boots-name'),
+    gloves: document.getElementById('equipped-gloves-name'),
+    amulet: document.getElementById('equipped-amulet-name'),
+    ring: document.getElementById('equipped-ring-name'),
+};
 const playersContainer = document.getElementById('players-container');
 const incomingChallenges = document.getElementById('incoming-challenges');
 const outgoingChallenges = document.getElementById('outgoing-challenges');
@@ -27,7 +38,6 @@ const player1Avatar = document.getElementById('player1-avatar');
 const player1Name = document.getElementById('player1-name');
 const player2Avatar = document.getElementById('player2-avatar');
 const player2Name = document.getElementById('player2-name');
-const gameMessage = document.getElementById('game-message');
 const combatControls = document.getElementById('combat-controls');
 const gameLog = document.getElementById('game-log');
 const player1Health = document.getElementById('player1-health');
@@ -65,34 +75,13 @@ const equippedArmor = document.getElementById('equipped-armor');
 const equippedShield = document.getElementById('equipped-shield');
 const equippedHelmet = document.getElementById('equipped-helmet');
 
-// Debug function for bot visibility
-function debugPlayerList() {
-  console.log('🔍 DEBUG: Current client state');
-  console.log('MyPlayerId:', myPlayerId);
-  console.log('Socket connected:', socket.connected);
-  console.log('Current screen:', 
-    loginScreen && !loginScreen.classList.contains('hidden') ? 'login' :
-    lobbyScreen && !lobbyScreen.classList.contains('hidden') ? 'lobby' :
-    gameScreen && !gameScreen.classList.contains('hidden') ? 'game' : 'unknown'
-  );
-  
-  // Request fresh player list
-  console.log('🔄 Requesting fresh player list...');
-  socket.emit('getPlayerList');
-}
-
-// Global test function for bot visibility
-window.testBotVisibility = function() {
-  console.log('🧪 Testing bot visibility...');
-  fetch('/api/debug/bots')
-    .then(response => response.json())
-    .then(data => {
-      console.log('🔍 Server bot data:', data);
-      console.log('🔄 Requesting client player list...');
-      socket.emit('getPlayerList');
-    })
-    .catch(error => console.error('Error fetching bot data:', error));
-};
+// FIXED: Game Message System DOM Elements
+let gameMessageContainer = null;
+let gameMessageWrapper = null;
+let msgChooseMove = null;
+let msgWaitingOpponent = null;
+let msgProcessing = null;
+let msgWaitingPlayers = null;
 
 // Global state
 let currentUser = null;
@@ -195,6 +184,67 @@ function disableStatsButtonsDuringBattle() {
         battleMessages.forEach(message => {
             message.remove();
         });
+    }
+}
+
+// FIXED: Initialize Game Message System
+function initializeGameMessageSystem() {
+    gameMessageContainer = document.getElementById('game-message-container');
+    gameMessageWrapper = document.querySelector('.game-message-wrapper');
+    msgChooseMove = document.getElementById('msg-choose-move');
+    msgWaitingOpponent = document.getElementById('msg-waiting-opponent');
+    msgProcessing = document.getElementById('msg-processing');
+    msgWaitingPlayers = document.getElementById('msg-waiting-players');
+    
+    if (!gameMessageContainer || !gameMessageWrapper) {
+        console.warn('Game message container or wrapper not found in DOM');
+        return false;
+    }
+    
+    if (!msgChooseMove || !msgWaitingOpponent || !msgProcessing || !msgWaitingPlayers) {
+        console.warn('One or more game message elements not found');
+        return false;
+    }
+    
+    console.log('Game message system initialized successfully');
+    return true;
+}
+
+// FIXED: Show Game Message Function
+function showGameMessage(messageId) {
+    if (!gameMessageWrapper) {
+        console.warn('Game message wrapper not available');
+        return;
+    }
+    
+    let messageElement = null;
+    let messageIndex = 0;
+    
+    switch(messageId) {
+        case 'choose-move':
+            messageElement = msgChooseMove;
+            messageIndex = 0;
+            break;
+        case 'waiting-opponent':
+            messageElement = msgWaitingOpponent;
+            messageIndex = 1;
+            break;
+        case 'processing':
+            messageElement = msgProcessing;
+            messageIndex = 2;
+            break;
+        case 'waiting-players':
+            messageElement = msgWaitingPlayers;
+            messageIndex = 3;
+            break;
+        default:
+            console.warn('Unknown message ID:', messageId);
+            return;
+    }
+    
+    if (messageElement) {
+        gameMessageWrapper.style.left = `-${messageIndex * 25}%`;
+        console.log(`Showing message: ${messageId} (index: ${messageIndex})`);
     }
 }
 
@@ -344,19 +394,24 @@ function setupEventListeners() {
     if (continueGameBtn) continueGameBtn.addEventListener('click', () => hideModal(combatResultModal));
     if (openShopBtn) {
         openShopBtn.addEventListener('click', () => {
-            // Check if we have a token
             const token = localStorage.getItem('token');
             if (!token) {
                 alert('Please log in to access the shop');
                 window.location.href = '/login.html';
                 return;
             }
-            // Navigate to shop
             window.location.href = '/shop.html';
         });
     }
     if (backToLobbyFromShopBtn) backToLobbyFromShopBtn.addEventListener('click', () => showScreen(lobbyScreen));
-    if (openInventoryBtn) openInventoryBtn.addEventListener('click', () => { socket.emit('getInventory'); showModal(inventoryModal); });
+    if (openInventoryBtn) openInventoryBtn.addEventListener('click', () => { 
+        if (window.modernInventorySystem) {
+            window.modernInventorySystem.openInventory();
+        } else {
+            socket.emit('getInventory'); 
+            showModal(inventoryModal);
+        }
+    });
     if (closeInventoryBtn) closeInventoryBtn.addEventListener('click', () => hideModal(inventoryModal));
     
     document.querySelectorAll('.category-btn').forEach(btn => {
@@ -382,20 +437,6 @@ function setupEventListeners() {
             openInventoryForSlot(slotType);
         });
     });
-
-    // Add debug button event listeners
-    const manualRefreshBtn = document.getElementById('manual-refresh-btn');
-    if (manualRefreshBtn) {
-        manualRefreshBtn.addEventListener('click', () => {
-            console.log('🔄 Manual refresh button clicked');
-            socket.emit('getPlayerList');
-        });
-    }
-
-    const debugInfoBtn = document.getElementById('debug-info-btn');
-    if (debugInfoBtn) {
-        debugInfoBtn.addEventListener('click', debugPlayerList);
-    }
 }
 
 function setupLobbyEventHandlers() {
@@ -455,7 +496,6 @@ function openInventoryForSlot(slotType) {
 
 function checkConfirmButton() {
     if (selectedAttackArea && selectedBlockArea) {
-        // Automatically make the move when both selections are made
         makeMove(selectedAttackArea, selectedBlockArea);
     }
 }
@@ -481,16 +521,21 @@ function login(username, avatarFallback) {
         const userData = JSON.parse(userStr);
         currentUser = userData;
 
-        if (playerAvatar) { 
-            playerAvatar.src = currentUser.avatar && currentUser.avatar.startsWith('images/') ? 
-                currentUser.avatar : `images/${currentUser.avatar || 'default-avatar.png'}`;
-        } else {
-            console.warn("player-avatar DOM element not found for main user display.");
+        // Use the new lobby avatar element if it exists
+        const lobbyAvatar = document.getElementById('player-avatar');
+        if (lobbyAvatar) {
+            let avatarSrc = userData.avatar || 'default-avatar.png';
+            if (userData.characterClass && userData.characterClass !== 'unselected') {
+                avatarSrc = `images/characters/${userData.characterClass}.png`;
+            } else if (!avatarSrc.startsWith('images/')) {
+                avatarSrc = `images/${avatarSrc}`;
+            }
+            lobbyAvatar.src = avatarSrc;
         }
-        if (playerName) {
-            playerName.textContent = currentUser.username;
-        } else {
-            console.warn("player-name DOM element not found for main user display.");
+
+        const lobbyName = document.getElementById('player-name');
+        if (lobbyName) {
+            lobbyName.textContent = currentUser.username;
         }
         
         socket.auth = { token: token };
@@ -538,6 +583,15 @@ function showScreen(screen) {
     
     if (screen === lobbyScreen) {
         if (window.cleanupDisplacedIcons) window.cleanupDisplacedIcons();
+    }
+    
+    // Initialize game message system when showing game screen
+    if (screen === gameScreen) {
+        // Add a small delay to ensure DOM is ready
+        setTimeout(() => {
+            initializeGameMessageSystem();
+            showGameMessage('waiting-players');
+        }, 100);
     }
 }
 
@@ -588,63 +642,45 @@ function updateTimerDisplay() {
     }
 }
 
-
-// ENHANCED: Updated player list function with proper HTML structure for your layout
 function updatePlayersList(players) {
     console.log('🔍 CLIENT: updatePlayersList called with:', players.length, 'players');
-    console.log('🔍 CLIENT: Full players array:', players);
-    console.log('🔍 CLIENT: MyPlayerId:', myPlayerId);
 
-    // Find the correct container - your HTML uses 'players-container' id
-    const playersContainer = document.getElementById('players-container');
-    if (!playersContainer) {
+    const playersListContainer = document.getElementById('players-container');
+    if (!playersListContainer) {
         console.error("❌ players-container DOM element not found!");
         return;
     }
     
-    // Clear the container
-    playersContainer.innerHTML = '';
+    playersListContainer.innerHTML = '';
 
-    // Update player count in header
     const playerCountElement = document.querySelector('.lobby-header .player-count');
     if (playerCountElement) {
         playerCountElement.textContent = `Players Online: ${players.length}`;
-        console.log('✅ Updated player count display:', players.length);
     }
 
     let otherPlayersCount = 0;
     
-    players.forEach((player, index) => {
-        console.log(`🔍 Processing player ${index + 1}:`, player.username, 'ID:', player.socketId, 'MyID:', myPlayerId);
-        
-        // Skip if this is the current user
+    players.forEach(player => {
         if (player.socketId === myPlayerId) {
-            console.log('⏭️ Skipping self:', player.username);
             return; 
         }
 
         otherPlayersCount++;
-        console.log('✅ Adding player to list:', player.username, player.socketId);
         
-        // Create player item with proper structure
         const playerItem = document.createElement('div');
         playerItem.classList.add('player-item');
         
-        // Add character class data attribute for styling
         if (player.characterClass && player.characterClass !== 'unselected') {
             playerItem.setAttribute('data-class', player.characterClass);
         }
         
-        // Check if it's a bot
         const isBot = player.isBot || player.socketId.startsWith('bot_');
         const botIndicator = isBot ? ' 🤖' : '';
         
-        // Format character class display
         const characterClassDisplay = player.characterClass && player.characterClass !== 'unselected' 
-            ? player.characterClass.charAt(0).toUpperCase() + player.characterClass.slice(1)
+            ? formatClassName(player.characterClass)
             : 'No Class';
         
-        // Create the HTML structure
         playerItem.innerHTML = `
             <div class="player-details">
                 <div class="player-name-list-item">${escapeHtml(player.username)}${botIndicator}</div>
@@ -654,241 +690,74 @@ function updatePlayersList(players) {
             <button class="challenge-btn" data-player-id="${player.socketId}">Challenge</button>
         `;
 
-        // Add event listener to the challenge button
         const challengeBtn = playerItem.querySelector('.challenge-btn');
         challengeBtn.addEventListener('click', (e) => {
-            e.preventDefault();
             e.stopPropagation();
-            
-            console.log('🎯 Challenging:', player.username, 'ID:', player.socketId);
-            
-            // Handle avatar path for modal display
-            let avatarForModal = player.avatar;
-            if (avatarForModal && !avatarForModal.startsWith('images/')) {
-                avatarForModal = `images/${avatarForModal}`;
-            } else if (!avatarForModal) {
-                avatarForModal = 'images/default-avatar.png';
-            }
-            
             showModal(challengeModal, { 
                 id: player.socketId,
                 userId: player.userId,
-                username: player.username, 
-                avatar: avatarForModal
+                username: player.username,
+                avatar: player.avatar
             });
         });
         
-        // Add animation class for new players
         playerItem.classList.add('new-player');
-        
-        // Remove animation class after animation completes
         setTimeout(() => {
             playerItem.classList.remove('new-player');
         }, 500);
         
-        playersContainer.appendChild(playerItem);
+        playersListContainer.appendChild(playerItem);
     });
 
-    console.log(`✅ CLIENT: Added ${otherPlayersCount} players to list`);
-
-    // Show message if no other players found
     if (otherPlayersCount === 0) {
-        console.log('ℹ️ No other players found, showing empty message');
-        const noPlayersMsg = document.createElement('div');
-        noPlayersMsg.classList.add('no-players-msg');
-        noPlayersMsg.innerHTML = `
-            <div>🎮</div>
-            <div>No other players online</div>
-            <div style="font-size: 12px; margin-top: 5px; opacity: 0.7;">Wait for someone to join or challenge a bot!</div>
-        `;
-        playersContainer.appendChild(noPlayersMsg);
-    }
-
-    // Clean up any display issues
-    if (window.cleanupDisplacedIcons) {
-        window.cleanupDisplacedIcons();
+        playersListContainer.innerHTML = '<div class="no-players-msg">No other players online.</div>';
     }
 }
 
-// Helper function to escape HTML to prevent XSS
 function escapeHtml(text) {
     if (!text) return '';
     const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
     };
-    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    return text.replace(/[&<>"']/g, (m) => map[m]);
 }
 
-// Enhanced cleanup function specifically for your layout
-function cleanupDisplacedIcons() {
-    // Target the specific container in your layout
-    const modernPlayersList = document.querySelector('.modern-players-list');
-    if (modernPlayersList) {
-        // Reset any problematic inline styles
-        const playerItems = modernPlayersList.querySelectorAll('.player-item');
-        playerItems.forEach(item => {
-            // Remove any conflicting inline styles
-            item.style.cssText = '';
-            
-            // Ensure proper layout structure
-            const challengeBtn = item.querySelector('.challenge-btn');
-            if (challengeBtn) {
-                challengeBtn.style.cssText = '';
-                challengeBtn.style.flexShrink = '0';
-            }
-            
-            const playerDetails = item.querySelector('.player-details');
-            if (playerDetails) {
-                playerDetails.style.cssText = '';
-                playerDetails.style.flex = '1';
-                playerDetails.style.minWidth = '0';
-            }
-        });
-    }
-    
-    // Fix any avatar images
-    const avatarImages = document.querySelectorAll('.character-avatar, .profile-avatar, .challenger-avatar');
-    avatarImages.forEach(img => {
-        if (!img.getAttribute('data-has-error-handler')) {
-            img.addEventListener('error', function() {
-                console.log('Avatar image failed to load:', this.src);
-                this.src = 'images/default-avatar.png';
-            });
-            img.setAttribute('data-has-error-handler', 'true');
-        }
-    });
-    
-    console.log('✅ UI cleanup completed - modern lobby player list should now display properly');
-}
-
-// Make sure the cleanup function is available globally
-window.cleanupDisplacedIcons = cleanupDisplacedIcons;
-
-// Helper function to escape HTML to prevent XSS
-function escapeHtml(text) {
-    const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    };
-    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
-}
-
-// Enhanced cleanup function for better display
-function cleanupDisplacedIcons() {
-    // Remove any inline styles that might be causing issues
-    const playerItems = document.querySelectorAll('.player-item');
-    playerItems.forEach(item => {
-        // Reset any problematic inline styles
-        item.style.cssText = '';
-        
-        // Ensure proper layout
-        const challengeBtn = item.querySelector('.challenge-btn');
-        if (challengeBtn) {
-            challengeBtn.style.cssText = '';
-        }
-        
-        const playerDetails = item.querySelector('.player-details');
-        if (playerDetails) {
-            playerDetails.style.cssText = '';
-        }
-    });
-    
-    // Fix any avatar images
-    const avatarImages = document.querySelectorAll('.character-avatar, .profile-avatar, .challenger-avatar');
-    avatarImages.forEach(img => {
-        if (!img.getAttribute('data-has-error-handler')) {
-            img.addEventListener('error', function() {
-                console.log('Avatar image failed to load:', this.src);
-                this.src = 'images/default-avatar.png';
-            });
-            img.setAttribute('data-has-error-handler', 'true');
-        }
-    });
-    
-    console.log('✅ UI cleanup completed - player list should now display properly');
-}
-
+// THIS IS THE NEW FUNCTION TO UPDATE THE LOBBY CHARACTER DISPLAY
 function updateProfileDisplay(playerData) {
-    const profileAvatarElement = document.querySelector('.profile-sidebar .profile-avatar');
-    const profileNameElement = document.querySelector('.profile-sidebar .profile-name');
+    if (!playerData) return;
+
+    // The key change is here: target the new, unique ID.
+    const lobbyAvatarElement = document.getElementById('lobby-character-display-avatar'); 
     
-    const avatarToDisplay = playerData.avatar || (currentUser ? currentUser.avatar : null);
+    const lobbyNameElement = document.getElementById('player-name');
+    const lobbyClassElement = document.getElementById('player-class');
+
     const usernameToDisplay = playerData.username || (currentUser ? currentUser.username : 'Player');
 
-    if (profileAvatarElement && avatarToDisplay) {
-        profileAvatarElement.src = avatarToDisplay.startsWith('images/') ? 
-            avatarToDisplay : `images/${avatarToDisplay || 'default-avatar.png'}`;
-    }
-    if (profileNameElement) {
-        profileNameElement.textContent = usernameToDisplay;
-    }
-}
+    let avatarSrc = `images/${playerData.avatar || 'default-avatar.png'}`;
+    let classType = 'Unassigned';
 
-function cleanupDisplacedIcons() {
-    const avatarImages = document.querySelectorAll('.character-avatar, .profile-avatar, .challenger-avatar');
-    avatarImages.forEach(img => {
-        img.style.removeProperty('transform');
-        img.style.display = '';
-        
-        if (!img.getAttribute('data-has-error-handler')) {
-            img.addEventListener('error', function() {
-                console.log('Avatar image failed to load:', this.src);
-                this.src = 'images/default-avatar.png';
-            });
-            img.setAttribute('data-has-error-handler', 'true');
-        }
-    });
-    
-    const actionButtons = document.querySelectorAll('.action-button, .challenge-btn, .accept-btn, .decline-btn');
-    actionButtons.forEach(btn => {
-        btn.style.position = '';
-        btn.style.removeProperty('margin-left');
-        btn.style.removeProperty('margin-top');
-    });
-    
-    const playerItems = document.querySelectorAll('.player-item');
-    playerItems.forEach(item => {
-        item.style.height = 'auto';
-        
-        const challengeBtn = item.querySelector('.challenge-btn');
-        if (challengeBtn) {
-            challengeBtn.style.marginRight = '10px';
-            challengeBtn.style.float = 'right';
-        }
-    });
-    
-    const slotIcons = document.querySelectorAll('.slot-icon');
-    slotIcons.forEach(icon => {
-        icon.style.position = 'absolute';
-        icon.style.top = '50%';
-        icon.style.left = '50%';
-        icon.style.transform = 'translate(-50%, -50%)';
-    });
-    
-    const equipmentNames = document.querySelectorAll('.equipment-name');
-    equipmentNames.forEach(name => {
-        name.style.fontSize = '10px';
-        name.style.textAlign = 'center';
-        name.style.position = 'absolute';
-        name.style.bottom = '2px';
-        name.style.left = '0';
-        name.style.right = '0';
-    });
-    
-    const tooltips = document.querySelectorAll('.tooltip');
-    tooltips.forEach(tooltip => {
-        tooltip.style.position = 'absolute';
-        tooltip.style.zIndex = '1000';
-    });
-    
-    console.log('UI cleanup complete - fixed any displaced icons and elements');
+    if (playerData.characterClass && playerData.characterClass !== 'unselected') {
+        avatarSrc = `images/characters/${playerData.characterClass}.png`;
+        const classInfo = {
+            'shadowsteel': { subclass: 'Shadow Warrior' },
+            'ironbound': { subclass: 'Metal Berserker' },
+            'flameheart': { subclass: 'Fire Warrior' },
+            'venomfang': { subclass: 'Poison Assassin' }
+        };
+        classType = classInfo[playerData.characterClass]?.subclass || 'Warrior';
+    }
+
+    if (lobbyAvatarElement) {
+        lobbyAvatarElement.src = avatarSrc;
+        lobbyAvatarElement.onerror = () => { lobbyAvatarElement.src = 'images/default-avatar.png'; };
+    }
+    if (lobbyNameElement) {
+        lobbyNameElement.textContent = usernameToDisplay;
+    }
+    if (lobbyClassElement) {
+        lobbyClassElement.textContent = classType;
+    }
 }
 
 function updateIncomingChallenges(challenge) {
@@ -904,23 +773,19 @@ function updateIncomingChallenges(challenge) {
         return;
     }
     
-    // Check if this challenge already exists to prevent duplicates
     if (document.getElementById(`challenge-${challenge.id}`)) {
         console.log('Challenge already exists, skipping duplicate:', challenge.id);
         return;
     }
     
-    // Create the challenge item immediately with loading state
     const challengeItem = document.createElement('div');
     challengeItem.classList.add('challenge-item', 'challenge-item-enhanced');
     challengeItem.id = `challenge-${challenge.id}`;
     
-    // Use the data we already have from the challenge
     const characterClass = challenge.challenger.characterClass || 'unselected';
     const characterAvatar = getCharacterAvatar(characterClass);
     const characterStyles = getCharacterStyles(characterClass);
     
-    // Set initial HTML with the data we have
     challengeItem.innerHTML = `
         <div class="challenge-character-display">
             <div class="challenger-avatar-container ${characterClass}" style="${characterStyles.containerStyle}">
@@ -938,22 +803,10 @@ function updateIncomingChallenges(challenge) {
                 </div>
                 
                 <div class="challenger-stats-preview loading">
-                    <div class="stat-preview-item">
-                        <span class="stat-icon strength-icon">💪</span>
-                        <span class="stat-value strength-val">-</span>
-                    </div>
-                    <div class="stat-preview-item">
-                        <span class="stat-icon agility-icon">🏃</span>
-                        <span class="stat-value agility-val">-</span>
-                    </div>
-                    <div class="stat-preview-item">
-                        <span class="stat-icon intuition-icon">🧠</span>
-                        <span class="stat-value intuition-val">-</span>
-                    </div>
-                    <div class="stat-preview-item">
-                        <span class="stat-icon endurance-icon">❤️</span>
-                        <span class="stat-value endurance-val">-</span>
-                    </div>
+                    <div class="stat-preview-item"><span class="stat-icon">💪</span><span class="stat-value strength-val">-</span></div>
+                    <div class="stat-preview-item"><span class="stat-icon">🏃</span><span class="stat-value agility-val">-</span></div>
+                    <div class="stat-preview-item"><span class="stat-icon">🧠</span><span class="stat-value intuition-val">-</span></div>
+                    <div class="stat-preview-item"><span class="stat-icon">❤️</span><span class="stat-value endurance-val">-</span></div>
                 </div>
                 
                 <div class="challenger-record">
@@ -969,12 +822,10 @@ function updateIncomingChallenges(challenge) {
         </div>
     `;
     
-    // Add event listeners for the accept/decline buttons
     const acceptBtn = challengeItem.querySelector('.accept-btn');
     const declineBtn = challengeItem.querySelector('.decline-btn');
     
     acceptBtn.addEventListener('click', () => {
-        console.log(`Accepting challenge ${challenge.id} from ${challenge.challenger.username}`);
         socket.emit('respondToChallenge', {
             challengeId: challenge.id,
             accepted: true,
@@ -984,7 +835,6 @@ function updateIncomingChallenges(challenge) {
     });
     
     declineBtn.addEventListener('click', () => {
-        console.log(`Declining challenge ${challenge.id} from ${challenge.challenger.username}`);
         socket.emit('respondToChallenge', {
             challengeId: challenge.id,
             accepted: false,
@@ -993,16 +843,12 @@ function updateIncomingChallenges(challenge) {
         challengeItem.remove();
     });
     
-    // Add the challenge to the incoming challenges container immediately
     incomingChallenges.appendChild(challengeItem);
     
-    // Then request full stats and update the display
     socket.emit('getChallengerStats', challenge.challenger.userId, (statsData) => {
-        // Double-check the element still exists (might have been accepted/declined)
         const existingItem = document.getElementById(`challenge-${challenge.id}`);
         if (!existingItem) return;
         
-        // Update the stats values
         if (!statsData.error) {
             existingItem.querySelector('.level-value').textContent = statsData.level || 1;
             existingItem.querySelector('.strength-val').textContent = statsData.stats?.strength || 10;
@@ -1012,7 +858,6 @@ function updateIncomingChallenges(challenge) {
             existingItem.querySelector('.wins-val').textContent = statsData.stats?.totalWins || 0;
             existingItem.querySelector('.losses-val').textContent = statsData.stats?.totalLosses || 0;
             
-            // Remove loading class
             const statsPreview = existingItem.querySelector('.challenger-stats-preview');
             if (statsPreview) {
                 statsPreview.classList.remove('loading');
@@ -1020,14 +865,11 @@ function updateIncomingChallenges(challenge) {
         }
     });
     
-    // Play sound notification
     const challengeSound = new Audio('sounds/challenge.mp3');
     challengeSound.play().catch(error => console.log('Could not play challenge sound:', error));
 }
 
 function addOutgoingChallenge(challenge) {
-    console.log('[Client] Received "challengeSent" event with data:', challenge);
-    
     if (!outgoingChallenges) {
         console.error("outgoingChallenges DOM element not found!");
         return;
@@ -1038,12 +880,8 @@ function addOutgoingChallenge(challenge) {
     challengeItem.id = `outgoing-${challenge.id}`;
     
     challengeItem.innerHTML = `
-        <div class="challenge-info">
-            <span class="challenge-text">Waiting for ${challenge.opponentName} to respond...</span>
-        </div>
-        <div class="challenge-time">
-            <span class="timestamp">Just now</span>
-        </div>
+        <div class="challenge-info"><span class="challenge-text">Waiting for ${challenge.opponentName} to respond...</span></div>
+        <div class="challenge-time"><span class="timestamp">Just now</span></div>
     `;
     
     outgoingChallenges.appendChild(challengeItem);
@@ -1058,41 +896,26 @@ function addOutgoingChallenge(challenge) {
 
 function startGame(gameData) {
     console.log('🎮 Starting game with data:', gameData);
-    console.log('🔍 Opponent data received:', gameData.opponent);
-    
-    // Debug: Check if opponent stats are included
-    if (gameData.opponent && gameData.opponent.stats) {
-        console.log('✅ Opponent stats found:', gameData.opponent.stats);
-    } else {
-        console.log('❌ No opponent stats in gameData!');
-        console.log('Available opponent properties:', Object.keys(gameData.opponent || {}));
-    }
     
     currentGameId = gameData.gameId;
-
     opponentInfo = {
-    name: gameData.opponent.username,
-    isBot: gameData.opponent.id.startsWith('bot_')
+        name: gameData.opponent.username,
+        isBot: gameData.opponent.id.startsWith('bot_')
     };
 
     localStorage.setItem('pendingGameId', currentGameId);
     clearGameContainer();
     
     if (currentUser && gameData.opponent) {
-        // Display current user's character or avatar
         if (currentUser.characterClass && currentUser.characterClass !== 'unselected') {
             player1Avatar.src = getCharacterAvatar(currentUser.characterClass);
-            player1Avatar.alt = currentUser.characterClass;
         } else {
-            player1Avatar.src = currentUser.avatar.startsWith('images/') ? 
-                currentUser.avatar : `images/${currentUser.avatar}`;
+            player1Avatar.src = currentUser.avatar.startsWith('images/') ? currentUser.avatar : `images/${currentUser.avatar}`;
         }
         player1Name.textContent = currentUser.username;
         
-        // Display opponent's character or avatar
         if (gameData.opponent.characterClass && gameData.opponent.characterClass !== 'unselected') {
             player2Avatar.src = getCharacterAvatar(gameData.opponent.characterClass);
-            player2Avatar.alt = gameData.opponent.characterClass;
         } else {
             let opponentAvatarSrc = gameData.opponent.avatar;
             if (opponentAvatarSrc && !opponentAvatarSrc.startsWith('images/')) {
@@ -1107,235 +930,84 @@ function startGame(gameData) {
         myPlayerId = socket.id;
         opponentId = gameData.opponent.id;
     } else {
-        console.error("Cannot start game: currentUser or opponent data missing.", currentUser, gameData.opponent);
+        console.error("Cannot start game: currentUser or opponent data missing.");
         return;
     }
     
     showScreen(gameScreen);
     
     setTimeout(() => {
-        console.log('Joining game:', currentGameId);
         socket.emit('joinGame', currentGameId);
         addLogEntry('Connecting to game session...', 'info');
         disableStatsButtonsDuringBattle();
     }, 100);
 }
 
-// CHANGED: This function is updated to populate the new in-game stats blocks.
-function updateGameState(state) {
-    gameState = state;
-    console.log('🎮 Game state updated:', state);
-    
-    const player1Data = state.players[myPlayerId];
-    const player2Data = state.players[opponentId] || Object.values(state.players).find(p => p.socketId !== myPlayerId);
+// THIS IS THE NEW FUNCTION TO UPDATE LOBBY EQUIPMENT DISPLAY
+function updateEquippedItemsDisplay(equippedItems) {
+    if (!equippedItems) return;
 
-    const player1Health = document.getElementById('player1-health');
-    const player1XpBar = document.getElementById('player1-energy');
-    const player2Health = document.getElementById('player2-health');
-    const player2XpBar = document.getElementById('player2-energy');
-    const gameMessage = document.getElementById('game-message');
-    const combatControls = document.getElementById('combat-controls');
-
-    // Helper functions for XP calculation
-    const BASE_XP_TO_LEVEL = 1000;
-    const XP_INCREASE_PER_LEVEL = 200;
-
-    function getTotalXPForLevel(level) {
-        if (level <= 1) return 0;
-        let totalXP = 0;
-        for (let i = 2; i <= level; i++) {
-            totalXP += BASE_XP_TO_LEVEL + (i - 2) * XP_INCREASE_PER_LEVEL;
+    Object.keys(lobbyEquipmentSlots).forEach(slotType => {
+        const nameElement = lobbyEquipmentSlots[slotType];
+        if (nameElement) {
+            nameElement.textContent = equippedItems[slotType] ? equippedItems[slotType].name : 'None';
         }
-        return totalXP;
-    }
+    });
 
-    function getXPForNextLevelUp(currentLevel) {
-        return BASE_XP_TO_LEVEL + (currentLevel - 1) * XP_INCREASE_PER_LEVEL;
-    }
-    
-    // Update Player 1 panel
-    if (player1Data) {
-        player1Health.style.width = `${(player1Data.health / player1Data.maxHealth) * 100}%`;
-        player1Health.parentElement.title = `Health: ${player1Data.health}/${player1Data.maxHealth}`;
-        
-        // Update XP Bar for Player 1
-        if (player1Data.level && player1XpBar) {
-            const level = player1Data.level.level || 1;
-            const totalXP = player1Data.level.totalXP || 0;
-            const xpForCurrentLevel = getTotalXPForLevel(level);
-            const xpForNextLevelUp = getXPForNextLevelUp(level);
-            const currentLevelXP = totalXP - xpForCurrentLevel;
-            const xpPercentage = (currentLevelXP / xpForNextLevelUp) * 100;
-            
-            player1XpBar.style.width = `${Math.min(100, xpPercentage)}%`;
-            player1XpBar.parentElement.title = `XP: ${currentLevelXP} / ${xpForNextLevelUp}`;
-        }
-        
-        updateEquipmentDisplay('player1', player1Data.equipment);
-        
-        if (player1Data.stats) {
-            document.getElementById('player1-strength-value').textContent = player1Data.stats.strength;
-            document.getElementById('player1-agility-value').textContent = player1Data.stats.agility;
-            document.getElementById('player1-intuition-value').textContent = player1Data.stats.intuition;
-            document.getElementById('player1-endurance-value').textContent = player1Data.stats.endurance;
-        }
-    }
-    
-    // Update Player 2 panel
-    if (player2Data) {
-        player2Health.style.width = `${(player2Data.health / player2Data.maxHealth) * 100}%`;
-        player2Health.parentElement.title = `Health: ${player2Data.health}/${player2Data.maxHealth}`;
-
-        // Update XP Bar for Player 2
-        if (player2Data.level && player2XpBar) {
-            const level = player2Data.level.level || 1;
-            const totalXP = player2Data.level.totalXP || 0;
-            const xpForCurrentLevel = getTotalXPForLevel(level);
-            const xpForNextLevelUp = getXPForNextLevelUp(level);
-            const currentLevelXP = totalXP - xpForCurrentLevel;
-            const xpPercentage = (currentLevelXP / xpForNextLevelUp) * 100;
-            
-            player2XpBar.style.width = `${Math.min(100, xpPercentage)}%`;
-            player2XpBar.parentElement.title = `XP: ${currentLevelXP} / ${xpForNextLevelUp}`;
-        }
-
-        updateEquipmentDisplay('player2', player2Data.equipment);
-
-        if (player2Data.stats) {
-            document.getElementById('player2-strength-value').textContent = player2Data.stats.strength;
-            document.getElementById('player2-agility-value').textContent = player2Data.stats.agility;
-            document.getElementById('player2-intuition-value').textContent = player2Data.stats.intuition;
-            document.getElementById('player2-endurance-value').textContent = player2Data.stats.endurance;
-        }
-    }
-    
-    if (state.waitingForPlayers) {
-        gameMessage.textContent = 'Waiting for opponent...';
-        combatControls.style.display = 'none';
-    } else if (state.currentRound && state.currentRound > 0 && !waitingForOpponent) {
-        gameMessage.textContent = 'Select an attack and block area (auto-submits when both selected)';
-        combatControls.style.display = 'flex';
-        combatControls.style.opacity = '1';
-    } else if (waitingForOpponent) {
-        gameMessage.textContent = 'Waiting for opponent\'s move...';
-        // Keep controls visible but disabled-looking
-        combatControls.style.display = 'flex';
-        combatControls.style.opacity = '0.5';
-    } else {
-        // Default case - hide controls if we're not sure
-        combatControls.style.display = 'none';
-    }
+    // Fallback for old inventory modal (if it still exists in some context)
+    if (equippedWeapon) equippedWeapon.textContent = equippedItems.weapon ? equippedItems.weapon.name : 'None';
+    if (equippedArmor) equippedArmor.textContent = equippedItems.armor ? equippedItems.armor.name : 'None';
+    if (equippedShield) equippedShield.textContent = equippedItems.shield ? equippedItems.shield.name : 'None';
+    if (equippedHelmet) equippedHelmet.textContent = equippedItems.helmet ? equippedItems.helmet.name : 'None';
 }
-// Add fallback images constant at the top of game.js (if not already present)
+
 const FALLBACK_IMAGES = {
-    weapon: 'images/slot-sword.svg',
-    armor: 'images/slot-armor.svg',
-    shield: 'images/slot-shield.svg',
-    helmet: 'images/slot-helmet.svg',
-    boots: 'images/slot-boots.svg',
-    gloves: 'images/slot-gloves.svg',
-    amulet: 'images/slot-amulet.svg',
-    ring: 'images/slot-ring.svg'
+    weapon: 'images/slot-sword.svg', armor: 'images/slot-armor.svg', shield: 'images/slot-shield.svg', helmet: 'images/slot-helmet.svg',
+    boots: 'images/slot-boots.svg', gloves: 'images/slot-gloves.svg', amulet: 'images/slot-amulet.svg', ring: 'images/slot-ring.svg'
 };
 
-// Enhanced updateEquipmentDisplay function that properly handles item images
-function updateEquipmentDisplay(playerPrefix, equipment) {
-    console.log(`🔄 updateEquipmentDisplay called for ${playerPrefix}:`, equipment);
-    
-    if (!equipment) {
-        console.warn(`❌ No equipment data provided for ${playerPrefix}`);
-        return;
-    }
+function updateInGameEquipmentDisplay(playerPrefix, equipment) {
+    if (!equipment) return;
     
     const slotTypes = ['weapon', 'armor', 'shield', 'helmet', 'boots', 'gloves', 'ring', 'amulet'];
     
     slotTypes.forEach(slotType => {
-        // Find the equipment slot element
         const slotElement = document.querySelector(`.${playerPrefix}-panel .${slotType}-slot`);
-        if (!slotElement) {
-            console.warn(`Equipment slot not found: .${playerPrefix}-panel .${slotType}-slot`);
-            return;
-        }
+        if (!slotElement) return;
         
         const slotIcon = slotElement.querySelector('.slot-icon');
         const itemNameElement = slotElement.querySelector('.equipment-name');
         
-        if (!slotIcon || !itemNameElement) {
-            console.warn(`Missing slot elements for ${playerPrefix} ${slotType}`);
-            return;
-        }
+        if (!slotIcon || !itemNameElement) return;
         
-        // Get the equipped item for this slot
         const equippedItem = equipment[slotType];
-        console.log(`🔍 ${playerPrefix} ${slotType}:`, equippedItem);
         
-        // Reset classes first
         slotElement.classList.remove('equipped', 'common', 'uncommon', 'rare', 'epic', 'legendary');
         
         if (equippedItem) {
-            // Item is equipped, update UI
             itemNameElement.textContent = equippedItem.name;
             slotElement.classList.add('equipped');
+            if (equippedItem.rarity) slotElement.classList.add(equippedItem.rarity);
             
-            // Add rarity class for styling
-            if (equippedItem.rarity) {
-                slotElement.classList.add(equippedItem.rarity);
-            }
+            const statText = equippedItem.damage ? `+${equippedItem.damage} Dmg` : equippedItem.defense ? `+${equippedItem.defense} Def` : '';
+            slotElement.title = `${equippedItem.name}\n${statText}`;
             
-            // Create tooltip with item stats
-            const statText = equippedItem.damage ? `+${equippedItem.damage} Damage` : 
-                           equippedItem.defense ? `+${equippedItem.defense} Defense` : '';
-            slotElement.title = `${equippedItem.name}\n${equippedItem.description || ''}\n${statText}`;
-            
-            // Set the item image with fallback
             if (equippedItem.image) {
                 slotIcon.src = equippedItem.image;
-                slotIcon.onerror = () => {
-                    console.warn(`Failed to load item image: ${equippedItem.image}, using fallback`);
-                    slotIcon.src = FALLBACK_IMAGES[slotType] || 'images/slot-default.svg';
-                };
+                slotIcon.onerror = () => { slotIcon.src = FALLBACK_IMAGES[slotType] || 'images/slot-default.svg'; };
             } else {
                 slotIcon.src = FALLBACK_IMAGES[slotType] || 'images/slot-default.svg';
             }
-            
-            console.log(`✅ Updated ${playerPrefix} ${slotType} slot with ${equippedItem.name}`);
-            
         } else {
-            // No item equipped, reset to placeholder
             slotIcon.src = FALLBACK_IMAGES[slotType] || 'images/slot-default.svg';
-            slotIcon.onerror = null; // Clear previous error handler
-            slotIcon.alt = `${slotType} slot`;
+            slotIcon.onerror = null;
             itemNameElement.textContent = 'None';
             slotElement.title = `${slotType.charAt(0).toUpperCase() + slotType.slice(1)} Slot`;
-            console.log(`🔄 Reset ${playerPrefix} ${slotType} slot to default`);
         }
     });
 }
 
-// Debug function to manually inspect game state
-function debugGameState() {
-    console.log('🔍 === GAME STATE DEBUG ===');
-    console.log('Current Game ID:', currentGameId);
-    console.log('My Player ID:', myPlayerId);
-    console.log('Opponent ID:', opponentId);
-    console.log('Game State:', gameState);
-    
-    if (gameState && gameState.players) {
-        console.log('Available Players:', Object.keys(gameState.players));
-        Object.entries(gameState.players).forEach(([playerId, playerData]) => {
-            console.log(`Player ${playerId}:`, {
-                health: playerData.health,
-                equipment: playerData.equipment,
-                stats: playerData.stats
-            });
-        });
-    }
-}
-
-// Make debug function available globally
-window.debugGameState = debugGameState;
-
-// Enhanced updateGameState function to ensure equipment display is updated
+// FIXED: Updated updateGameState function
 function updateGameState(state) {
     gameState = state;
     console.log('🎮 Game state updated:', state);
@@ -1343,26 +1015,13 @@ function updateGameState(state) {
     const player1Data = state.players[myPlayerId];
     const player2Data = state.players[opponentId] || Object.values(state.players).find(p => p.socketId !== myPlayerId);
 
-    // --- DOM element references ---
-    const player1Name = document.getElementById('player1-name');
-    const player1Health = document.getElementById('player1-health');
-    const player1XpBar = document.getElementById('player1-energy');
-    const player2Name = document.getElementById('player2-name');
-    const player2Health = document.getElementById('player2-health');
-    const player2XpBar = document.getElementById('player2-energy');
-    const gameMessage = document.getElementById('game-message');
-    const combatControls = document.getElementById('combat-controls');
-
-    // Helper functions for XP calculation
     const BASE_XP_TO_LEVEL = 1000;
     const XP_INCREASE_PER_LEVEL = 200;
 
     function getTotalXPForLevel(level) {
         if (level <= 1) return 0;
         let totalXP = 0;
-        for (let i = 2; i <= level; i++) {
-            totalXP += BASE_XP_TO_LEVEL + (i - 2) * XP_INCREASE_PER_LEVEL;
-        }
+        for (let i = 2; i <= level; i++) totalXP += BASE_XP_TO_LEVEL + (i - 2) * XP_INCREASE_PER_LEVEL;
         return totalXP;
     }
 
@@ -1370,78 +1029,94 @@ function updateGameState(state) {
         return BASE_XP_TO_LEVEL + (currentLevel - 1) * XP_INCREASE_PER_LEVEL;
     }
     
-    // Update Player 1 panel
     if (player1Data) {
-        player1Name.textContent = player1Data.username; // Set name from game state
         player1Health.style.width = `${(player1Data.health / player1Data.maxHealth) * 100}%`;
         player1Health.parentElement.title = `Health: ${player1Data.health}/${player1Data.maxHealth}`;
         
-        if (player1Data.level && player1XpBar) {
+        if (player1Data.level && player1Energy) {
             const level = player1Data.level.level || 1;
             const totalXP = player1Data.level.totalXP || 0;
             const xpForCurrentLevel = getTotalXPForLevel(level);
             const xpForNextLevelUp = getXPForNextLevelUp(level);
             const currentLevelXP = totalXP - xpForCurrentLevel;
-            const xpPercentage = xpForNextLevelUp > 0 ? (currentLevelXP / xpForNextLevelUp) * 100 : 0;
-            
-            player1XpBar.style.width = `${Math.min(100, xpPercentage)}%`;
-            player1XpBar.parentElement.title = `XP: ${currentLevelXP} / ${xpForNextLevelUp}`;
+            const xpPercentage = (currentLevelXP / xpForNextLevelUp) * 100;
+            player1Energy.style.width = `${Math.min(100, xpPercentage)}%`;
+            player1Energy.parentElement.title = `XP: ${currentLevelXP} / ${xpForNextLevelUp}`;
         }
         
-        updateEquipmentDisplay('player1', player1Data.equipment);
+        updateInGameEquipmentDisplay('player1', player1Data.equipment);
         
         if (player1Data.stats) {
-            document.getElementById('player1-strength-value').textContent = player1Data.stats.strength;
-            document.getElementById('player1-agility-value').textContent = player1Data.stats.agility;
-            document.getElementById('player1-intuition-value').textContent = player1Data.stats.intuition;
-            document.getElementById('player1-endurance-value').textContent = player1Data.stats.endurance;
+            const strengthElement = document.getElementById('player1-strength-value');
+            const agilityElement = document.getElementById('player1-agility-value');
+            const intuitionElement = document.getElementById('player1-intuition-value');
+            const enduranceElement = document.getElementById('player1-endurance-value');
+            
+            if (strengthElement) strengthElement.textContent = player1Data.stats.strength;
+            if (agilityElement) agilityElement.textContent = player1Data.stats.agility;
+            if (intuitionElement) intuitionElement.textContent = player1Data.stats.intuition;
+            if (enduranceElement) enduranceElement.textContent = player1Data.stats.endurance;
         }
     }
     
-    // Update Player 2 panel
     if (player2Data) {
-        player2Name.textContent = player2Data.username; // Set name from game state
         player2Health.style.width = `${(player2Data.health / player2Data.maxHealth) * 100}%`;
         player2Health.parentElement.title = `Health: ${player2Data.health}/${player2Data.maxHealth}`;
 
-        if (player2Data.level && player2XpBar) {
+        if (player2Data.level && player2Energy) {
             const level = player2Data.level.level || 1;
             const totalXP = player2Data.level.totalXP || 0;
             const xpForCurrentLevel = getTotalXPForLevel(level);
             const xpForNextLevelUp = getXPForNextLevelUp(level);
             const currentLevelXP = totalXP - xpForCurrentLevel;
-            const xpPercentage = xpForNextLevelUp > 0 ? (currentLevelXP / xpForNextLevelUp) * 100 : 0;
-            
-            player2XpBar.style.width = `${Math.min(100, xpPercentage)}%`;
-            player2XpBar.parentElement.title = `XP: ${currentLevelXP} / ${xpForNextLevelUp}`;
+            const xpPercentage = (currentLevelXP / xpForNextLevelUp) * 100;
+            player2Energy.style.width = `${Math.min(100, xpPercentage)}%`;
+            player2Energy.parentElement.title = `XP: ${currentLevelXP} / ${xpForNextLevelUp}`;
         }
 
-        updateEquipmentDisplay('player2', player2Data.equipment);
+        updateInGameEquipmentDisplay('player2', player2Data.equipment);
 
         if (player2Data.stats) {
-            document.getElementById('player2-strength-value').textContent = player2Data.stats.strength;
-            document.getElementById('player2-agility-value').textContent = player2Data.stats.agility;
-            document.getElementById('player2-intuition-value').textContent = player2Data.stats.intuition;
-            document.getElementById('player2-endurance-value').textContent = player2Data.stats.endurance;
+            const strengthElement = document.getElementById('player2-strength-value');
+            const agilityElement = document.getElementById('player2-agility-value');
+            const intuitionElement = document.getElementById('player2-intuition-value');
+            const enduranceElement = document.getElementById('player2-endurance-value');
+            
+            if (strengthElement) strengthElement.textContent = player2Data.stats.strength;
+            if (agilityElement) agilityElement.textContent = player2Data.stats.agility;
+            if (intuitionElement) intuitionElement.textContent = player2Data.stats.intuition;
+            if (enduranceElement) enduranceElement.textContent = player2Data.stats.endurance;
         }
     }
     
+    // FIXED: Proper message state handling with message system
     if (state.waitingForPlayers) {
-        gameMessage.textContent = 'Waiting for opponent...';
-        combatControls.style.display = 'none';
-    } else if (state.currentRound && state.currentRound > 0 && !waitingForOpponent) {
-        gameMessage.textContent = 'Select an attack and block area (auto-submits when both selected)';
-        combatControls.style.display = 'flex';
-        combatControls.style.opacity = '1';
+        showGameMessage('waiting-players');
+        if (combatControls) combatControls.style.display = 'none';
+    } else if (state.currentRound > 0 && !waitingForOpponent && !roundInProgress) {
+        showGameMessage('choose-move');
+        if (combatControls) {
+            combatControls.style.display = 'flex';
+            combatControls.style.opacity = '1';
+        }
     } else if (waitingForOpponent) {
-        gameMessage.textContent = 'Waiting for opponent\'s move...';
-        combatControls.style.display = 'flex';
-        combatControls.style.opacity = '0.5';
+        showGameMessage('waiting-opponent');
+        if (combatControls) {
+            combatControls.style.display = 'flex';
+            combatControls.style.opacity = '0.5';
+        }
+    } else if (roundInProgress) {
+        showGameMessage('processing');
+        if (combatControls) {
+            combatControls.style.display = 'flex';
+            combatControls.style.opacity = '0.5';
+        }
     } else {
-        combatControls.style.display = 'none';
+        // Default to waiting for players if state is unclear
+        showGameMessage('waiting-players');
+        if (combatControls) combatControls.style.display = 'none';
     }
 }
-
 
 function makeMove(attackArea, blockArea) {
     if (!currentGameId || waitingForOpponent || roundInProgress) {
@@ -1450,8 +1125,10 @@ function makeMove(attackArea, blockArea) {
     }
     
     waitingForOpponent = true;
-    combatControls.style.opacity = '0.5';
-    gameMessage.textContent = 'Move submitted! Waiting for opponent...';
+    if (combatControls) combatControls.style.opacity = '0.5';
+
+    // Show the "Waiting for opponent" message
+    showGameMessage('waiting-opponent');
     
     socket.emit('makeMove', {
         gameId: currentGameId,
@@ -1541,22 +1218,20 @@ function handleGameEnd(result) {
     stopTurnTimer();
     currentGameId = null;
     gameState = null;
-    opponentInfo = null; // Clear opponent info
+    opponentInfo = null;
     localStorage.removeItem('pendingGameId');
     
     let endMessage = '';
-    if (result.winner === myPlayerId) {
+    if (result.isDraw || result.reason === 'draw') {
+        endMessage = 'The battle ended in a DRAW!';
+    } else if (result.winner === myPlayerId) {
         endMessage = 'Victory! You have defeated your opponent!';
-        const victorySound = new Audio('sounds/victory.mp3');
-        victorySound.play().catch(e => console.log('Could not play victory sound'));
     } else if (result.reason === 'opponent_abandoned') {
         endMessage = 'Your opponent has abandoned the battle. You win!';
     } else if (result.reason === 'you_abandoned') {
         endMessage = 'You have abandoned the battle. You lose!';
     } else {
         endMessage = 'Defeat! You have been defeated.';
-        const defeatSound = new Audio('sounds/defeat.mp3');
-        defeatSound.play().catch(e => console.log('Could not play defeat sound'));
     }
     
     addLogEntry(endMessage, result.winner === myPlayerId ? 'heal' : 'damage');
@@ -1599,11 +1274,6 @@ function updateInventoryDisplay(inventoryData) {
     if (goldShopSpan) goldShopSpan.textContent = inventoryData.gold;
     
     if (inventoryData.equipped) {
-        if (equippedWeapon) equippedWeapon.textContent = inventoryData.equipped.weapon ? inventoryData.equipped.weapon.name : 'None';
-        if (equippedArmor) equippedArmor.textContent = inventoryData.equipped.armor ? inventoryData.equipped.armor.name : 'None';
-        if (equippedShield) equippedShield.textContent = inventoryData.equipped.shield ? inventoryData.equipped.shield.name : 'None';
-        if (equippedHelmet) equippedHelmet.textContent = inventoryData.equipped.helmet ? inventoryData.equipped.helmet.name : 'None';
-        
         updateEquippedItemsDisplay(inventoryData.equipped);
     }
     
@@ -1636,19 +1306,7 @@ function clearGameContainer() {
     resetCombatSelections();
     waitingForOpponent = false;
     roundInProgress = false;
-    combatControls.style.opacity = '1';
-}
-
-function updateEquippedItemsDisplay(equippedItems) {
-    const weaponNameElement = document.getElementById('equipped-weapon-name');
-    const armorNameElement = document.getElementById('equipped-armor-name');
-    const shieldNameElement = document.getElementById('equipped-shield-name');
-    const helmetNameElement = document.getElementById('equipped-helmet-name');
-    
-    if (weaponNameElement) weaponNameElement.textContent = equippedItems.weapon ? equippedItems.weapon.name : 'None';
-    if (armorNameElement) armorNameElement.textContent = equippedItems.armor ? equippedItems.armor.name : 'None';
-    if (shieldNameElement) shieldNameElement.textContent = equippedItems.shield ? equippedItems.shield.name : 'None';
-    if (helmetNameElement) helmetNameElement.textContent = equippedItems.helmet ? equippedItems.helmet.name : 'None';
+    if (combatControls) combatControls.style.opacity = '1';
 }
 
 function updateStatValues(data) {
@@ -1662,16 +1320,6 @@ function updateStatValues(data) {
         agilityElements.forEach(el => el.textContent = data.stats.agility);
         intuitionElements.forEach(el => el.textContent = data.stats.intuition);
         enduranceElements.forEach(el => el.textContent = data.stats.endurance);
-        
-        const strengthFill = document.querySelector('.strength-fill');
-        const agilityFill = document.querySelector('.agility-fill');
-        const intuitionFill = document.querySelector('.intuition-fill');
-        const enduranceFill = document.querySelector('.endurance-fill');
-        
-        if (strengthFill) strengthFill.style.width = `${Math.min(data.stats.strength, 100)}%`;
-        if (agilityFill) agilityFill.style.width = `${Math.min(data.stats.agility, 100)}%`;
-        if (intuitionFill) intuitionFill.style.width = `${Math.min(data.stats.intuition, 100)}%`;
-        if (enduranceFill) enduranceFill.style.width = `${Math.min(data.stats.endurance, 100)}%`;
     }
     
     if (data.stats) {
@@ -1722,7 +1370,6 @@ socket.on('disconnect', (reason) => {
 });
 
 socket.on('authenticated', (data) => {
-    console.log('Custom "authenticated" event received:', data);
     if (data.user && currentUser) {
         currentUser = {...currentUser, ...data.user};
         updateProfileDisplay(currentUser);
@@ -1746,129 +1393,61 @@ socket.on('challengeSent', addOutgoingChallenge);
 socket.on('challengeAccepted', startGame);
 
 socket.on('challengeRejected', (data) => {
-    console.log('Challenge rejected:', data);
     const outgoingChallenge = document.getElementById(`outgoing-${data.challengeId}`);
-    if (outgoingChallenge) {
-        outgoingChallenge.remove();
-    }
+    if (outgoingChallenge) outgoingChallenge.remove();
     alert(data.message);
 });
 
 socket.on('gameStarted', (data) => {
-    console.log('Game started:', data);
     updateGameState(data.gameState);
     addLogEntry('Game started! Prepare for battle!', 'info');
 });
 
 socket.on('roundStarted', (data) => {
-    console.log('Round started:', data);
     roundInProgress = false;
     waitingForOpponent = false;
-    
-    // FIXED: Explicitly show and enable combat controls
-    combatControls.style.display = 'flex';
-    combatControls.style.opacity = '1';
-    
+    if (combatControls) {
+        combatControls.style.display = 'flex';
+        combatControls.style.opacity = '1';
+    }
     resetCombatSelections();
     startTurnTimer(data.turnTime);
     addLogEntry(`Round ${data.round} started!`, 'info');
-    gameMessage.textContent = 'Select an attack and block area (auto-submits when both selected)';
+    showGameMessage('choose-move');
 });
 
 socket.on('moveReceived', (data) => {
-    console.log('Move received confirmation:', data);
     stopTurnTimer();
 });
 
 socket.on('opponentMadeMove', () => {
-    console.log('Opponent made their move');
-    
     const opponentName = opponentInfo ? opponentInfo.name : 'Opponent';
-    const isBot = opponentInfo ? opponentInfo.isBot : false;
-    
-    if (isBot) {
-        addLogEntry(`${opponentName} is making their move...`, 'info');
-    } else {
-        addLogEntry(`${opponentName} has made their move`, 'info');
-    }
+    addLogEntry(`${opponentName} has made their move`, 'info');
 });
 
-socket.on('playerSkippedTurn', (data) => {
-    const playerName = data.playerId === myPlayerId ? 'You' : 'Your opponent';
-    addLogEntry(`${playerName} skipped the turn (timed out)`, 'info');
-});
-
+// FIXED: Added the missing allMovesMade event handler
 socket.on('allMovesMade', (data) => {
-    console.log('All moves made, processing round');
+    console.log('All moves received, processing round...');
     roundInProgress = true;
-    stopTurnTimer();
-    gameMessage.textContent = 'Processing moves...';
+    waitingForOpponent = false;
+    
+    // Show processing message
+    showGameMessage('processing');
+    if (combatControls) combatControls.style.opacity = '0.5';
+    
+    addLogEntry('Processing moves...', 'info');
 });
 
 socket.on('roundResult', (data) => {
-    console.log('Round result:', data);
     updateGameState(data.gameState);
     showCombatResult(data);
-    
     data.combatLog.forEach(log => {
         addLogEntry(log.message, log.type === 'hit' ? 'damage' : 'info');
     });
 });
 
-socket.on('invalidMove', (data) => {
-    console.error('Invalid move:', data);
-    waitingForOpponent = false;
-    combatControls.style.opacity = '1';
-    alert(data.message);
-});
-
 socket.on('gameOver', (result) => {
-    console.log('Game over:', result);
     handleGameEnd(result);
-});
-
-socket.on('opponentLeft', (data) => {
-    console.log('Opponent left the game');
-    addLogEntry('Your opponent has left the game', 'info');
-    gameMessage.textContent = 'Opponent disconnected - waiting for reconnection...';
-});
-
-socket.on('opponentDisconnected', (data) => {
-    console.log('Opponent disconnected');
-    addLogEntry('Your opponent has disconnected', 'info');
-    gameMessage.textContent = 'Opponent disconnected - they have 30 seconds to reconnect...';
-});
-
-socket.on('opponentLeftBattle', (data) => {
-    console.log('Opponent left battle, waiting for reconnection');
-    gameMessage.textContent = `${data.opponentName} has left the battle. Waiting for reconnection (${data.timeRemaining}s)...`;
-    
-    if (data.isPaused) {
-        stopTurnTimer();
-        combatControls.style.display = 'none';
-    }
-});
-
-socket.on('opponentRejoined', (data) => {
-    console.log('Opponent rejoined the battle');
-    gameMessage.textContent = `${data.opponentName} has rejoined the battle!`;
-    addLogEntry(`${data.opponentName} reconnected to the game`, 'info');
-    
-    if (data.gameState) {
-        updateGameState(data.gameState);
-    }
-});
-
-socket.on('opponentAbandoned', (data) => {
-    console.log('Opponent abandoned the game');
-    handleGameEnd({
-        winner: myPlayerId,
-        reason: 'opponent_abandoned'
-    });
-});
-
-socket.on('debugMessage', (data) => {
-    console.log('[Server Debug]:', data.message, data.data || '');
 });
 
 socket.on('profileData', (data) => {
@@ -1892,9 +1471,7 @@ socket.on('statsUpdate', (stats) => {
 socket.on('inventory', updateInventoryDisplay);
 
 socket.on('equipmentUpdated', (data) => {
-    console.log('Equipment updated:', data);
     updateInventoryDisplay(data);
-    
     const slot = document.querySelector(`.${data.slotType}-slot`);
     if (slot) {
         animateEquipItem(slot);
@@ -1902,80 +1479,22 @@ socket.on('equipmentUpdated', (data) => {
 });
 
 socket.on('purchaseComplete', (data) => {
-    console.log('Purchase complete:', data);
     alert(`Successfully purchased ${data.itemName}!`);
     socket.emit('getInventory');
 });
 
 socket.on('purchaseFailed', (data) => {
-    console.error('Purchase failed:', data);
     alert(data.message);
 });
 
 socket.on('shopItems', (items) => {
-    console.log('Shop items received:', items);
     shopData = items;
     displayShopItems('weapons');
-});
-
-socket.on('levelUp', (data) => {
-    console.log('Level up!', data);
-    const notification = document.createElement('div');
-    notification.className = 'level-up-notification';
-    notification.textContent = `Level Up! You are now level ${data.newLevel}!`;
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
-});
-
-socket.on('statPointAwarded', (data) => {
-    console.log('Stat point awarded:', data);
-    const notification = document.createElement('div');
-    notification.className = 'stat-point-notification';
-    notification.textContent = `You earned a stat point! Total available: ${data.availablePoints}`;
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
-});
-
-
-
-
-socket.on('challengeFailed', (data) => {
-  console.error('Challenge failed:', data);
-  alert(`Challenge failed: ${data.message}`);
-});
-
-socket.on('challengeError', (data) => {
-  console.error('Challenge error:', data);
-  alert(`Challenge error: ${data.message}`);
-});
-
-socket.on('challengeExpired', (data) => {
-  console.log('Challenge expired:', data);
-  const outgoingChallenge = document.getElementById(`outgoing-${data.challengeId}`);
-  if (outgoingChallenge) outgoingChallenge.remove();
-  const incomingChallenge = document.getElementById(`challenge-${data.challengeId}`);
-  if (incomingChallenge) incomingChallenge.remove();
-});
-
-socket.on('challengeCancelled', (data) => {
-  console.log('Challenge cancelled:', data);
-  const outgoingChallenge = document.getElementById(`outgoing-${data.challengeId}`);
-  if (outgoingChallenge) outgoingChallenge.remove();
-  const incomingChallenge = document.getElementById(`challenge-${data.challengeId}`);
-  if (incomingChallenge) incomingChallenge.remove();
-  if (data.reason) alert(`Challenge cancelled: ${data.reason}`);
 });
 
 // Make buyItem and equipItem global so they can be called from HTML onclick
 window.buyItem = buyItem;
 window.equipItem = equipItem;
-window.cleanupDisplacedIcons = cleanupDisplacedIcons;
 
 // Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', init);

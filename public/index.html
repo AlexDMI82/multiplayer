@@ -6,6 +6,7 @@
     <title>Multiplayer Game Lobby</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="lobby-modern.css">
+    <link rel="stylesheet" href="character-panel.css">
 </head>
 <body>
 
@@ -160,76 +161,72 @@
             
             <!-- Right Sidebar - User Profile -->
             <div class="profile-sidebar">
-                <div class="profile-card">
-                    <div class="profile-header">
-                        <div class="level-indicator">LVL 1</div>
-                    </div>
-                    <div class="profile-avatar-container">
-                        <img id="player-avatar" src="" alt="Your Avatar" class="profile-avatar">
-                        <div class="avatar-border"></div>
-                    </div>
-                    <div class="profile-info">
-                        <h2 id="player-name" class="profile-name"></h2>
-                        <div class="profile-rank">New Player</div>
+                <div class="character-panel"> <!-- Use a consistent class name -->
+                    <div class="character-image-preview">
+                        <!-- Use a unique ID for this specific image -->
+                        <img id="lobby-character-display-avatar" src="" alt="Character">
                     </div>
                     
-                    <div class="quick-stats">
-                        <div class="quick-stat">
-                            <div class="stat-icon strength-icon"></div>
-                            <div class="stat-bar">
-                                <div class="stat-fill strength-fill"></div>
-                            </div>
-                            <div class="stat-value strength-value">10</div>
+                    <div class="equipment-grid">
+                        <div class="equipment-slot-shop slot-helmet" data-slot="helmet">
+                            <img src="images/slot-helmet.svg" class="slot-icon">
+                            <div class="slot-name" id="equipped-helmet-name">None</div>
                         </div>
-                        <div class="quick-stat">
-                            <div class="stat-icon agility-icon"></div>
-                            <div class="stat-bar">
-                                <div class="stat-fill agility-fill"></div>
-                            </div>
-                            <div class="stat-value agility-value">10</div>
+                        <div class="equipment-slot-shop slot-weapon" data-slot="weapon">
+                            <img src="images/slot-sword.svg" class="slot-icon">
+                            <div class="slot-name" id="equipped-weapon-name">None</div>
                         </div>
-                        <div class="quick-stat">
-                            <div class="stat-icon intuition-icon"></div>
-                            <div class="stat-bar">
-                                <div class="stat-fill intuition-fill"></div>
-                            </div>
-                            <div class="stat-value intuition-value">10</div>
+                        <div class="equipment-slot-shop slot-armor" data-slot="armor">
+                            <img src="images/slot-armor.svg" class="slot-icon">
+                            <div class="slot-name" id="equipped-armor-name">None</div>
                         </div>
-                        <div class="quick-stat">
-                            <div class="stat-icon endurance-icon"></div>
-                            <div class="stat-bar">
-                                <div class="stat-fill endurance-fill"></div>
-                            </div>
-                            <div class="stat-value endurance-value">10</div>
+                        <div class="equipment-slot-shop slot-shield" data-slot="shield">
+                            <img src="images/slot-shield.svg" class="slot-icon">
+                            <div class="slot-name" id="equipped-shield-name">None</div>
+                        </div>
+                        <div class="equipment-slot-shop slot-gloves" data-slot="gloves">
+                            <img src="images/slot-gloves.svg" class="slot-icon">
+                            <div class="slot-name" id="equipped-gloves-name">None</div>
+                        </div>
+                        <div class="equipment-slot-shop slot-boots" data-slot="boots">
+                            <img src="images/slot-boots.svg" class="slot-icon">
+                            <div class="slot-name" id="equipped-boots-name">None</div>
+                        </div>
+                        <div class="equipment-slot-shop slot-amulet" data-slot="amulet">
+                            <img src="images/slot-amulet.svg" class="slot-icon">
+                            <div class="slot-name" id="equipped-amulet-name">None</div>
+                        </div>
+                        <div class="equipment-slot-shop slot-ring" data-slot="ring">
+                            <img src="images/slot-ring.svg" class="slot-icon">
+                            <div class="slot-name" id="equipped-ring-name">None</div>
                         </div>
                     </div>
                     
-                    <div class="action-buttons">
-                        <button class="action-button primary-action" id="find-match-btn">FIND MATCH</button>
-                        <button class="action-button secondary-action" id="player-profile-detail-btn">VIEW DETAILS</button>
+                    <div class="character-stats">
+                        <div class="character-name" id="player-name">Player Name</div>
+                        <div class="character-class" id="player-class">Warrior Class</div>
+                        
+                        <div class="stat-row">
+                            <span>💪 Strength</span>
+                            <span class="stat-value strength-value">10</span>
+                        </div>
+                         <div class="stat-row">
+                            <span>🏃 Agility</span>
+                            <span class="stat-value agility-value">10</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>🧠 Intuition</span>
+                            <span class="stat-value intuition-value">10</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>❤️ Endurance</span>
+                            <span class="stat-value endurance-value">10</span>
+                        </div>
                     </div>
                 </div>
-                
-                <div class="equipment-preview">
-                    <h3>EQUIPPED ITEMS</h3>
-                    <div class="equipped-items-grid">
-                        <div class="equipped-item weapon-slot">
-                            <div class="item-icon weapon-icon"></div>
-                            <div class="item-name" id="equipped-weapon-name">None</div>
-                        </div>
-                        <div class="equipped-item armor-slot">
-                            <div class="item-icon armor-icon"></div>
-                            <div class="item-name" id="equipped-armor-name">None</div>
-                        </div>
-                        <div class="equipped-item shield-slot">
-                            <div class="item-icon shield-icon"></div>
-                            <div class="item-name" id="equipped-shield-name">None</div>
-                        </div>
-                        <div class="equipped-item helmet-slot">
-                            <div class="item-icon helmet-icon"></div>
-                            <div class="item-name" id="equipped-helmet-name">None</div>
-                        </div>
-                    </div>
+                 <div class="action-buttons-lobby">
+                    <button class="action-button primary-action" id="find-match-btn">FIND MATCH</button>
+                    <button class="action-button secondary-action" id="player-profile-detail-btn">VIEW PROFILE</button>
                 </div>
             </div>
         </div>
@@ -318,34 +315,43 @@
                 </div>
             </div>
             
-            <!-- Combat Area (Middle) -->
+            <!-- Combat Area (Middle) -->   
             <div class="combat-area-container">
-                <div id="game-message">Choose your move!</div>
-                
-                <div class="versus-display">
-                    <span>VS</span>
-                </div>
-                
-                <div id="combat-controls" class="combat-controls">
-                    <div class="combat-section">
-                        <h3>Attack</h3>
-                        <div class="attack-areas">
-                            <div class="combat-area" data-area="head">Head</div>
-                            <div class="combat-area" data-area="body">Body</div>
-                            <div class="combat-area" data-area="legs">Legs</div>
+                <!-- NEW WRAPPER DIV -->
+                <div class="combat-main-content">
+                       <div id="game-message-container" class="game-message-container">
+                        <div class="game-message-wrapper">
+                            <div id="msg-choose-move" class="game-message active">Select an attack and block area (auto-submits when both selected)</div>
+                            <div id="msg-waiting-opponent" class="game-message">Waiting for opponent's move...</div>
+                            <div id="msg-processing" class="game-message">Processing moves...</div>
+                            <div id="msg-waiting-players" class="game-message">Waiting for opponent to connect...</div>
                         </div>
                     </div>
                     
-                    <div class="combat-section">
-                        <h3>Block</h3>
-                        <div class="block-areas">
-                            <div class="combat-area" data-area="head">Head</div>
-                            <div class="combat-area" data-area="body">Body</div>
-                            <div class="combat-area" data-area="legs">Legs</div>
+                    <div class="versus-display">
+                        <span>VS</span>
+                    </div>
+                    
+                    <div id="combat-controls" class="combat-controls">
+                        <div class="combat-section">
+                            <h3>Attack</h3>
+                            <div class="attack-areas">
+                                <div class="combat-area" data-area="head">Head</div>
+                                <div class="combat-area" data-area="body">Body</div>
+                                <div class="combat-area" data-area="legs">Legs</div>
+                            </div>
                         </div>
-                    </div>                   
-                   
-                </div>
+                        
+                        <div class="combat-section">
+                            <h3>Block</h3>
+                            <div class="block-areas">
+                                <div class="combat-area" data-area="head">Head</div>
+                                <div class="combat-area" data-area="body">Body</div>
+                                <div class="combat-area" data-area="legs">Legs</div>
+                            </div>
+                        </div>                   
+                    </div>
+                </div> <!-- END OF NEW WRAPPER DIV -->
                 
                 <div id="game-log" class="game-log"></div>
             </div>

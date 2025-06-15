@@ -240,32 +240,124 @@ function updateProfileUI(data) {
     }
     if (data.inventory) {
         playerInventory = data.inventory;
-        updateEquipmentDisplay();
+        updateEquipmentDisplay(); // This needs to be called to get item data
+        updateStatsUI(); // Call again to update calculations with item data
     }
 }
 
-function updateStatsUI() {
-    if (!playerStats) return;
 
-    strengthValueElement.textContent = playerStats.strength || 10;
-    agilityValueElement.textContent = playerStats.agility || 10;
-    intuitionValueElement.textContent = playerStats.intuition || 10;
-    enduranceValueElement.textContent = playerStats.endurance || 10;
+function getCharacterBonuses(characterClass) {
+    const bonuses = {
+        shadowsteel: { strength: 3, agility: 7, intuition: 0, endurance: 0, specialAbility: 'evade' },
+        ironbound: { strength: 5, agility: 0, intuition: 0, endurance: 5, specialAbility: 'ignoreBlock' },
+        flameheart: { strength: 3, agility: 0, intuition: 7, endurance: 0, specialAbility: 'criticalHit' },
+        venomfang: { strength: 5, agility: 5, intuition: 0, endurance: 0, specialAbility: 'poison' }
+    };
+    return bonuses[characterClass] || { strength: 0, agility: 0, intuition: 0, endurance: 0 };
+}
+
+
+function updateStatsUI() {
+    if (!playerStats || !playerData) return;
+
+    const classBonuses = getCharacterBonuses(playerData.characterClass);
+
+    // --- 1. Calculate all bonuses from equipped items dynamically ---
+    let itemBonuses = {
+        health: 0, damage: 0, criticalChance: 0, evasionChance: 0,
+        strength: 0, agility: 0, intuition: 0, endurance: 0
+    };
+    let healthBreakdownLines = [];
+    let attackBreakdownLines = [];
+
+    if (playerInventory && playerInventory.equipped) {
+        for (const item of Object.values(playerInventory.equipped)) {
+            if (item && item.bonuses) {
+                if(item.bonuses.health) {
+                    itemBonuses.health += item.bonuses.health;
+                    healthBreakdownLines.push(`<li>From ${item.name}: <span>+${item.bonuses.health}</span></li>`);
+                }
+                if(item.bonuses.damage) {
+                    itemBonuses.damage += item.bonuses.damage;
+                    attackBreakdownLines.push(`<li>From ${item.name}: <span>+${item.bonuses.damage}</span></li>`);
+                }
+                // Add more for other stats as needed (e.g., crit, evade)
+                itemBonuses.criticalChance += item.bonuses.criticalChance || 0;
+                itemBonuses.evasionChance += item.bonuses.evasionChance || 0;
+            }
+        }
+    }
+
+    // --- 2. Update Base Stat Display with Tooltips ---
+    const statsToUpdate = ['strength', 'agility', 'intuition', 'endurance'];
+    statsToUpdate.forEach(stat => {
+        const totalValue = playerStats[stat] || 10;
+        const classBonus = classBonuses[stat] || 0;
+        const itemBonus = itemBonuses[stat] || 0;
+        const baseValue = totalValue - classBonus - itemBonus;
+
+        document.getElementById(`${stat}-value`).textContent = baseValue;
+        const bonusEl = document.getElementById(`${stat}-bonus`);
+        const totalBonus = classBonus + itemBonus;
+        bonusEl.textContent = totalBonus > 0 ? `(+${totalBonus})` : '';
+
+        const tooltipEl = document.getElementById(`${stat}-tooltip`);
+        tooltipEl.innerHTML = `
+            <ul>
+                <li>Base Points: <span>${baseValue}</span></li>
+                <li>Class Bonus: <span>+${classBonus}</span></li>
+                <li>Item Bonus: <span>+${itemBonus}</span></li>
+                <hr>
+                <li><strong>Total:</strong> <span><strong>${totalValue}</strong></span></li>
+            </ul>
+        `;
+    });
+    
     availablePointsElement.textContent = playerStats.availablePoints || 0;
 
-    let totalAttack = (playerStats.strength || 10) * 2;
-    if (playerInventory?.equipped?.weapon) {
-        totalAttack += playerInventory.equipped.weapon.damage || 0;
-    }
-    attackValueElement.textContent = totalAttack;
-    evadeChanceElement.textContent = `${(playerStats.agility || 10) * 0.5}%`;
-    criticalChanceElement.textContent = `${(playerStats.intuition || 10) * 0.5}%`;
-    healthValueElement.textContent = `${200 + ((playerStats.endurance || 10) * 10)} HP`;
+    // --- 3. Update Calculated Combat Stats with Dynamic Breakdowns ---
+    const totalStrength = playerStats.strength || 10;
+    const totalAgility = playerStats.agility || 10;
+    const totalIntuition = playerStats.intuition || 10;
+    const totalEndurance = playerStats.endurance || 10;
 
+    // Attack
+    const weaponDamage = playerInventory?.equipped?.weapon?.damage || 0;
+    const baseAttack = totalStrength * 2;
+    const totalAttack = baseAttack + weaponDamage + itemBonuses.damage;
+    document.getElementById('total-attack-value').textContent = totalAttack;
+    document.getElementById('attack-breakdown-list').innerHTML = `
+        <li>From Strength: <span>${baseAttack}</span></li>
+        <li>From Weapon: <span>+${weaponDamage}</span></li>
+        ${attackBreakdownLines.join('')}
+    `;
+
+    // Health
+    const BASE_HEALTH = 200;
+    const enduranceHealth = (totalEndurance > 10) ? (totalEndurance - 10) * 10 : 0;
+    const totalHealth = BASE_HEALTH + enduranceHealth + itemBonuses.health;
+    document.getElementById('total-health-value').textContent = `${totalHealth} HP`;
+    document.getElementById('health-breakdown-list').innerHTML = `
+        <li>Base: <span>${BASE_HEALTH}</span></li>
+        <li>From Endurance: <span>+${enduranceHealth}</span></li>
+        ${healthBreakdownLines.join('')}
+    `;
+
+    // Evade Chance (now includes item bonuses)
+    const baseEvade = totalAgility * 0.5;
+    const classEvadeBonus = playerData.characterClass === 'shadowsteel' ? 5 : 0;
+    evadeChanceElement.innerHTML = `${baseEvade + classEvadeBonus + itemBonuses.evasionChance}%`;
+
+    // Critical Chance (now includes item bonuses)
+    const baseCrit = totalIntuition * 0.5;
+    const classCritBonus = playerData.characterClass === 'flameheart' ? 5 : 0;
+    criticalChanceElement.innerHTML = `${baseCrit + classCritBonus + itemBonuses.criticalChance}%`;
+
+    // Record Stats (no change needed here)
     totalWinsElement.textContent = playerStats.totalWins || 0;
-    totalLossesElement.textContent = playerStats.totalLosses || 0;
+    // ... rest of record stats ...
     const totalGames = (playerStats.totalWins || 0) + (playerStats.totalLosses || 0);
-    const winRate = totalGames > 0 ? Math.round((playerStats.totalWins / totalGames) * 100) : 0;
+    const winRate = totalGames > 0 ? Math.round(((playerStats.totalWins || 0) / totalGames) * 100) : 0;
     winRateElement.textContent = `${winRate}%`;
 
     updateStatButtons();

@@ -390,11 +390,23 @@ function updateCharacterStats() {
             defense += equipment[slot].defense;
         }
     });
+
+    // --- FIX START: Standardize HP and Crit Calculation in Shop ---
+    const BASE_HEALTH = 200;
+    const endurance = playerStats.endurance || 10;
+    const enduranceBonus = (endurance > 10) ? (endurance - 10) * 10 : 0;
+    
+    let itemHealthBonus = 0;
+    if (playerInventory?.equipped?.amulet?.name === 'Health Amulet') {
+        itemHealthBonus = 25;
+    }
+    const totalHealth = BASE_HEALTH + enduranceBonus + itemHealthBonus;
     
     if (shopAttackPower) shopAttackPower.textContent = attackPower;
     if (shopDefense) shopDefense.textContent = defense;
-    if (shopHealth) shopHealth.textContent = 100 + ((playerStats.endurance || 10) * 10);
-    if (shopCritChance) shopCritChance.textContent = `${playerStats.intuition || 10}%`;
+    if (shopHealth) shopHealth.textContent = totalHealth;
+    if (shopCritChance) shopCritChance.textContent = `${(playerStats.intuition || 10) * 0.5}%`;
+    // --- FIX END ---
 }
 
 function setupEventListeners() {

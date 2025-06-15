@@ -271,7 +271,7 @@ const shopItems = {
       image: 'images/accessories/gauntlets.png',
       description: 'Reinforced steel gauntlets for protection.'
     },
-    {
+{
       id: 'amulet_001',
       name: 'Health Amulet',
       type: 'amulet',
@@ -279,7 +279,12 @@ const shopItems = {
       defense: 0,
       rarity: 'rare',
       image: 'images/accessories/amulet.png',
-      description: 'Mystical amulet that boosts vitality. Increases maximum health by 25 points.'
+      // FIX START: Add a bonuses object and update description
+      description: 'A mystical amulet that channels raw life force.',
+      bonuses: {
+        health: 25
+      }
+      // FIX END
     },
     {
       id: 'amulet_002',
@@ -289,9 +294,14 @@ const shopItems = {
       defense: 0,
       rarity: 'rare',
       image: 'images/accessories/power_amulet.png',
-      description: 'Magical amulet that enhances strength. Increases damage by 5 points.'
+      // FIX START: Add a bonuses object and update description
+      description: 'The gem within pulses with raw power.',
+      bonuses: {
+        damage: 5
+      }
+      // FIX END
     },
-    {
+   {
       id: 'ring_001',
       name: 'Power Ring',
       type: 'ring',
@@ -299,7 +309,12 @@ const shopItems = {
       defense: 0,
       rarity: 'rare',
       image: 'images/accessories/ring.png',
-      description: 'Ring imbued with magical power. Increases critical hit chance by 5%.'
+      // FIX START: Add a bonuses object and update description
+      description: 'Focuses the wielder\'s intent into sharp, critical strikes.',
+      bonuses: {
+        criticalChance: 5
+      }
+      // FIX END
     },
     {
       id: 'ring_002',

@@ -243,20 +243,115 @@
     color: #aaa;
 }
 
+
+.stat-value-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stat-base-value {
+    color: #fff;
+    font-weight: bold;
+    font-size: 16px;
+    min-width: 25px;
+    text-align: right;
+}
+
+.stat-bonus-value {
+    color: #4caf50; /* Green for bonuses */
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.stat-tooltip ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.stat-tooltip li {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 0;
+}
+
+.stat-tooltip li span {
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+
 .stat-value {
     color: #fff;
     font-weight: bold;
 }
 
+
+
+/* FIX START: Added styles for the new stat breakdown section */
+.stat-breakdown-item {
+    background-color: rgba(20, 20, 20, 0.5);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 15px;
+    border-left: 3px solid #4a8cff;
+}
+
+.stat-breakdown-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.stat-breakdown-header .stat-label {
+    font-size: 16px;
+    color: #fff;
+    font-weight: bold;
+}
+
+.stat-breakdown-header .stat-value {
+    font-size: 18px;
+    color: #4a8cff;
+    font-weight: bold;
+}
+
+.stat-breakdown-list {
+    list-style-type: none;
+    padding-left: 10px;
+    margin: 0;
+    font-size: 13px;
+    color: #aaa;
+}
+
+.stat-breakdown-list li {
+    padding: 3px 0;
+    display: flex;
+    justify-content: space-between;
+}
+
+.stat-breakdown-list li span {
+    color: #fff;
+    font-weight: 500;
+}
+/* FIX END */
+
+
+
 /* Base stats section */
 .available-points {
     color: #4caf50;
     font-weight: bold;
-    margin-top: auto;
-    padding-top: 20px;
+    /* FIX START: Adjust styles for the new position */
+    margin-top: 20px;
+    padding: 10px;
     text-align: center;
     width: 100%;
-    border-top: 1px solid #444;
+    background-color: #2a2a2a;
+    border-radius: 5px;
+    font-size: 16px;
+    /* FIX END */
 }
 
 .stat-row {

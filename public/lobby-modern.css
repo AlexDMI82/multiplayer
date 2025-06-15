@@ -3,6 +3,7 @@
     display: grid;
     grid-template-columns: 280px 1fr 320px;
     grid-template-rows: 100vh;
+    height: 100vh;
     overflow: hidden;
 }
 
@@ -13,6 +14,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    min-width: 280px;
 }
 
 .logo-container {
@@ -72,7 +74,6 @@
     justify-content: center;
 }
 
-/* Using default icons - replace with actual icons if available */
 .icon-users:before { content: "👥"; }
 .icon-user:before { content: "👤"; }
 .icon-shop:before { content: "🛒"; }
@@ -86,9 +87,12 @@
 }
 
 .player-list-container h2 {
-    color: #4d79ff;
+    color: #4a9eff;
     font-size: 14px;
+    font-weight: 600;
     margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
     padding-bottom: 8px;
     border-bottom: 1px solid #2c364a;
 }
@@ -97,48 +101,6 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-}
-
-/* Style for each player in the list */
-.player-item {
-    background-color: #242d3f;
-    border-radius: 6px;
-    padding: 8px 12px;
-    display: flex;
-    align-items: center;
-    transition: transform 0.2s, background-color 0.2s;
-}
-
-.player-item:hover {
-    background-color: #2c364a;
-    transform: translateY(-2px);
-}
-
-.player-details {
-    flex: 1;
-}
-
-.player-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid #4d79ff;
-}
-
-.challenge-btn {
-    background-color: #4d79ff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 6px 10px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.challenge-btn:hover {
-    background-color: #3a66ff;
 }
 
 /* Main Content Area Styles */
@@ -160,14 +122,11 @@
     align-items: center;
 }
 
-.status-indicator {
+.status-indicator.online {
     width: 10px;
     height: 10px;
     border-radius: 50%;
     margin-right: 8px;
-}
-
-.status-indicator.online {
     background-color: #4CAF50;
     box-shadow: 0 0 8px #4CAF50;
 }
@@ -178,9 +137,10 @@
     margin-right: 20px;
 }
 
-.player-count {
+.lobby-header .player-count {
     color: #8a9bb8;
     font-size: 14px;
+    margin-left: 15px;
 }
 
 .lobby-content {
@@ -203,20 +163,9 @@
     flex-direction: column;
 }
 
-.challenges-card {
-    grid-column: 1;
-    grid-row: 1 / span 2;
-}
-
-.outgoing-card {
-    grid-column: 2;
-    grid-row: 1;
-}
-
-.stats-card {
-    grid-column: 2;
-    grid-row: 2;
-}
+.challenges-card { grid-column: 1; grid-row: 1 / span 2; }
+.outgoing-card { grid-column: 2; grid-row: 1; }
+.stats-card { grid-column: 2; grid-row: 2; }
 
 .card-header {
     background-color: #242d3f;
@@ -238,24 +187,6 @@
     overflow-y: auto;
 }
 
-/* Challenge items styling */
-.challenge-item {
-    background-color: #242d3f;
-    border-radius: 6px;
-    padding: 10px;
-    margin-bottom: 10px;
-}
-
-.challenge-player {
-    margin-bottom: 10px;
-}
-
-.challenge-buttons {
-    display: flex;
-    gap: 8px;
-}
-
-/* Stats section styling */
 .stats-container {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -276,437 +207,36 @@
     background-color: #2c364a;
 }
 
-.stat-value {
+.stat-item .stat-value {
     font-size: 24px;
     font-weight: bold;
     color: #4d79ff;
     margin-bottom: 5px;
 }
 
-.stat-label {
+.stat-item .stat-label {
     color: #8a9bb8;
     font-size: 12px;
 }
 
-/* Right Sidebar - Profile Styles */
+/* Right Sidebar Container */
 .profile-sidebar {
     background-color: #1a1f2b;
     border-left: 1px solid #2c364a;
     display: flex;
     flex-direction: column;
     padding: 20px;
+    gap: 20px;
     overflow-y: auto;
 }
 
-.profile-card {
-    background-color: #242d3f;
-    border-radius: 10px;
-    overflow: hidden;
-    padding-bottom: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+/* Challenge items styling */
+#incoming-challenges {
+    max-height: 600px;
+    overflow-y: auto;
+    padding-right: 5px;
 }
 
-.profile-header {
-    height: 80px;
-    background: linear-gradient(to right, #3a66ff, #4d79ff);
-    position: relative;
-}
-
-.level-indicator {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background-color: rgba(0, 0, 0, 0.6);
-    color: #fff;
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: bold;
-}
-
-.profile-avatar-container {
-    position: relative;
-    width: 100px;
-    height: 100px;
-    margin: -50px auto 10px;
-}
-
-.profile-avatar {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    border: 4px solid #242d3f;
-    object-fit: cover;
-    background-color: #121820;
-}
-
-.avatar-border {
-    position: absolute;
-    top: -4px;
-    left: -4px;
-    right: -4px;
-    bottom: -4px;
-    border-radius: 50%;
-    border: 2px solid #4d79ff;
-    box-shadow: 0 0 15px rgba(77, 121, 255, 0.5);
-    pointer-events: none;
-}
-
-.profile-info {
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-.profile-name {
-    color: #fff;
-    font-size: 18px;
-    margin: 0 0 5px;
-}
-
-.profile-rank {
-    color: #4d79ff;
-    font-size: 14px;
-}
-
-.quick-stats {
-    padding: 0 20px;
-    margin-bottom: 20px;
-}
-
-.quick-stat {
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.stat-icon {
-    width: 24px;
-    height: 24px;
-    background-color: #1a1f2b;
-    border-radius: 4px;
-    margin-right: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    color: #fff;
-}
-
-.strength-icon:before { content: "💪"; }
-.agility-icon:before { content: "🏃"; }
-.intuition-icon:before { content: "🧠"; }
-.endurance-icon:before { content: "❤️"; }
-
-.stat-bar {
-    flex: 1;
-    height: 8px;
-    background-color: #1a1f2b;
-    border-radius: 4px;
-    overflow: hidden;
-    margin-right: 10px;
-}
-
-.stat-fill {
-    height: 100%;
-    border-radius: 4px;
-    width: 60%; /* Default - will be set by JS */
-}
-
-.strength-fill { background-color: #F44336; width: 60%; }
-.agility-fill { background-color: #2196F3; width: 50%; }
-.intuition-fill { background-color: #9C27B0; width: 75%; }
-.endurance-fill { background-color: #4CAF50; width: 55%; }
-
-.action-buttons {
-    padding: 0 20px;
-}
-
-.action-button {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 4px;
-    font-weight: bold;
-    cursor: pointer;
-    margin-bottom: 10px;
-    transition: all 0.2s;
-}
-
-.primary-action {
-    background-color: #4d79ff;
-    color: white;
-}
-
-.primary-action:hover {
-    background-color: #3a66ff;
-    transform: translateY(-2px);
-}
-
-.secondary-action {
-    background-color: transparent;
-    border: 1px solid #4d79ff;
-    color: #4d79ff;
-}
-
-.secondary-action:hover {
-    background-color: rgba(77, 121, 255, 0.1);
-}
-
-.equipment-preview {
-    background-color: #242d3f;
-    border-radius: 10px;
-    padding: 15px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.equipment-preview h3 {
-    color: #4d79ff;
-    font-size: 14px;
-    margin-bottom: 15px;
-    text-align: center;
-}
-
-.equipped-items-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-gap: 10px;
-}
-
-.equipped-item {
-    background-color: #1a1f2b;
-    border-radius: 6px;
-    padding: 8px;
-    display: flex;
-    align-items: center;
-    transition: transform 0.2s;
-    overflow: hidden;
-}
-
-.equipped-item:hover {
-    transform: translateY(-2px);
-    background-color: #2c364a;
-}
-
-.item-icon {
-    width: 30px;
-    height: 30px;
-    background-color: #242d3f;
-    border-radius: 4px;
-    margin-right: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-}
-
-
-/* Fix for misplaced item icons in stats section */
-.stats-container .item-icon,
-.stats-card .item-icon {
-    display: none; /* Hide any item icons that appear in the stats area */
-}
-
-/* If there are specific elements with IDs */
-#displaced-icons,
-.stats-section .item-icon {
-    display: none;
-}
-
-/* Additional fix for any icon elements that might be misplaced */
-.content-card .stat-item img,
-.content-card .stat-value img {
-    display: none;
-}
-
-.weapon-icon:before { content: "⚔️"; }
-.armor-icon:before { content: "🛡️"; }
-.shield-icon:before { content: "🔰"; }
-.helmet-icon:before { content: "⛑️"; }
-
-.item-name {
-    font-size: 12px;
-    color: #f0f0f0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* Scrollbar styling */
-::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
-
-::-webkit-scrollbar-track {
-    background: #1a1f2b;
-}
-
-::-webkit-scrollbar-thumb {
-    background: #3a66ff;
-    border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: #4d79ff;
-}
-
-/* Responsive adjustments */
-@media (max-width: 1200px) {
-    .modern-lobby {
-        grid-template-columns: 230px 1fr 280px;
-    }
-}
-
-@media (max-width: 992px) {
-    .modern-lobby {
-        grid-template-columns: 200px 1fr 0;
-    }
-    
-    .profile-sidebar {
-        display: none;
-    }
-}
-
-@media (max-width: 768px) {
-    .modern-lobby {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto 1fr;
-    }
-    
-    .lobby-sidebar {
-        display: none;
-    }
-    
-    /* Add mobile navigation */
-    .mobile-nav {
-        display: flex;
-        justify-content: space-between;
-        padding: 10px;
-        background-color: #1a1f2b;
-        border-bottom: 1px solid #2c364a;
-    }
-}
-
-
-/* Game result message container */
-.game-result-message-wrapper {
-    text-align: center;
-    margin-top: 20px; /* Give some space from top if needed */
-    width: 80%; /* Take up most of the combat area width */
-    max-width: 500px; /* But not too wide */
-    position: absolute; 
-    top: 50%; 
-    left: 50%;
-    transform: translate(-50%, -50%);
-    padding: 25px;
-    background-color: rgba(30, 30, 30, 0.9); /* Darker, more opaque background */
-    border-radius: 12px;
-    color: #fff;
-    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
-    z-index: 10; /* Ensure it's above other elements in combat area */
-}
-
-.game-result-message-wrapper .game-result {
-    font-size: 2em; 
-    font-weight: bold;
-    margin-bottom: 20px;
-    text-shadow: 0 0 5px rgba(255,255,255,0.3);
-}
-.game-result-message-wrapper .profile-message {
-    font-size: 1.1em;
-}
-.game-result-message-wrapper .profile-message a {
-    color: #ffdd77; /* Brighter gold for link */
-    text-decoration: underline;
-    font-weight: bold;
-}
-.game-result-message-wrapper .profile-message a:hover {
-    color: #fff0aa;
-}
-
-/* Ensure game message in combat controls doesn't overlap with this */
-#game-message {
-    position: relative; 
-    z-index: 1;
-}
-
-/* Style for stat lock indicator in game panels */
-.stat-lock-indicator {
-    display: block; 
-    color: #ff9800; 
-    font-size: 0.8em;
-    margin-left: 10px; /* If appended to stats header */
-    font-style: italic;
-}
-
-/* Ensure game message in combat controls doesn't overlap with this */
-#game-message {
-    position: relative; 
-    z-index: 1;
-}
-
-/* Ensure character panels in game screen have relative positioning if needed for stat lock */
-.character-panel .character-stats .stats-header {
-    position: relative; /* For positioning the lock indicator if appended here */
-}
-
-/* Modern Lobby - Player Count */
-.lobby-header .player-count {
-    color: #8a9bb8;
-    font-size: 14px;
-    margin-left: 15px; /* Added some margin */
-}
-
-
-
-
-/* Add this to your styles.css or lobby-modern.css */
-.player-list-container .player-item {
-    display: flex;
-    justify-content: space-between; /* Puts name on left, button on right */
-    align-items: center;
-    padding: 8px 12px; /* Adjust padding as needed */
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Example border */
-}
-
-.player-list-container .player-item:last-child {
-    border-bottom: none;
-}
-
-.player-list-container .player-details {
-    flex-grow: 1; /* Allows name to take available space */
-}
-
-.player-list-container .player-name-list-item {
-    color: #e0e0e0; /* Example text color */
-    font-size: 0.9em;
-}
-
-.player-list-container .challenge-btn {
-    /* Your existing styles for challenge-btn, or add new ones */
-    padding: 4px 8px;
-    font-size: 0.8em;
-    margin-left: 10px; /* Space between name and button */
-}
-
-.player-list-container .no-players-msg {
-    padding: 10px;
-    color: #aaa;
-    text-align: center;
-    font-style: italic;
-}
-
-
-/* Loading state for stats */
-.challenger-stats-preview.loading .stat-value {
-    color: #666;
-    font-style: italic;
-}/* Add these styles to lobby-modern.css */
-
-/* Add these styles to lobby-modern.css */
-
-/* Enhanced Challenge Item Styling */
 .challenge-item-enhanced {
     background: linear-gradient(135deg, #1a1f2b 0%, #242d3f 100%);
     border-radius: 10px;
@@ -728,7 +258,6 @@
     margin-bottom: 15px;
 }
 
-/* Character Avatar Container */
 .challenger-avatar-container {
     position: relative;
     width: 120px;
@@ -739,6 +268,11 @@
     border: 2px solid #4a69bd;
     flex-shrink: 0;
 }
+
+.challenger-avatar-container.shadowsteel { box-shadow: 0 0 15px rgba(0, 0, 100, 0.8), 0 0 30px rgba(0, 0, 255, 0.5); border-color: #4a69bd; }
+.challenger-avatar-container.ironbound { box-shadow: 0 0 15px rgba(100, 100, 100, 0.8), 0 0 30px rgba(150, 150, 150, 0.5); border-color: #7a7a7a; }
+.challenger-avatar-container.flameheart { box-shadow: 0 0 15px rgba(200, 50, 0, 0.8), 0 0 30px rgba(255, 80, 0, 0.5); border-color: #bd4a4a; }
+.challenger-avatar-container.venomfang { box-shadow: 0 0 15px rgba(0, 100, 0, 0.8), 0 0 30px rgba(0, 150, 0, 0.5); border-color: #4abd4a; }
 
 .challenger-character-avatar {
     width: 100%;
@@ -756,386 +290,50 @@
     text-align: center;
 }
 
-.class-name {
-    font-size: 12px;
-    font-weight: bold;
-    color: #fff;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
-}
+.class-name { font-size: 12px; font-weight: bold; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+.class-type { font-size: 10px; color: #8a9bb8; }
 
-.class-type {
-    font-size: 10px;
-    color: #8a9bb8;
-}
+.challenger-info { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.challenger-name-section { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+.challenger-username { margin: 0; color: #fff; font-size: 18px; }
+.challenger-level { background-color: #ffcc00; color: #000; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; }
 
-/* Challenger Info Section */
-.challenger-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
+.challenger-stats-preview { display: flex; gap: 15px; padding: 10px; background-color: rgba(0, 0, 0, 0.3); border-radius: 6px; }
+.challenger-stats-preview.loading .stat-value { color: #666; font-style: italic; }
+.stat-preview-item { display: flex; align-items: center; gap: 5px; }
+.stat-preview-item .stat-icon { font-size: 16px; }
+.stat-preview-item .stat-value { font-weight: bold; color: #4d79ff; font-size: 14px; }
+.challenger-record { display: flex; gap: 20px; font-size: 14px; color: #8a9bb8; }
+.challenger-record .wins { color: #4CAF50; }
+.challenger-record .losses { color: #f44336; }
 
-.challenger-name-section {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 5px;
-}
+.challenge-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.challenge-actions button { padding: 8px 20px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; transition: all 0.2s; font-size: 14px; }
+.accept-btn { background-color: #4CAF50; color: white; }
+.accept-btn:hover { background-color: #45a049; transform: translateY(-1px); }
+.decline-btn { background-color: #f44336; color: white; }
+.decline-btn:hover { background-color: #da190b; transform: translateY(-1px); }
 
-.challenger-username {
-    margin: 0;
-    color: #fff;
-    font-size: 18px;
-}
-
-.challenger-level {
-    background-color: #ffcc00;
-    color: #000;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: bold;
-}
-
-/* Stats Preview */
-.challenger-stats-preview {
-    display: flex;
-    gap: 15px;
-    padding: 10px;
-    background-color: rgba(0, 0, 0, 0.3);
-    border-radius: 6px;
-}
-
-.stat-preview-item {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.stat-preview-item .stat-icon {
-    font-size: 16px;
-}
-
-.stat-preview-item .stat-value {
-    font-weight: bold;
-    color: #4d79ff;
-    font-size: 14px;
-}
-
-/* Challenger Record */
-.challenger-record {
-    display: flex;
-    gap: 20px;
-    font-size: 14px;
-    color: #8a9bb8;
-}
-
-.challenger-record .wins {
-    color: #4CAF50;
-}
-
-.challenger-record .losses {
-    color: #f44336;
-}
-
-/* Challenge Actions */
-.challenge-actions {
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-}
-
-.challenge-actions button {
-    padding: 8px 20px;
-    border: none;
-    border-radius: 5px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-size: 14px;
-}
-
-.accept-btn {
-    background-color: #4CAF50;
-    color: white;
-}
-
-.accept-btn:hover {
-    background-color: #45a049;
-    transform: translateY(-1px);
-}
-
-.decline-btn {
-    background-color: #f44336;
-    color: white;
-}
-
-.decline-btn:hover {
-    background-color: #da190b;
-    transform: translateY(-1px);
-}
-
-/* Character-specific challenger container styles */
-.challenger-avatar-container.shadowsteel {
-    box-shadow: 0 0 15px rgba(0, 0, 100, 0.8), 0 0 30px rgba(0, 0, 255, 0.5);
-    border-color: #4a69bd;
-}
-
-.challenger-avatar-container.ironbound {
-    box-shadow: 0 0 15px rgba(100, 100, 100, 0.8), 0 0 30px rgba(150, 150, 150, 0.5);
-    border-color: #7a7a7a;
-}
-
-.challenger-avatar-container.flameheart {
-    box-shadow: 0 0 15px rgba(200, 50, 0, 0.8), 0 0 30px rgba(255, 80, 0, 0.5);
-    border-color: #bd4a4a;
-}
-
-.challenger-avatar-container.venomfang {
-    box-shadow: 0 0 15px rgba(0, 100, 0, 0.8), 0 0 30px rgba(0, 150, 0, 0.5);
-    border-color: #4abd4a;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .challenge-character-display {
-        flex-direction: column;
-    }
-    
-    .challenger-avatar-container {
-        width: 100%;
-        height: 200px;
-        margin-bottom: 10px;
-    }
-    
-    .challenger-stats-preview {
-        flex-wrap: wrap;
-    }
-}
-
-/* Fallback for old challenge display - preserves existing functionality */
-.challenge-item:not(.challenge-item-enhanced) {
-    background: #2a2a2a;
-    border-radius: 5px;
-    padding: 12px;
-    margin-bottom: 10px;
-}
-
-/* Update the incoming challenges container to handle larger items */
-#incoming-challenges {
-    max-height: 600px;
-    overflow-y: auto;
-    padding-right: 5px;
-}
-
-/* Custom scrollbar for challenges */
-#incoming-challenges::-webkit-scrollbar {
-    width: 6px;
-}
-
-#incoming-challenges::-webkit-scrollbar-track {
-    background: #1a1f2b;
-}
-
-#incoming-challenges::-webkit-scrollbar-thumb {
-    background: #3a66ff;
-    border-radius: 3px;
-}
-
-#incoming-challenges::-webkit-scrollbar-thumb:hover {
-    background: #4d79ff;
-}
-
-/* Fixed Online Players List Styling - Matches your HTML structure */
-
-/* Player List Container */
-.player-list-container {
-    margin-top: 20px;
-}
-
-.player-list-container h2 {
-    color: #4a9eff;
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 15px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.modern-players-list {
-    max-height: 400px;
-    overflow-y: auto;
-    padding-right: 5px;
-}
-
-/* Custom scrollbar for players container */
-.modern-players-list::-webkit-scrollbar {
-    width: 6px;
-}
-
-.modern-players-list::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-}
-
-.modern-players-list::-webkit-scrollbar-thumb {
-    background: #4a9eff;
-    border-radius: 3px;
-}
-
-.modern-players-list::-webkit-scrollbar-thumb:hover {
-    background: #3a8eef;
-}
-
-/* Individual Player Item */
-.player-item {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 12px;
-    margin-bottom: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: all 0.3s ease;
-    min-height: 60px;
-}
-
-.player-item:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: #4a9eff;
-    transform: translateY(-1px);
-}
-
-/* Player Details Section */
-.player-details {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 0; /* Allows text to truncate */
-}
-
-.player-name-list-item {
-    color: #ffffff;
-    font-weight: 600;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* Bot indicator styling */
-.player-name-list-item .bot-indicator,
-.player-name-list-item:contains("🤖") {
-    opacity: 0.8;
-    font-size: 12px;
-}
-
-.player-level {
-    color: #4a9eff;
-    font-size: 12px;
-    font-weight: 500;
-}
-
-.player-class {
-    color: #888;
-    font-size: 11px;
-    text-transform: capitalize;
-}
-
-/* Challenge Button */
-.challenge-btn {
-    background: linear-gradient(135deg, #4a9eff 0%, #3a8eef 100%);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 8px 16px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    min-width: 70px;
-    height: 32px;
-    flex-shrink: 0;
-}
-
-.challenge-btn:hover {
-    background: linear-gradient(135deg, #3a8eef 0%, #2a7edf 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
-}
-
-.challenge-btn:active {
-    transform: translateY(0);
-}
-
-/* No Players Message */
-.no-players-msg {
-    text-align: center;
-    color: #888;
-    font-style: italic;
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 8px;
-    border: 1px dashed rgba(255, 255, 255, 0.1);
-}
-
-.no-players-msg div:first-child {
-    font-size: 24px;
-    margin-bottom: 8px;
-}
-
-/* Player Count Header - Fix for your lobby header */
-.lobby-header .player-count {
-    color: #4a9eff;
-    font-weight: 500;
-    font-size: 14px;
-}
-
-/* Character Class Specific Colors */
-.player-item[data-class="shadowsteel"] .player-class {
-    color: #4a69bd;
-}
-
-.player-item[data-class="ironbound"] .player-class {
-    color: #7a7a7a;
-}
-
-.player-item[data-class="flameheart"] .player-class {
-    color: #bd4a4a;
-}
-
-.player-item[data-class="venomfang"] .player-class {
-    color: #4abd4a;
-}
-
-/* Fix for existing modern lobby styles that might conflict */
-.modern-lobby .player-list-container {
-    padding: 0 15px;
-}
-
-.modern-lobby .modern-players-list {
-    background: transparent;
-}
-
-/* Override any existing conflicting styles */
+/* Online Players List */
 .modern-players-list .player-item {
     background: rgba(255, 255, 255, 0.05) !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    margin-bottom: 10px !important;
-    padding: 12px !important;
     border-radius: 8px !important;
+    padding: 12px !important;
+    margin-bottom: 10px !important;
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
+    min-height: 60px;
+    transition: all 0.3s ease;
 }
 
-/* Ensure text doesn't overlap */
+.modern-players-list .player-item:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: #4a9eff !important;
+    transform: translateY(-1px);
+}
+
 .modern-players-list .player-details {
     flex: 1 !important;
     display: flex !important;
@@ -1145,83 +343,364 @@
     margin-right: 10px !important;
 }
 
-.modern-players-list .player-name-list-item,
-.modern-players-list .player-level,
-.modern-players-list .player-class {
-    display: block !important;
-    width: 100% !important;
-    text-overflow: ellipsis !important;
-    overflow: hidden !important;
-    white-space: nowrap !important;
+.player-name-list-item {
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
+
+.player-level { color: #4a9eff; font-size: 12px; font-weight: 500; }
+.player-class { color: #888; font-size: 11px; text-transform: capitalize; }
+.player-item[data-class="shadowsteel"] .player-class { color: #4a69bd; }
+.player-item[data-class="ironbound"] .player-class { color: #7a7a7a; }
+.player-item[data-class="flameheart"] .player-class { color: #bd4a4a; }
+.player-item[data-class="venomfang"] .player-class { color: #4abd4a; }
+
+.challenge-btn {
+    background: linear-gradient(135deg, #4a9eff 0%, #3a8eef 100%);
+    color: white; border: none; border-radius: 6px; padding: 8px 16px; font-size: 12px;
+    font-weight: 600; cursor: pointer; transition: all 0.2s ease; min-width: 70px;
+    height: 32px; flex-shrink: 0;
+}
+
+.challenge-btn:hover {
+    background: linear-gradient(135deg, #3a8eef 0%, #2a7edf 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
+}
+
+.no-players-msg {
+    text-align: center; color: #888; font-style: italic; padding: 20px;
+    background: rgba(255, 255, 255, 0.02); border-radius: 8px;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #1a1f2b; }
+::-webkit-scrollbar-thumb { background: #3a66ff; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #4d79ff; }
 
 /* Responsive adjustments */
 @media (max-width: 1200px) {
-    .player-item {
-        padding: 10px;
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
-        min-height: auto;
-    }
-    
-    .player-details {
-        align-items: center;
-        text-align: center;
-        margin-right: 0 !important;
-    }
-    
-    .challenge-btn {
-        width: 100%;
-        margin-top: 5px;
-    }
+    .modern-lobby { grid-template-columns: 230px 1fr 280px; }
+    .modern-players-list .player-item { padding: 10px; flex-direction: column; align-items: stretch; gap: 8px; min-height: auto; }
+    .modern-players-list .player-details { align-items: center; text-align: center; margin-right: 0 !important; }
+    .challenge-btn { width: 100%; margin-top: 5px; }
 }
 
-/* Animation for new players joining */
-@keyframes slideInFromRight {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
+@media (max-width: 992px) {
+    .modern-lobby { grid-template-columns: 200px 1fr; }
+    .profile-sidebar { display: none; }
 }
 
-.player-item.new-player {
-    animation: slideInFromRight 0.5s ease-out;
+@media (max-width: 768px) {
+    .modern-lobby { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    .lobby-sidebar { display: none; }
+    .lobby-content { grid-template-columns: 1fr; }
+    .challenges-card { grid-row: auto; }
+    .outgoing-card, .stats-card { grid-column: auto; grid-row: auto; }
 }
 
-/* Loading state */
-.modern-players-list.loading {
-    opacity: 0.6;
+* --- FIX FOR RIGHT SIDEBAR CHARACTER DISPLAY --- */
+
+/* Main container for the right sidebar */
+.profile-sidebar {
+    background-color: #1a1f2b;
+    border-left: 1px solid #2c364a;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    gap: 20px;
+    overflow-y: auto;
+}
+
+/* The main character panel in the lobby */
+.character-panel-lobby {
+    background: rgba(20, 20, 30, 0.9);
+    border: 2px solid #444;
+    border-radius: 10px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    flex-grow: 1; /* Allows the panel to fill vertical space */
+    min-height: 0; 
+}
+
+/* This is the key fix: Give the image container a height */
+.character-image-preview {
+    width: 100%;
+    height: 300px; /* Explicitly set height */
+    background: radial-gradient(ellipse at center, rgba(50, 50, 70, 0.3) 0%, transparent 70%);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    border: 2px solid #333;
+    flex-shrink: 0;
+}
+
+.character-image-preview img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.2));
+}
+
+/* The grid for equipment slots */
+.equipment-grid-lobby {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    row-gap: 24px;
+    column-gap: 10px;
+    margin-bottom: 20px;
+    padding: 10px;
+    background: rgba(30, 30, 40, 0.5);
+    border-radius: 8px;
+    border: 1px solid #444;
+}
+
+.equipment-slot-lobby {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid #444;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: visible; /* Allows the name label to be positioned outside */
+}
+
+.equipment-slot-lobby .slot-icon {
+    width: 70%;
+    height: 70%;
+    opacity: 0.7;
+}
+
+.equipment-slot-lobby .slot-name {
+    position: absolute;
+    bottom: -18px; /* Position below the slot */
+    left: 0;
+    width: 100%;
+    font-size: 10px;
+    color: #ccc;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 1px 3px;
+    border-radius: 3px;
     pointer-events: none;
 }
 
-.modern-players-list.loading::after {
-    content: "Loading players...";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+/* The stats box at the bottom of the panel */
+.character-stats-lobby {
+    background: rgba(30, 30, 40, 0.8);
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #444;
+    margin-top: auto; /* Pushes this box to the bottom */
+}
+
+.character-stats-lobby .character-name {
+    font-size: 18px;
+    color: #fff;
+    text-align: center;
+    margin-bottom: 4px;
+    font-weight: bold;
+}
+
+.character-stats-lobby .character-class {
+    font-size: 12px;
     color: #4a9eff;
-    font-weight: 500;
+    text-align: center;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    font-weight: bold;
 }
 
-/* Ensure sidebar doesn't get too narrow */
-.lobby-sidebar {
-    min-width: 280px;
+.character-stats-lobby .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    color: #ccc;
+    font-size: 14px;
 }
 
-.player-list-container {
-    flex: 1;
+.character-stats-lobby .stat-row .stat-value {
+    color: #fff;
+    font-weight: bold;
+}
+
+/* Container for the Find Match/View Profile buttons */
+.action-buttons-lobby {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-shrink: 0; /* Prevent buttons from shrinking */
+    margin-top: 20px;
+}
+
+.action-buttons-lobby .action-button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.action-buttons-lobby .primary-action {
+    background-color: #4d79ff;
+    color: white;
+}
+
+.action-buttons-lobby .secondary-action {
+    background-color: transparent;
+    border: 1px solid #4d79ff;
+    color: #4d79ff;
+}
+
+/* Hide the old, broken sidebar styles */
+.profile-card, .equipment-preview, .quick-stats, .action-buttons {
+    display: none !important;
+}
+
+
+.profile-sidebar {
+    display: flex;
+    flex-direction: column;
+}
+
+.character-panel {
+    flex-grow: 1;
+    min-height: 0;
+    background: rgba(20, 20, 30, 0.9);
+    border: 2px solid #444;
+    border-radius: 10px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.character-image-preview {
+    width: 100%;
+    height: 300px;
+    background: radial-gradient(ellipse at center, rgba(50, 50, 70, 0.3) 0%, transparent 70%);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    border: 2px solid #333;
+    flex-shrink: 0;
+}
+
+#lobby-character-display-avatar {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.2));
+    /* The next two lines are important to override any lingering small-size styles */
+    width: auto !important;
+    height: auto !important;
+}
+
+.equipment-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    row-gap: 24px;
+    column-gap: 10px;
+    margin-bottom: 20px;
+    padding: 10px;
+    background: rgba(30, 30, 40, 0.5);
+    border-radius: 8px;
+    border: 1px solid #444;
+}
+
+.equipment-slot-shop {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid #444;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: visible;
+}
+
+.equipment-slot-shop .slot-icon {
+    width: 70%;
+    height: 70%;
+    opacity: 0.7;
+}
+
+.equipment-slot-shop .slot-name {
+    position: absolute;
+    bottom: -18px;
+    left: 0;
+    width: 100%;
+    font-size: 10px;
+    color: #ccc;
+    text-align: center;
+    white-space: nowrap;
     overflow: hidden;
+    text-overflow: ellipsis;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 1px 3px;
+    border-radius: 3px;
+    pointer-events: none;
 }
 
-/* Fix any layout issues in the sidebar */
-.lobby-sidebar .modern-players-list {
-    height: auto;
-    max-height: 400px;
+.character-stats {
+    background: rgba(30, 30, 40, 0.8);
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #444;
+    margin-top: auto;
 }
 
+.character-stats .character-name {
+    font-size: 18px;
+    text-align: center;
+    margin-bottom: 4px;
+}
+
+.character-stats .character-class {
+    font-size: 12px;
+    color: #4a9eff;
+    text-align: center;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+}
+
+.character-stats .stat-row {
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.action-buttons-lobby {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-shrink: 0;
+    margin-top: 20px;
+}
+
+/* Hide old/conflicting sidebar styles */
+.profile-card, .equipment-preview, .quick-stats, .action-buttons {
+    display: none !important;
+}

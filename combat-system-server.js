@@ -270,35 +270,50 @@ calculateDamage(attacker, defender, attackArea, isBlocked) {
         }
     });
     
-    // Check if any player is defeated (health <= 0)
+
     let gameOver = false;
     let winner = null;
-    
-    playerIds.forEach(playerId => {
-        if (players[playerId].health <= 0) {
-            gameOver = true;
-            winner = playerIds.find(id => id !== playerId);
-            
-            combatLog.push({
-                type: 'defeat',
-                player: playerId,
-                message: `${players[playerId].username} has been defeated!`
-            });
-            
-            combatLog.push({
-                type: 'victory',
-                player: winner,
-                message: `${players[winner].username} is victorious!`
-            });
-        }
-    });
-    
+    let loser = null;
+    let isDraw = false;
+
+    const playerA = players[playerIds[0]];
+    const playerB = players[playerIds[1]];
+
+    const playerADefeated = playerA.health <= 0;
+    const playerBDefeated = playerB.health <= 0;
+
+    if (playerADefeated && playerBDefeated) {
+        // It's a draw
+        gameOver = true;
+        isDraw = true;
+        combatLog.push({
+            type: 'draw',
+            message: `Both combatants have fallen! The match is a DRAW!`
+        });
+    } else if (playerADefeated) {
+        // Player B wins
+        gameOver = true;
+        winner = playerB.socketId;
+        loser = playerA.socketId;
+        combatLog.push({ type: 'defeat', player: loser, message: `${playerA.username} has been defeated!` });
+        combatLog.push({ type: 'victory', player: winner, message: `${playerB.username} is victorious!` });
+    } else if (playerBDefeated) {
+        // Player A wins
+        gameOver = true;
+        winner = playerA.socketId;
+        loser = playerB.socketId;
+        combatLog.push({ type: 'defeat', player: loser, message: `${playerB.username} has been defeated!` });
+        combatLog.push({ type: 'victory', player: winner, message: `${playerA.username} is victorious!` });
+    }
+
     return {
         damageDealt,
         combatLog,
         gameOver,
-        winner
-    };
+        winner,
+        loser, // Also return the loser
+        isDraw  // Return the draw flag
+    };   
 }
 }
 

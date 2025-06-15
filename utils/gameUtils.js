@@ -30,11 +30,34 @@ class GameUtils {
   async createPlayerGameData(socket, stats, inventory, playerLevel) {
     const characterBonuses = this.getCharacterBonuses(socket.user.characterClass || 'unselected');
     
-    // Calculate max health based on endurance
-    const baseHealth = 100; // Base health for all players
-    const currentEndurance = (stats?.endurance || 10) + characterBonuses.endurance;
-    const enduranceBonus = (currentEndurance - 10) * 10; // +10 HP per point of endurance over 10
-    const maxHealth = baseHealth + enduranceBonus;
+  
+     const currentStrength = stats?.strength || 10;
+    const currentAgility = stats?.agility || 10;
+    const currentIntuition = stats?.intuition || 10;
+    const currentEndurance = stats?.endurance || 10;
+
+    let itemBonuses = {
+      health: 0,
+      damage: 0,
+      criticalChance: 0,
+      evasionChance: 0
+    };
+
+    if (inventory && inventory.equipped) {
+      for (const item of Object.values(inventory.equipped)) {
+        if (item && item.bonuses) {
+          itemBonuses.health += item.bonuses.health || 0;
+          itemBonuses.damage += item.bonuses.damage || 0;
+          itemBonuses.criticalChance += item.bonuses.criticalChance || 0;
+          itemBonuses.evasionChance += item.bonuses.evasionChance || 0;
+        }
+      }
+    }
+
+    const baseHealth = 200;
+    const enduranceBonus = (currentEndurance > 10) ? (currentEndurance - 10) * 10 : 0;
+    const maxHealth = baseHealth + enduranceBonus + itemBonuses.health;
+
 
     return {
       socketId: socket.id,
@@ -46,18 +69,19 @@ class GameUtils {
       maxHealth: maxHealth,  // Set the calculated max health
       
       // Apply character bonuses to base stats
-      stats: {
-        strength: (stats?.strength || 10) + characterBonuses.strength,
-        agility: (stats?.agility || 10) + characterBonuses.agility,
-        intuition: (stats?.intuition || 10) + characterBonuses.intuition,
+      // Do NOT add characterBonuses here, as they are already included in the 'stats' object.
+       stats: {
+        strength: currentStrength,
+        agility: currentAgility,
+        intuition: currentIntuition,
         endurance: currentEndurance,
       },
       
-      // Combat calculation properties
-      damageBonus: ((stats?.strength || 10) + characterBonuses.strength - 10) * 2,
-      criticalChance: (stats?.intuition || 10) + characterBonuses.intuition - 10,
-      evasionChance: (stats?.agility || 10) + characterBonuses.agility - 10,
-      enemyEvasionReduction: ((stats?.intuition || 10) + characterBonuses.intuition - 10) * 0.5,
+      // Combat properties now include item bonuses
+      damageBonus: ((currentStrength - 10) * 2) + itemBonuses.damage,
+      criticalChance: (currentIntuition - 10) + itemBonuses.criticalChance,
+      evasionChance: (currentAgility - 10) + itemBonuses.evasionChance,
+      enemyEvasionReduction: (currentIntuition - 10) * 0.5,
       specialAbility: characterBonuses.specialAbility,
       
       equipment: inventory?.equipped || {},
@@ -161,10 +185,12 @@ class GameUtils {
       });
 
       // Check if game is over
-      if (result.gameOver) {
-        console.log(`🏁 Game ${gameId} ended. Winner: ${result.winner}`);
+   if (result.gameOver) {
+        console.log(`🏁 Game ${gameId} ended. Winner: ${result.winner}, Draw: ${result.isDraw}`);
         setTimeout(() => {
-          this.endGame(gameId, result.winner);
+          // --- FIX START: Pass the entire result object to endGame ---
+          this.endGame(gameId, result);
+          // --- FIX END ---
         }, 3000);
       } else {
         // Start next round after a delay
@@ -173,72 +199,91 @@ class GameUtils {
         }, 5000);
       }
 
-    } catch (error) {
-      console.error('Error processing round:', error);
-      this.io.to(gameId).emit('gameError', { message: 'Error processing round' });
-    }
-  }
+      } catch (error) {
+          console.error('Error processing round:', error);
+          this.io.to(gameId).emit('gameError', { message: 'Error processing round' });
+        }
+      }
 
-  async endGame(gameId, winnerId) {
+async endGame(gameId, result) {
     const game = this.activeGames.get(gameId);
     if (!game) {
       console.error(`❌ Cannot end game: Game ${gameId} not found`);
       return;
     }
     
-    console.log(`🏁 Ending game ${gameId}, winner: ${winnerId}`);
+    console.log(`🏁 Ending game ${gameId}, result:`, result);
     
-    // Clear the turn timer
     if (game.turnTimer) {
       clearTimeout(game.turnTimer);
       game.turnTimer = null;
     }
     
-    const loserId = Object.keys(game.players).find(id => id !== winnerId);
-    let winnerName = 'Unknown';
-    let loserName = 'Unknown';
-
-    // Process game results for real players (not bots)
-    if (winnerId && game.players[winnerId] && !winnerId.startsWith('bot_')) {
-      const winner = game.players[winnerId];
-      winnerName = winner.username;
-      
-      try {
-        if (this.levelingSystem && typeof this.levelingSystem.processGameResult === 'function') {
-          await this.levelingSystem.processGameResult(winner.userId, 'win');
+    if (result.isDraw) {
+        // --- DRAW LOGIC ---
+        console.log(`⚖️ Game ${gameId} is a draw. Awarding reduced XP to both players.`);
+        
+        // Award 'loss' XP to both players
+        for (const playerId of Object.keys(game.players)) {
+            const player = game.players[playerId];
+            if (player && !player.isBot) {
+                try {
+                    await this.levelingSystem.processGameResult(player.userId, 'loss');
+                    await this.sendProfileUpdate(player.userId);
+                } catch (error) {
+                    console.error(`Error processing draw result for ${player.username}:`, error);
+                }
+            }
         }
-        await this.sendProfileUpdate(winner.userId);
-      } catch (error) {
-        console.error('Error processing winner stats:', error);
-      }
-    }
-    
-    if (loserId && game.players[loserId] && !loserId.startsWith('bot_')) {
-      const loser = game.players[loserId];
-      loserName = loser.username;
-      
-      try {
-        if (this.levelingSystem && typeof this.levelingSystem.processGameResult === 'function') {
-          await this.levelingSystem.processGameResult(loser.userId, 'loss');
+        
+        // Notify clients of the draw
+        this.io.to(gameId).emit('gameOver', {
+            isDraw: true,
+            reason: 'draw'
+        });
+
+    } else {
+        // --- WIN/LOSS LOGIC (existing logic) ---
+        const winnerId = result.winner;
+        const loserId = result.loser;
+        let winnerName = 'Unknown';
+        let loserName = 'Unknown';
+
+        // Process game results for winner (if not a bot)
+        if (winnerId && game.players[winnerId] && !game.players[winnerId].isBot) {
+            const winner = game.players[winnerId];
+            winnerName = winner.username;
+            try {
+                await this.levelingSystem.processGameResult(winner.userId, 'win');
+                await this.sendProfileUpdate(winner.userId);
+            } catch (error) {
+                console.error('Error processing winner stats:', error);
+            }
         }
-        await this.sendProfileUpdate(loser.userId);
-      } catch (error) {
-        console.error('Error processing loser stats:', error);
-      }
+        
+        // Process game results for loser (if not a bot)
+        if (loserId && game.players[loserId] && !game.players[loserId].isBot) {
+            const loser = game.players[loserId];
+            loserName = loser.username;
+            try {
+                await this.levelingSystem.processGameResult(loser.userId, 'loss');
+                await this.sendProfileUpdate(loser.userId);
+            } catch (error) {
+                console.error('Error processing loser stats:', error);
+            }
+        }
+
+        this.io.to(gameId).emit('gameOver', {
+            winner: winnerId,
+            winnerName: winnerName,
+            loser: loserId,
+            loserName: loserName,
+            isDraw: false,
+            reason: 'defeat'
+        });
     }
 
-    // Send game over event to all players in the game
-    this.io.to(gameId).emit('gameOver', {
-      winner: winnerId,
-      winnerName: winnerName,
-      loser: loserId,
-      loserName: loserName,
-      reason: 'defeat'
-    });
-    
-    console.log(`✅ Game ${gameId} ended: ${winnerName} defeated ${loserName}`);
-    
-    // Clean up the game
+    // Clean up the game from active memory
     this.activeGames.delete(gameId);
   }
 
