@@ -1,8 +1,11 @@
-const { PlayerLevel, Stats } = require('../models');
+const { PlayerLevel, Stats, Inventory } = require('../models');
 
 // Constants for the leveling system
 const XP_FOR_WIN = 250;
 const XP_FOR_LOSS = 100;
+const GOLD_FOR_WIN = 50;  // 50 gold for a win
+const GOLD_FOR_LOSS = 0;   // 0 gold for a loss or draw
+const GOLD_PER_LEVEL_UP = 500; // 500 gold upon leveling up
 const BASE_XP_TO_LEVEL = 1000;
 const XP_INCREASE_PER_LEVEL = 200;
 const STAT_POINTS_PER_LEVEL = 5;
@@ -70,23 +73,43 @@ class LevelingSystem {
             playerLevel = await PlayerLevel.create({ userId: userId, level: 1, totalXP: 0 });
         }
 
+     
+        // 1. Calculate XP and Gold based on the game result
         const xpGained = result === 'win' ? XP_FOR_WIN : XP_FOR_LOSS;
-        playerLevel.totalXP += xpGained;
+        const goldGainedFromGame = result === 'win' ? GOLD_FOR_WIN : GOLD_FOR_LOSS;
 
+        playerLevel.totalXP += xpGained;
+        
+        // This will be the total gold to award, starting with game result gold
+        let totalGoldAwarded = goldGainedFromGame; 
+        
+        // 2. Handle Level-Up Logic
         const originalLevel = playerLevel.level;
         let xpForNext = this.getTotalXPForLevel(playerLevel.level + 1);
         
+        let levelsGained = 0;
         while (playerLevel.totalXP >= xpForNext) {
             playerLevel.level++;
+            levelsGained++;
             xpForNext = this.getTotalXPForLevel(playerLevel.level + 1);
         }
 
-        const leveledUp = playerLevel.level > originalLevel;
+        const leveledUp = levelsGained > 0;
         if (leveledUp) {
-            const levelsGained = playerLevel.level - originalLevel;
             const pointsAwarded = levelsGained * STAT_POINTS_PER_LEVEL;
+            const goldFromLevelUp = levelsGained * GOLD_PER_LEVEL_UP;
+            
+            // Add level-up gold to the total
+            totalGoldAwarded += goldFromLevelUp; 
+
             await Stats.updateOne({ userId }, { $inc: { availablePoints: pointsAwarded } });
-            console.log(`Player ${userId} leveled up to ${playerLevel.level}! Awarded ${pointsAwarded} stat points.`);
+            console.log(`✨ Player ${userId} leveled up to ${playerLevel.level}! Awarded ${pointsAwarded} stat points and ${goldFromLevelUp} gold.`);
+        }
+        
+        // 3. Update Inventory with the total combined gold
+        if (totalGoldAwarded > 0) {
+            await Inventory.updateOne({ userId }, { $inc: { gold: totalGoldAwarded } });
+            console.log(`💰 Player ${userId} was awarded a total of ${totalGoldAwarded} gold.`);
         }
         
         await playerLevel.save();

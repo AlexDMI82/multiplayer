@@ -1077,76 +1077,77 @@ class ModernInventorySystem {
         });
     }
 
-    updateInventoryGrid() {
-        if (!this.inventoryData || !this.inventoryData.inventory) return;
+  updateInventoryGrid() {
+    if (!this.inventoryData || !this.inventoryData.inventory) return;
 
-        const grid = document.getElementById('modern-inventory-items-grid');
-        grid.innerHTML = '';
+    const grid = document.getElementById('modern-inventory-items-grid');
+    grid.innerHTML = '';
 
-        // Filter items
-        const filteredItems = this.inventoryData.inventory.filter(item => {
-            if (this.currentFilter === 'all') return true;
-            if (this.currentFilter === 'accessory') {
-                return ['ring', 'amulet', 'boots', 'gloves'].includes(item.type);
-            }
-            return item.type === this.currentFilter;
-        });
-
-        console.log(`🔍 Filtered ${filteredItems.length} items for category: ${this.currentFilter}`);
-
-        // Create inventory slots - dynamic based on content
-        const minSlots = 24;
-        const totalSlots = Math.max(minSlots, Math.ceil(filteredItems.length / 6) * 6);
-        
-        for (let i = 0; i < totalSlots; i++) {
-            const slot = document.createElement('div');
-            slot.className = 'modern-inventory-slot';
-            
-            if (i < filteredItems.length) {
-                const item = filteredItems[i];
-                this.addRarityClass(slot, item.rarity);
-                
-                // Create item display
-                const itemIcon = document.createElement('img');
-                itemIcon.className = 'modern-item-icon';
-                itemIcon.alt = item.name;
-                
-                // --- CHANGED: Use item.image and provide a fallback ---
-                // Set item image with fallback
-                if (item.image) {
-                    itemIcon.src = item.image;
-                    itemIcon.onerror = () => {
-                        console.warn(`Failed to load inventory item image: ${item.image}, using fallback.`);
-                        itemIcon.src = this.getDefaultSlotIcon(item.type);
-                    };
-                } else {
-                    itemIcon.src = this.getDefaultSlotIcon(item.type);
-                }
-                
-                const itemName = document.createElement('div');
-                itemName.className = 'modern-item-name-small';
-                itemName.textContent = item.name;
-                
-                slot.appendChild(itemIcon);
-                slot.appendChild(itemName);
-                
-                // Store item data
-                slot.itemData = item;
-                
-                // Add click event
-                slot.addEventListener('click', () => this.selectItem(item, slot));
-                
-                // Add tooltip
-                slot.title = this.getItemTooltip(item);
-                
-                console.log(`📦 Added item to grid: ${item.name} (${item.type})`);
-            } else {
-                slot.classList.add('empty');
-            }
-            
-            grid.appendChild(slot);
+    // Filter items
+    const filteredItems = this.inventoryData.inventory.filter(item => {
+        if (this.currentFilter === 'all') return true;
+        if (this.currentFilter === 'accessory') {
+            return ['ring', 'amulet', 'boots', 'gloves'].includes(item.type);
         }
+        return item.type === this.currentFilter;
+    });
+
+    console.log(`🔍 Filtered ${filteredItems.length} items for category: ${this.currentFilter}`);
+
+    // Create inventory slots - dynamic based on content
+    const minSlots = 24;
+    const totalSlots = Math.max(minSlots, Math.ceil(filteredItems.length / 6) * 6);
+    
+    for (let i = 0; i < totalSlots; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'modern-inventory-slot';
+        
+        if (i < filteredItems.length) {
+            const item = filteredItems[i];
+            this.addRarityClass(slot, item.rarity);
+            
+            // Create item display
+            const itemIcon = document.createElement('img');
+            itemIcon.className = 'modern-item-icon';
+            itemIcon.alt = item.name;
+            
+            // Set item image with absolute paths and fallback
+            if (item.image) {
+                // Ensure absolute path
+                const imagePath = item.image.startsWith('/') ? item.image : `/${item.image}`;
+                itemIcon.src = imagePath;
+                itemIcon.onerror = () => {
+                    console.warn(`Failed to load inventory item image: ${item.image}, using fallback.`);
+                    itemIcon.src = this.getDefaultSlotIcon(item.type); // This now returns absolute paths
+                };
+            } else {
+                itemIcon.src = this.getDefaultSlotIcon(item.type); // This now returns absolute paths
+            }
+            
+            const itemName = document.createElement('div');
+            itemName.className = 'modern-item-name-small';
+            itemName.textContent = item.name;
+            
+            slot.appendChild(itemIcon);
+            slot.appendChild(itemName);
+            
+            // Store item data
+            slot.itemData = item;
+            
+            // Add click event
+            slot.addEventListener('click', () => this.selectItem(item, slot));
+            
+            // Add tooltip
+            slot.title = this.getItemTooltip(item);
+            
+            console.log(`📦 Added item to grid: ${item.name} (${item.type})`);
+        } else {
+            slot.classList.add('empty');
+        }
+        
+        grid.appendChild(slot);
     }
+}
 
     updateCharacterStats() {
         if (!this.playerStats) return;
@@ -1157,52 +1158,54 @@ class ModernInventorySystem {
         document.getElementById('modern-char-endurance').textContent = this.playerStats.endurance || 10;
     }
 
-    updateCharacterDisplay() {
-        if (!this.playerData) return;
+   updateCharacterDisplay() {
+    if (!this.playerData) return;
 
-        const avatarElement = document.getElementById('modern-character-avatar');
-        const classElement = document.getElementById('modern-character-class');
-        const subclassElement = document.getElementById('modern-character-subclass');
-        const overviewElement = document.getElementById('modern-character-overview');
+    const avatarElement = document.getElementById('modern-character-avatar');
+    const classElement = document.getElementById('modern-character-class');
+    const subclassElement = document.getElementById('modern-character-subclass');
+    const overviewElement = document.getElementById('modern-character-overview');
 
-        // Set character avatar
-        if (this.playerData.characterClass && this.playerData.characterClass !== 'unselected') {
-            const characterImagePath = `images/characters/${this.playerData.characterClass}.png`;
-            avatarElement.src = characterImagePath;
-            avatarElement.onerror = () => {
-                console.warn('Character class image failed to load, using default avatar');
-                const avatarSrc = this.playerData.avatar?.startsWith('images/') ? 
-                    this.playerData.avatar : `images/${this.playerData.avatar || 'default-avatar.png'}`;
-                avatarElement.src = avatarSrc;
-            };
-            
-            // Add character class styling
-            overviewElement.className = 'modern-character-overview';
-            overviewElement.classList.add(this.playerData.characterClass);
-            
-            // Set class info
-            const classMap = {
-                'shadowsteel': { name: 'Shadowsteel', subclass: 'Shadow Warrior' },
-                'ironbound': { name: 'Ironbound', subclass: 'Metal Berserker' },
-                'flameheart': { name: 'Flameheart', subclass: 'Fire Warrior' },
-                'venomfang': { name: 'Venomfang', subclass: 'Poison Assassin' }
-            };
-            
-            const classInfo = classMap[this.playerData.characterClass];
-            if (classInfo) {
-                classElement.textContent = classInfo.name;
-                subclassElement.textContent = classInfo.subclass;
-            }
-        } else {
-            // Fallback to regular avatar
-            const avatarSrc = this.playerData.avatar?.startsWith('images/') ? 
-                this.playerData.avatar : `images/${this.playerData.avatar || 'default-avatar.png'}`;
+    // Set character avatar with absolute paths
+    if (this.playerData.characterClass && this.playerData.characterClass !== 'unselected') {
+        const characterImagePath = `/images/characters/${this.playerData.characterClass}.png`; // Changed: Added leading slash
+        avatarElement.src = characterImagePath;
+        avatarElement.onerror = () => {
+            console.warn('Character class image failed to load, using default avatar');
+            const avatarSrc = this.playerData.avatar?.startsWith('/images/') || this.playerData.avatar?.startsWith('images/') ? 
+                (this.playerData.avatar.startsWith('/') ? this.playerData.avatar : `/${this.playerData.avatar}`) : 
+                `/images/${this.playerData.avatar || 'default-avatar.png'}`; // Changed: Ensure absolute path
             avatarElement.src = avatarSrc;
-            
-            classElement.textContent = 'No Class';
-            subclassElement.textContent = 'Unassigned';
+        };
+        
+        // Add character class styling
+        overviewElement.className = 'modern-character-overview';
+        overviewElement.classList.add(this.playerData.characterClass);
+        
+        // Set class info
+        const classMap = {
+            'shadowsteel': { name: 'Shadowsteel', subclass: 'Shadow Warrior' },
+            'ironbound': { name: 'Ironbound', subclass: 'Metal Berserker' },
+            'flameheart': { name: 'Flameheart', subclass: 'Fire Warrior' },
+            'venomfang': { name: 'Venomfang', subclass: 'Poison Assassin' }
+        };
+        
+        const classInfo = classMap[this.playerData.characterClass];
+        if (classInfo) {
+            classElement.textContent = classInfo.name;
+            subclassElement.textContent = classInfo.subclass;
         }
+    } else {
+        // Fallback to regular avatar with absolute path
+        const avatarSrc = this.playerData.avatar?.startsWith('/images/') || this.playerData.avatar?.startsWith('images/') ? 
+            (this.playerData.avatar.startsWith('/') ? this.playerData.avatar : `/${this.playerData.avatar}`) : 
+            `/images/${this.playerData.avatar || 'default-avatar.png'}`; // Changed: Ensure absolute path
+        avatarElement.src = avatarSrc;
+        
+        classElement.textContent = 'No Class';
+        subclassElement.textContent = 'Unassigned';
     }
+}
 
     selectItem(item, slotElement) {
         // Remove previous selections
@@ -1351,20 +1354,20 @@ class ModernInventorySystem {
         }
     }
 
-    getDefaultSlotIcon(itemType) {
-        const iconMap = {
-            weapon: 'images/slot-sword.svg',
-            armor: 'images/slot-armor.svg',
-            helmet: 'images/slot-helmet.svg',
-            shield: 'images/slot-shield.svg',
-            ring: 'images/slot-ring.svg',
-            amulet: 'images/slot-amulet.svg',
-            boots: 'images/slot-boots.svg',
-            gloves: 'images/slot-gloves.svg'
-        };
-        
-        return iconMap[itemType] || 'images/slot-default.svg';
-    }
+   getDefaultSlotIcon(itemType) {
+    const iconMap = {
+        weapon: '/images/slot-sword.svg',      // Changed: Added leading slash
+        armor: '/images/slot-armor.svg',      // Changed: Added leading slash
+        helmet: '/images/slot-helmet.svg',    // Changed: Added leading slash
+        shield: '/images/slot-shield.svg',    // Changed: Added leading slash
+        ring: '/images/slot-ring.svg',        // Changed: Added leading slash
+        amulet: '/images/slot-amulet.svg',    // Changed: Added leading slash
+        boots: '/images/slot-boots.svg',      // Changed: Added leading slash
+        gloves: '/images/slot-gloves.svg'     // Changed: Added leading slash
+    };
+    
+    return iconMap[itemType] || '/images/slot-default.svg'; // Changed: Added leading slash
+}
 
     getItemTooltip(item) {
         let tooltip = `${item.name}\n`;

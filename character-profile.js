@@ -149,13 +149,10 @@ function setupEventListeners() {
     openShopBtn.addEventListener('click', () => { window.location.href = '/shop.html'; });
 
     // This now calls the modern inventory system
-    openInventoryBtn.addEventListener('click', () => {
-        if (window.modernInventorySystem && typeof window.modernInventorySystem.openInventory === 'function') {
-            window.modernInventorySystem.openInventory();
-        } else {
-            console.error("Modern inventory system not found. Make sure modern-inventory.js is loaded.");
-        }
-    });
+ openInventoryBtn.addEventListener('click', () => {
+    console.log('🎒 Redirecting to inventory page...');
+    window.location.href = '/inventory.html';
+});
     
     statIncreaseButtons.forEach(button => {
         button.addEventListener('click', () => {

@@ -205,7 +205,7 @@ class GameUtils {
         }
       }
 
-async endGame(gameId, result) {
+  async endGame(gameId, result) {
     const game = this.activeGames.get(gameId);
     if (!game) {
       console.error(`❌ Cannot end game: Game ${gameId} not found`);
@@ -218,12 +218,17 @@ async endGame(gameId, result) {
       clearTimeout(game.turnTimer);
       game.turnTimer = null;
     }
-    
+
+    // Define all variables at the top level of the function scope
+    let eventPayload = {}; 
+    const winnerId = result.winner;
+    const loserId = result.loser;
+
     if (result.isDraw) {
         // --- DRAW LOGIC ---
+        const drawRewards = { xp: 100, gold: 0 };
         console.log(`⚖️ Game ${gameId} is a draw. Awarding reduced XP to both players.`);
         
-        // Award 'loss' XP to both players
         for (const playerId of Object.keys(game.players)) {
             const player = game.players[playerId];
             if (player && !player.isBot) {
@@ -236,53 +241,63 @@ async endGame(gameId, result) {
             }
         }
         
-        // Notify clients of the draw
-        this.io.to(gameId).emit('gameOver', {
+        eventPayload = {
             isDraw: true,
-            reason: 'draw'
-        });
+            reason: 'draw',
+            rewards: drawRewards
+        };
 
     } else {
-        // --- WIN/LOSS LOGIC (existing logic) ---
-        const winnerId = result.winner;
-        const loserId = result.loser;
-        let winnerName = 'Unknown';
-        let loserName = 'Unknown';
+        // --- WIN/LOSS LOGIC ---
+        const winRewards = { xp: 250, gold: 50 };
+        const lossRewards = { xp: 100, gold: 0 };
+        
+        // Define names safely, defaulting if a player isn't found
+        const winnerName = game.players[winnerId]?.username || 'A Fighter';
+        const loserName = game.players[loserId]?.username || 'A Fighter';
 
-        // Process game results for winner (if not a bot)
+        // Process winner (if not a bot)
         if (winnerId && game.players[winnerId] && !game.players[winnerId].isBot) {
-            const winner = game.players[winnerId];
-            winnerName = winner.username;
             try {
-                await this.levelingSystem.processGameResult(winner.userId, 'win');
-                await this.sendProfileUpdate(winner.userId);
+                await this.levelingSystem.processGameResult(game.players[winnerId].userId, 'win');
+                await this.sendProfileUpdate(game.players[winnerId].userId);
             } catch (error) {
                 console.error('Error processing winner stats:', error);
             }
         }
         
-        // Process game results for loser (if not a bot)
+        // Process loser (if not a bot)
         if (loserId && game.players[loserId] && !game.players[loserId].isBot) {
-            const loser = game.players[loserId];
-            loserName = loser.username;
             try {
-                await this.levelingSystem.processGameResult(loser.userId, 'loss');
-                await this.sendProfileUpdate(loser.userId);
+                await this.levelingSystem.processGameResult(game.players[loserId].userId, 'loss');
+                await this.sendProfileUpdate(game.players[loserId].userId);
             } catch (error) {
                 console.error('Error processing loser stats:', error);
             }
         }
 
-        this.io.to(gameId).emit('gameOver', {
+        // Create the single payload for all players
+        eventPayload = {
             winner: winnerId,
             winnerName: winnerName,
             loser: loserId,
             loserName: loserName,
             isDraw: false,
-            reason: 'defeat'
-        });
+            reason: 'defeat',
+            // Send the correct rewards based on who is receiving the event
+            // The client will determine which set of rewards to use
+            rewards: {
+                win: winRewards,
+                loss: lossRewards
+            }
+        };
     }
 
+    // Emit one single gameOver event to everyone in the room
+    this.io.to(gameId).emit('gameOver', eventPayload);
+
+    console.log(`✅ Game ${gameId} concluded. Event sent to clients.`);
+    
     // Clean up the game from active memory
     this.activeGames.delete(gameId);
   }

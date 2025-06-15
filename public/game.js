@@ -75,7 +75,7 @@ const equippedArmor = document.getElementById('equipped-armor');
 const equippedShield = document.getElementById('equipped-shield');
 const equippedHelmet = document.getElementById('equipped-helmet');
 
-// FIXED: Game Message System DOM Elements
+// Game Message System DOM Elements
 let gameMessageContainer = null;
 let gameMessageWrapper = null;
 let msgChooseMove = null;
@@ -187,7 +187,7 @@ function disableStatsButtonsDuringBattle() {
     }
 }
 
-// FIXED: Initialize Game Message System
+// Initialize Game Message System
 function initializeGameMessageSystem() {
     gameMessageContainer = document.getElementById('game-message-container');
     gameMessageWrapper = document.querySelector('.game-message-wrapper');
@@ -210,7 +210,7 @@ function initializeGameMessageSystem() {
     return true;
 }
 
-// FIXED: Show Game Message Function
+// Show Game Message Function
 function showGameMessage(messageId) {
     if (!gameMessageWrapper) {
         console.warn('Game message wrapper not available');
@@ -404,14 +404,13 @@ function setupEventListeners() {
         });
     }
     if (backToLobbyFromShopBtn) backToLobbyFromShopBtn.addEventListener('click', () => showScreen(lobbyScreen));
-    if (openInventoryBtn) openInventoryBtn.addEventListener('click', () => { 
-        if (window.modernInventorySystem) {
-            window.modernInventorySystem.openInventory();
-        } else {
-            socket.emit('getInventory'); 
-            showModal(inventoryModal);
-        }
+  if (openInventoryBtn) {
+    openInventoryBtn.addEventListener('click', () => { 
+        console.log('🎒 Redirecting to inventory page...');
+        window.location.href = '/inventory.html';
     });
+}
+
     if (closeInventoryBtn) closeInventoryBtn.addEventListener('click', () => hideModal(inventoryModal));
     
     document.querySelectorAll('.category-btn').forEach(btn => {
@@ -437,6 +436,21 @@ function setupEventListeners() {
             openInventoryForSlot(slotType);
         });
     });
+
+    // Event listener for the new Battle End modal button
+    const battleEndToLobbyBtn = document.getElementById('battle-end-to-lobby-btn');
+    if (battleEndToLobbyBtn) {
+        battleEndToLobbyBtn.addEventListener('click', () => {
+            // Reset game state and return to lobby
+            currentGameId = null;
+            gameState = null;
+            opponentInfo = null;
+            localStorage.removeItem('pendingGameId');
+            showScreen(lobbyScreen);
+            hideModal(document.getElementById('battle-end-modal'));
+            disableStatsButtonsDuringBattle();
+        });
+    }
 }
 
 function setupLobbyEventHandlers() {
@@ -717,21 +731,21 @@ function updatePlayersList(players) {
 function escapeHtml(text) {
     if (!text) return '';
     const map = {
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&apos;'
     };
     return text.replace(/[&<>"']/g, (m) => map[m]);
 }
 
-// THIS IS THE NEW FUNCTION TO UPDATE THE LOBBY CHARACTER DISPLAY
 function updateProfileDisplay(playerData) {
     if (!playerData) return;
 
-    // The key change is here: target the new, unique ID.
     const lobbyAvatarElement = document.getElementById('lobby-character-display-avatar'); 
-    
     const lobbyNameElement = document.getElementById('player-name');
     const lobbyClassElement = document.getElementById('player-class');
-
     const usernameToDisplay = playerData.username || (currentUser ? currentUser.username : 'Player');
 
     let avatarSrc = `images/${playerData.avatar || 'default-avatar.png'}`;
@@ -943,7 +957,6 @@ function startGame(gameData) {
     }, 100);
 }
 
-// THIS IS THE NEW FUNCTION TO UPDATE LOBBY EQUIPMENT DISPLAY
 function updateEquippedItemsDisplay(equippedItems) {
     if (!equippedItems) return;
 
@@ -1007,7 +1020,6 @@ function updateInGameEquipmentDisplay(playerPrefix, equipment) {
     });
 }
 
-// FIXED: Updated updateGameState function
 function updateGameState(state) {
     gameState = state;
     console.log('🎮 Game state updated:', state);
@@ -1089,7 +1101,6 @@ function updateGameState(state) {
         }
     }
     
-    // FIXED: Proper message state handling with message system
     if (state.waitingForPlayers) {
         showGameMessage('waiting-players');
         if (combatControls) combatControls.style.display = 'none';
@@ -1112,7 +1123,6 @@ function updateGameState(state) {
             combatControls.style.opacity = '0.5';
         }
     } else {
-        // Default to waiting for players if state is unclear
         showGameMessage('waiting-players');
         if (combatControls) combatControls.style.display = 'none';
     }
@@ -1127,7 +1137,6 @@ function makeMove(attackArea, blockArea) {
     waitingForOpponent = true;
     if (combatControls) combatControls.style.opacity = '0.5';
 
-    // Show the "Waiting for opponent" message
     showGameMessage('waiting-opponent');
     
     socket.emit('makeMove', {
@@ -1216,32 +1225,64 @@ function formatAreaName(area) {
 
 function handleGameEnd(result) {
     stopTurnTimer();
-    currentGameId = null;
-    gameState = null;
-    opponentInfo = null;
-    localStorage.removeItem('pendingGameId');
+    // Keep gameId and gameState to allow viewing the log until player clicks to go back to lobby
+    
+    const modal = document.getElementById('battle-end-modal');
+    const title = document.getElementById('battle-end-title');
+    const image = document.getElementById('battle-end-image');
+    const rewardsDiv = document.getElementById('battle-end-rewards');
     
     let endMessage = '';
-    if (result.isDraw || result.reason === 'draw') {
+    let rewardsText = '';
+    
+ if (result.isDraw) {
+        title.textContent = 'Draw';
+        title.className = 'draw';
+        image.src = 'images/battle-result/draw.jpg';
         endMessage = 'The battle ended in a DRAW!';
+        
+        if (result.rewards) {
+            rewardsText = `<p>XP Gained: <span class="reward-value">${result.rewards.xp}</span></p>
+                           <p>Gold Gained: <span class="reward-value">${result.rewards.gold}</span></p>`;
+        }
+
     } else if (result.winner === myPlayerId) {
+        title.textContent = 'Victory';
+        title.className = 'victory';
+        image.src = 'images/battle-result/victory.jpg';
         endMessage = 'Victory! You have defeated your opponent!';
-    } else if (result.reason === 'opponent_abandoned') {
-        endMessage = 'Your opponent has abandoned the battle. You win!';
-    } else if (result.reason === 'you_abandoned') {
-        endMessage = 'You have abandoned the battle. You lose!';
-    } else {
-        endMessage = 'Defeat! You have been defeated.';
+
+        if (result.rewards && result.rewards.win) {
+            rewardsText = `<p>XP Gained: <span class="reward-value">${result.rewards.win.xp}</span></p>
+                           <p>Gold Gained: <span class="reward-value">${result.rewards.win.gold}</span></p>`;
+        }
+
+    } else { // This covers loss and opponent abandonment
+        title.textContent = 'Defeat';
+        title.className = 'loss';
+        image.src = 'images/battle-result/loss.jpg';
+        
+        if (result.reason === 'opponent_abandoned') {
+             endMessage = 'Your opponent has abandoned the battle. You win!';
+        } else {
+             endMessage = 'Defeat! You have been defeated.';
+        }
+
+        if (result.rewards && result.rewards.loss) {
+            rewardsText = `<p>XP Gained: <span class="reward-value">${result.rewards.loss.xp}</span></p>
+                           <p>Gold Gained: <span class="reward-value">${result.rewards.loss.gold}</span></p>`;
+        }
     }
     
+    rewardsDiv.innerHTML = rewardsText;
     addLogEntry(endMessage, result.winner === myPlayerId ? 'heal' : 'damage');
     
+    // Show the modal after a short delay
     setTimeout(() => {
-        alert(endMessage);
-        showScreen(lobbyScreen);
-        disableStatsButtonsDuringBattle();
-    }, 2000);
+        showModal(modal);
+    }, 1500);
 }
+
 
 function displayShopItems(category) {
     if (!shopData || !shopData[category]) return;
@@ -1425,16 +1466,12 @@ socket.on('opponentMadeMove', () => {
     addLogEntry(`${opponentName} has made their move`, 'info');
 });
 
-// FIXED: Added the missing allMovesMade event handler
 socket.on('allMovesMade', (data) => {
     console.log('All moves received, processing round...');
     roundInProgress = true;
     waitingForOpponent = false;
-    
-    // Show processing message
     showGameMessage('processing');
     if (combatControls) combatControls.style.opacity = '0.5';
-    
     addLogEntry('Processing moves...', 'info');
 });
 

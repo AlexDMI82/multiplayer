@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory</title>
+    <link rel="stylesheet" href="inventory-page.css">
+</head>
+<body>
+    <div class="inventory-page-container">
+        <!-- Header -->
+        <div class="inventory-header">
+            <h1 class="inventory-title">Inventory</h1>
+            
+            <div class="gold-display">
+                <div class="gold-icon">🪙</div>
+                <span id="player-gold-amount">0</span>
+                <span>Gold</span>
+            </div>
+            
+            <div class="inventory-nav">
+                <a href="/" class="nav-button">← Back to Lobby</a>
+                <a href="/character-profile.html" class="nav-button">Character Profile</a>
+                <a href="/shop.html" class="nav-button">Shop</a>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="inventory-main">
+            <!-- Character Panel -->
+            <div class="character-panel">
+                <div class="character-frame">
+                    <div class="avatar-container">
+                        <img id="character-avatar" src="" alt="Character Avatar">
+                        <div class="character-class-badge">
+                            <div id="character-class">Class Name</div>
+                            <div id="character-subclass" class="character-subclass">Subclass</div>
+                        </div>
+                        
+                        <!-- Equipment slots -->
+                        <div class="equipment-slot helmet-slot" data-slot="helmet" title="Helmet">
+                            <img src="/images/slot-helmet.svg" class="slot-icon">
+                            <div class="equipment-name" id="helmet-name">None</div>
+                        </div>
+                        
+                        <div class="equipment-slot armor-slot" data-slot="armor" title="Armor">
+                            <img src="/images/slot-armor.svg" class="slot-icon">
+                            <div class="equipment-name" id="armor-name">None</div>
+                        </div>
+                        
+                        <div class="equipment-slot shield-slot" data-slot="shield" title="Shield">
+                            <img src="/images/slot-shield.svg" class="slot-icon">
+                            <div class="equipment-name" id="shield-name">None</div>
+                        </div>
+                        
+                        <div class="equipment-slot boots-slot" data-slot="boots" title="Boots">
+                            <img src="/images/slot-boots.svg" class="slot-icon">
+                            <div class="equipment-name" id="boots-name">None</div>
+                        </div>
+                        
+                        <div class="equipment-slot weapon-slot" data-slot="weapon" title="Weapon">
+                            <img src="/images/slot-sword.svg" class="slot-icon">
+                            <div class="equipment-name" id="weapon-name">None</div>
+                        </div>
+                        
+                        <div class="equipment-slot amulet-slot" data-slot="amulet" title="Amulet">
+                            <img src="/images/slot-amulet.svg" class="slot-icon">
+                            <div class="equipment-name" id="amulet-name">None</div>
+                        </div>
+                        
+                        <div class="equipment-slot ring-slot" data-slot="ring" title="Ring">
+                            <img src="/images/slot-ring.svg" class="slot-icon">
+                            <div class="equipment-name" id="ring-name">None</div>
+                        </div>
+                        
+                        <div class="equipment-slot gloves-slot" data-slot="gloves" title="Gloves">
+                            <img src="/images/slot-gloves.svg" class="slot-icon">
+                            <div class="equipment-name" id="gloves-name">None</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Character Stats -->
+                <div class="character-stats">
+                    <h2 class="stats-title">📊 Character Stats</h2>
+                    
+                    <div class="stat-row">
+                        <span class="stat-label">💪 STRENGTH</span>
+                        <span class="stat-value" id="char-strength">10</span>
+                    </div>
+                    
+                    <div class="stat-row">
+                        <span class="stat-label">🏃 AGILITY</span>
+                        <span class="stat-value" id="char-agility">10</span>
+                    </div>
+                    
+                    <div class="stat-row">
+                        <span class="stat-label">🧠 INTUITION</span>
+                        <span class="stat-value" id="char-intuition">10</span>
+                    </div>
+                    
+                    <div class="stat-row">
+                        <span class="stat-label">❤️ ENDURANCE</span>
+                        <span class="stat-value" id="char-endurance">10</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inventory Panel -->
+            <div class="inventory-panel">
+                <div class="inventory-grid-header">
+                    <h2 class="inventory-grid-title">🎒 Inventory</h2>
+                    <div class="inventory-filter">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="weapon">⚔️ Weapons</button>
+                        <button class="filter-btn" data-filter="armor">🛡️ Armor</button>
+                        <button class="filter-btn" data-filter="helmet">⛑️ Helmets</button>
+                        <button class="filter-btn" data-filter="accessory">💎 Accessories</button>
+                    </div>
+                </div>
+                
+                <div class="inventory-grid" id="inventory-items-grid">
+                    <!-- Inventory items will be populated here -->
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="inventory-actions">
+                    <button class="action-btn equip-btn" id="equip-selected-item" disabled>Equip Selected</button>
+                    <button class="action-btn equip-btn" id="unequip-selected-slot" disabled>Unequip Selected</button>
+                    <button class="action-btn equip-btn" id="sort-inventory">Sort Items</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Socket.io and Scripts -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/auth.js"></script>
+    <script src="inventory-standalone.js"></script>
+</body>
+</html>

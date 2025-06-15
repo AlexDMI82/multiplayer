@@ -172,6 +172,7 @@ app.get('/profile.html', authenticate, (req, res) => res.sendFile(path.join(__di
 app.get('/shop.html', authenticate, (req, res) => res.sendFile(path.join(__dirname, 'shop.html')));
 app.get('/profile', authenticate, (req, res) => res.sendFile(path.join(__dirname, 'profile.html')));
 app.get('/character-select.html', authenticate, (req, res) => res.sendFile(path.join(__dirname, 'character-select.html')));
+app.get('/inventory.html', authenticate, (req, res) => res.sendFile(path.join(__dirname, 'inventory.html')));
 
 
 // Google OAuth routes BEFORE your existing /api routes

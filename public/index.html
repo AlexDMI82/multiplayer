@@ -80,7 +80,7 @@
                         <i class="icon-shop"></i>
                         <span>SHOP</span>
                     </button>
-                    <button class="nav-item" id="open-inventory-btn">
+                    <button class="nav-item" onclick="window.location.href='/inventory.html'">
                         <i class="icon-inventory"></i>
                         <span>INVENTORY</span>
                     </button>
@@ -521,6 +521,24 @@
             </div>
         </div>
     </div>
+
+
+    <div id="battle-end-modal" class="modal hidden">
+        <div class="battle-end-content">
+            <div id="battle-end-image-container" class="battle-end-image-container">
+                <img id="battle-end-image" src="" alt="Battle Result">
+            </div>
+            <div class="battle-end-details">
+                <h2 id="battle-end-title"></h2>
+                <div id="battle-end-rewards" class="battle-end-rewards">
+                    <!-- Rewards will be populated here -->
+                </div>
+                <button id="battle-end-to-lobby-btn" class="button">Return to Lobby</button>
+            </div>
+        </div>
+    </div>
+
+
 </div>
 
 <script src="/auth.js"></script>
